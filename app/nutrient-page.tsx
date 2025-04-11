@@ -204,7 +204,7 @@ export default function UserNutrientPage() {
         };
 
   const handleCheck = () => {
-    navigation.navigate('page-6');
+    navigation.navigate('page-6', data);
   };
 
   if (!fontsLoaded) {
@@ -397,7 +397,7 @@ export default function UserNutrientPage() {
           
       {/* Floating check button */}
       <TouchableOpacity style={styles.checkButton} onPress={handleCheck}>
-        <ThemedText style={styles.checkMark}>✓</ThemedText>
+        <ThemedText style={styles.checkMark}>➜</ThemedText>
       </TouchableOpacity>
     </SafeAreaView>
   );

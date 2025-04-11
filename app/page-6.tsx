@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   StyleSheet, 
   View, 
@@ -15,6 +15,7 @@ import PieChart from 'react-native-pie-chart';
 import { useNavigation } from '@react-navigation/native';
 import { RootStackParamList } from '@/types/types';
 import { StackNavigationProp } from '@react-navigation/stack';
+import { useRoute } from '@react-navigation/native';
 
 const toProgressWidth = (value: number) => `${Math.min(value, 100)}%` as DimensionValue;
 const toPercentageText = (value: number) => `${value}%`;
@@ -24,46 +25,105 @@ type Page6ScreenNavigationProp = StackNavigationProp<RootStackParamList, 'page-6
 
 interface NutritionData {
   progress: {
-    sugar: { user: number; avg: number };
+    carbohydrate: { user: number; avg: number };
     sodium: { user: number; avg: number };
-    calories: { user: number; avg: number };
+    protein: { user: number; avg: number };
   };
   values: {
-    sugar: { user: number; avg: number };
+    carbohydrate: { user: number; avg: number };
     sodium: { user: number; avg: number };
-    calories: { user: number; avg: number };
+    protein: { user: number; avg: number };
   };
   intake: {
-    breakdown: { calories: number; sugar: number; sodium: number };
+    breakdown: { protein: number; carbohydrate: number; sodium: number };
     total: number;
   };
   avg: {
-    breakdown: { calories: number; sugar: number; sodium: number };
+    breakdown: { protein: number; carbohydrate: number; sodium: number };
     total: number;
   };
 }
 
 export default function Page6() {
-  const [nutritionData] = useState<NutritionData>({
+    const route = useRoute();
+    const { data } = route.params as { data: any };
+
+  const [nutritionData, setNutritionData] = useState<NutritionData>({
     progress: {
-      sugar: { user: 88, avg: 50 },
+      carbohydrate: { user: 88, avg: 50 },
       sodium: { user: 33, avg: 50 },
-      calories: { user: 45, avg: 50 },
+      protein: { user: 45, avg: 50 },
     },
     values: {
-      sugar: { user: 53, avg: 49 },
+      carbohydrate: { user: 53, avg: 49 },
       sodium: { user: 15, avg: 11 },
-      calories: { user: 180, avg: 147 }, 
+      protein: { user: 180, avg: 147 }, 
     },
     intake: { 
-      breakdown: { calories: 22, sugar: 45, sodium: 22 },
-      total: 209
+      breakdown: { carbohydrate: 94, sodium: 2, protein: 4 },
+      total: 93.33
     },
     avg: { 
-      breakdown: { calories: 22, sugar: 45, sodium: 11 },
-      total: 210
+      breakdown: { carbohydrate: 77, sodium: 7, protein: 16 },
+      total: 402
     },
   });
+
+  useEffect(() => {
+    if (data?.combined) {
+      const parseGrams = (value: string): number => {
+        if (value.toLowerCase().includes('mg')) {
+          return parseFloat(value) / 1000;
+        } else {
+          return parseFloat(value);
+        }
+      };
+  
+      const carbohydrate = parseGrams(data.combined.carbs_total);
+      const protein = parseGrams(data.combined.protein_total);
+      const sodium = parseGrams(data.combined.sodium_total);
+  
+  
+      const total = ((carbohydrate + protein + sodium) / 3).toFixed(2);
+  
+      setNutritionData((prev) => ({
+        ...prev,
+        intake: {
+          ...prev.intake,
+          breakdown: { carbohydrate, protein, sodium },
+          total: parseFloat(total),
+        },
+        values: {
+          carbohydrate: {
+            ...prev.values.carbohydrate,
+            user: parseFloat(carbohydrate.toFixed(1)),
+          },
+          protein: {
+            ...prev.values.protein,
+            user: parseFloat(protein.toFixed(1)),
+          },
+          sodium: {
+            ...prev.values.sodium,
+            user: parseFloat(sodium.toFixed(1)),
+          },
+        },
+        progress: {
+          carbohydrate: {
+            ...prev.progress.carbohydrate,
+            user: parseFloat(((carbohydrate / 100) * 100).toFixed(1)), // You can replace 100 with your carb goal
+          },
+          protein: {
+            ...prev.progress.protein,
+            user: parseFloat(((protein / 200) * 100).toFixed(1)), // Replace 200 with your protein goal
+          },
+          sodium: {
+            ...prev.progress.sodium,
+            user: parseFloat(((sodium / 2.3) * 100).toFixed(1)), // 2.3g = 2300mg recommended
+          },
+        },
+      }));
+    }
+  }, [data]);
 
   const navigation = useNavigation<Page6ScreenNavigationProp>();
 
@@ -98,23 +158,23 @@ export default function Page6() {
               </View>
             </View>
 
-            {/* Sugar Row */}
+            {/* Carbohydrate Row (was Sugar) */}
             <View style={styles.nutrientRow}>
               <View style={styles.nutrientLabel}>
-                <Text style={styles.nutrientText}>Sugar</Text>
-                <Image source={require('@/assets/images/Sugar Icon.png')} style={styles.icon} />
+                <Text style={styles.nutrientText}>Carbs</Text>
+                <Image source={require('@/assets/images/Carbohydrate Icon.png')} style={styles.icon} />
               </View>
               <View style={styles.progressBars}>
                 <View style={styles.progressBarBackground}>
-                  <View style={[styles.progressBar, styles.userProgress, { width: toProgressWidth(nutritionData.progress.sugar.user) }]} />
+                  <View style={[styles.progressBar, styles.userProgress, { width: toProgressWidth(nutritionData.progress.carbohydrate.user) }]} />
                 </View>
                 <View style={styles.progressBarBackground}>
-                  <View style={[styles.progressBar, styles.avgProgress, { width: toProgressWidth(nutritionData.progress.sugar.avg) }]} />
+                  <View style={[styles.progressBar, styles.avgProgress, { width: toProgressWidth(nutritionData.progress.carbohydrate.avg) }]} />
                 </View>
               </View>
               <View style={styles.valueContainer}>
-                <Text style={styles.userValue}>{formatValue(nutritionData.values.sugar.user)}</Text>
-                <Text style={styles.avgValue}>{formatValue(nutritionData.values.sugar.avg)}</Text>
+                <Text style={styles.userValue}>{formatValue(nutritionData.values.carbohydrate.user)}</Text>
+                <Text style={styles.avgValue}>{formatValue(nutritionData.values.carbohydrate.avg)}</Text>
               </View>
             </View>
 
@@ -138,23 +198,23 @@ export default function Page6() {
               </View>
             </View>
 
-            {/* Calories Row */}
+            {/* Protein Row (was Calories) */}
             <View style={styles.nutrientRow}>
               <View style={styles.nutrientLabel}>
-                <Text style={styles.nutrientText}>Calories</Text>
-                <Image source={require('@/assets/images/Cholesterol Icon.png')} style={styles.icon} />
+                <Text style={styles.nutrientText}>Protein</Text>
+                <Image source={require('@/assets/images/Protein Icon.png')} style={styles.icon} />
               </View>
               <View style={styles.progressBars}>
                 <View style={styles.progressBarBackground}>
-                  <View style={[styles.progressBar, styles.userProgress, { width: toProgressWidth(nutritionData.progress.calories.user) }]} />
+                  <View style={[styles.progressBar, styles.userProgress, { width: toProgressWidth(nutritionData.progress.protein.user) }]} />
                 </View>
                 <View style={styles.progressBarBackground}>
-                  <View style={[styles.progressBar, styles.avgProgress, { width: toProgressWidth(nutritionData.progress.calories.avg) }]} />
+                  <View style={[styles.progressBar, styles.avgProgress, { width: toProgressWidth(nutritionData.progress.protein.avg) }]} />
                 </View>
               </View>
               <View style={styles.valueContainer}>
-                <Text style={styles.userValue}>{formatValue(nutritionData.values.calories.user)}</Text>
-                <Text style={styles.avgValue}>{formatValue(nutritionData.values.calories.avg)}</Text>
+                <Text style={styles.userValue}>{formatValue(nutritionData.values.protein.user)}</Text>
+                <Text style={styles.avgValue}>{formatValue(nutritionData.values.protein.avg)}</Text>
               </View>
             </View>
           </View>
@@ -168,9 +228,9 @@ export default function Page6() {
                   <PieChart
                     widthAndHeight={150}
                     series={[
-                      { value: nutritionData.intake.breakdown.sodium, color: '#000000' },
-                      { value: nutritionData.intake.breakdown.sugar, color: '#c0b4b4' },
-                      { value: nutritionData.intake.breakdown.calories, color: '#7ca844' },
+                      { value: nutritionData.intake.breakdown.protein, color: '#000000' },
+                      { value: nutritionData.intake.breakdown.carbohydrate, color: '#7ca844' },
+                      { value: nutritionData.intake.breakdown.sodium, color: '#c0b4b4' },
                     ]}
                     cover={0.55}
                   />
@@ -179,15 +239,15 @@ export default function Page6() {
                   <Text style={styles.chartTitle}>User Intake</Text>
                   <View style={styles.legendItem}>
                     <View style={[styles.colorCircle, { backgroundColor: '#7ca844' }]} />
-                    <Text style={styles.legendLabel}>Calories ({toPercentageText(nutritionData.intake.breakdown.calories)})</Text>
+                    <Text style={styles.legendLabel}>Carbohydrate ({toPercentageText(nutritionData.intake.breakdown.carbohydrate)})</Text>
                   </View>
                   <View style={styles.legendItem}>
                     <View style={[styles.colorCircle, { backgroundColor: '#c0b4b4' }]} />
-                    <Text style={styles.legendLabel}>Sugar ({toPercentageText(nutritionData.intake.breakdown.sugar)})</Text>
+                    <Text style={styles.legendLabel}>Sodium ({toPercentageText(nutritionData.intake.breakdown.sodium)})</Text>
                   </View>
                   <View style={styles.legendItem}>
                     <View style={[styles.colorCircle, { backgroundColor: '#000000' }]} />
-                    <Text style={styles.legendLabel}>Sodium ({toPercentageText(nutritionData.intake.breakdown.sodium)})</Text>
+                    <Text style={styles.legendLabel}>Protein ({toPercentageText(nutritionData.intake.breakdown.protein)})</Text>
                   </View>
                   <View style={styles.totalBox}>
                     <Text style={styles.totalText}>
@@ -205,9 +265,9 @@ export default function Page6() {
                   <PieChart
                     widthAndHeight={150}
                     series={[
-                      { value: nutritionData.avg.breakdown.sodium, color: '#000000' },
-                      { value: nutritionData.avg.breakdown.sugar, color: '#c0b4b4' },
-                      { value: nutritionData.avg.breakdown.calories, color: '#7ca844' },
+                      { value: nutritionData.avg.breakdown.protein, color: '#000000' },
+                      { value: nutritionData.avg.breakdown.carbohydrate, color: '#7ca844' },
+                      { value: nutritionData.avg.breakdown.sodium, color: '#c0b4b4' },
                     ]}
                     cover={0.55}
                   />
@@ -216,15 +276,15 @@ export default function Page6() {
                   <Text style={styles.chartTitle}>Average Intake</Text>
                   <View style={styles.legendItem}>
                     <View style={[styles.colorCircle, { backgroundColor: '#7ca844' }]} />
-                    <Text style={styles.legendLabel}>Calories ({toPercentageText(nutritionData.avg.breakdown.calories)})</Text>
+                    <Text style={styles.legendLabel}>Carbohydrate ({toPercentageText(nutritionData.avg.breakdown.carbohydrate)})</Text>
                   </View>
                   <View style={styles.legendItem}>
                     <View style={[styles.colorCircle, { backgroundColor: '#c0b4b4' }]} />
-                    <Text style={styles.legendLabel}>Sugar ({toPercentageText(nutritionData.avg.breakdown.sugar)})</Text>
+                    <Text style={styles.legendLabel}>Sodium ({toPercentageText(nutritionData.avg.breakdown.sodium)})</Text>
                   </View>
                   <View style={styles.legendItem}>
                     <View style={[styles.colorCircle, { backgroundColor: '#000000' }]} />
-                    <Text style={styles.legendLabel}>Sodium ({toPercentageText(nutritionData.avg.breakdown.sodium)})</Text>
+                    <Text style={styles.legendLabel}>Protein ({toPercentageText(nutritionData.avg.breakdown.protein)})</Text>
                   </View>
                   <View style={styles.totalBox}>
                     <Text style={styles.totalText}>
@@ -293,7 +353,7 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   legendItemSpacing: {
-    marginLeft: 24, // Additional spacing for the second legend
+    marginLeft: 24,
   },
   legendSquare: {
     width: 16,
@@ -332,11 +392,11 @@ const styles = StyleSheet.create({
     height: 20,
   },
   progressBars: {
-    flex: 3,
+    flex: 3.5,
   },
   progressBarBackground: {
     height: 4,
-    backgroundColor: '#EEEEEE', // Grey background for progress bar
+    backgroundColor: '#EEEEEE',
     borderRadius: 3,
     marginVertical: 2,
     overflow: 'hidden',
@@ -352,7 +412,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#9AB106',
   },
   valueContainer: {
-    flex: 1,
+    flex: 0.80,
     alignItems: 'flex-end',
   },
   userValue: {
@@ -403,10 +463,9 @@ const styles = StyleSheet.create({
     marginHorizontal: 12,
   },
   legendLabel: {
-    fontSize: 14,
+    fontSize: 12,
     color: '#333',
   },
-
   totalBox: {
     backgroundColor: '#f8e4e4',
     padding: 12,
@@ -435,3 +494,5 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
 });
+
+
