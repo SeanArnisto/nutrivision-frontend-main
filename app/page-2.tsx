@@ -166,7 +166,7 @@ export default function Page2() {
       </ThemedView>
       <TouchableOpacity style={styles.checkButton} onPress={handleCheck}>
       <Image source={require('@/assets/images/Plus.png')} 
-                        style={{ width: 30, height: 30 }}/>
+                        style={{ width: 20, height: 20 }}/>
         </TouchableOpacity>
     </SafeAreaView>
   );

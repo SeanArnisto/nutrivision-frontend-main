@@ -379,8 +379,8 @@ export default function UserNutrientPage() {
                   </View>
                   <View style={styles.legendItem}>
                     <View style={[styles.colorCircle, { backgroundColor: '#000000' }]} />
-                    <Text style={styles.legendLabel}>P
-                      protein ({toPercentageText(nutritionData.userIntake.breakdown.protein)})</Text>
+                    <Text style={styles.legendLabel}>
+                      Protein ({toPercentageText(nutritionData.userIntake.breakdown.protein)})</Text>
                   </View>
                   <View style={styles.totalBox}>
                     <Text style={styles.totalText}>
