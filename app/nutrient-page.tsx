@@ -47,8 +47,16 @@ export default function UserNutrientPage() {
 
   useEffect(() => {
     if (data?.combined) {
-      const parseGrams = (value: string): number => {
-        if (value.toLowerCase().includes('mg')) {
+
+  
+      const parseGrams = (value: string | null | undefined): number => {
+        if (!value) {
+          return 0;
+        }
+      
+        const lowerValue = value.toLowerCase();
+      
+        if (lowerValue.includes('mg')) {
           return parseFloat(value) / 1000;
         } else {
           return parseFloat(value);
