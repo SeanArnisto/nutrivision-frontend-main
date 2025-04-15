@@ -625,6 +625,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginVertical: 7.5,
     marginHorizontal: 8,
+    overflow: "hidden"
   },
   icon: {
     width: 24,
@@ -649,7 +650,7 @@ const styles = StyleSheet.create({
   inputBox: {
     backgroundColor: "#F0F0F0",
     borderRadius: 8,
-    width: 80,
+    width: 90,
     height: 40,
     justifyContent: "center",
     position: "relative", // Added to position the edit icon inside
