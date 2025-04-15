@@ -83,6 +83,22 @@ export default function UserNutrientPage() {
         },
       });
     }
+    if (data?.fruits) {
+      const carbohydrate = data.fruits.total_carbs;
+      const protein = data.fruits.total_protein;
+      const sodium =  data.fruits.total_sodium;
+
+      setNutrients({ carbohydrate, protein, sodium });
+
+      const total = ((carbohydrate + protein + sodium) / 3).toFixed(2);
+
+      setNutritionData({
+        userIntake: {
+          breakdown: { carbohydrate, protein, sodium },
+          total: parseFloat(total),
+        },
+      });
+    }
   }, [data]);
 
   // State for nutrient inputs (now as numbers without units)
