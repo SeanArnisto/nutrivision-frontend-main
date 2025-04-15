@@ -79,6 +79,9 @@ import React, { useRef, useState, useEffect, createContext, useContext } from 'r
 
     const handleSubmitPhoto = async (photos) => {
       console.log('Button clicked, starting image submission...');
+
+      const fruitsUrl = 'https://leidanielaguila-nutrivision.hf.space/detect'; // object detection 
+      const labelsUrl = 'https://nutrivision-backend-textrecog-77tx.onrender.com/extract/'; // nutritional label
     
       if (!photos || photos.length === 0) {
         console.log('No photos provided for submission.');
@@ -102,13 +105,19 @@ import React, { useRef, useState, useEffect, createContext, useContext } from 'r
       }
     
       console.log('FormData constructed with', photos.length, 'files.');
-    
+      let urlToSend = '';
+
+      if (isLabelMode) {
+        urlToSend = labelsUrl;
+      } else {
+        urlToSend = fruitsUrl;
+      }
       try {
         console.log('Sending request to backend endpoint...');
         
         // Let axios set the Content-Type header automatically with the boundary
         const response = await axios.post(
-          'https://nutrivision-backend-textrecog-77tx.onrender.com/extract/',
+          urlToSend,
           formData,
           {
             // Don't set Content-Type header at all, let axios handle it
@@ -119,7 +128,7 @@ import React, { useRef, useState, useEffect, createContext, useContext } from 'r
         );
         console.log('✅ Response from server:', response.data);
         //setExtractedData(response.data);
-        navigation.navigate('nutrient-page', { data: response.data });
+        // navigation.navigate('nutrient-page', { data: response.data });
         return response.data;
       } catch (err) {
         console.error('❌ Axios upload error:', err);
