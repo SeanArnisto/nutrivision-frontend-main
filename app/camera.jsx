@@ -23,7 +23,7 @@ import React, { useRef, useState, useEffect, createContext, useContext } from 'r
   import { useNavigation } from '@react-navigation/native';
   import { StackNavigationProp } from '@react-navigation/stack';
   import { useIsFocused } from '@react-navigation/native';
-  import  {ApiProvider, useApi} from '@/hooks/ApiContext';
+  import  { useApi} from '../hooks/ApiContext';
   import axios from 'axios';
   import PhotoPreviewSection from '@/components/PhotoPreviewSection';
   import { navigate } from 'expo-router/build/global-state/routing';
@@ -72,8 +72,7 @@ import React, { useRef, useState, useEffect, createContext, useContext } from 'r
     const [isLabelMode, setIsLabelMode] = useState(true); // Default to label mode
     const [capturedPhotos, setCapturedPhotos] = useState([]);
     const [mediaLibraryPermission, setMediaLibraryPermission] = useState(null);
-    //const { uploadImages, isLoading } = useApi();
-    const { setExtractedData } = useApi();
+    //const { setExtractedData } = useApi();
     // Always vertical (portrait) orientation. No toggle.
     const boxOrientation = 'vertical';
 
@@ -119,7 +118,8 @@ import React, { useRef, useState, useEffect, createContext, useContext } from 'r
           }
         );
         console.log('✅ Response from server:', response.data);
-        setExtractedData(response.data);
+        //setExtractedData(response.data);
+        navigation.navigate('nutrient-page', { data: response.data });
         return response.data;
       } catch (err) {
         console.error('❌ Axios upload error:', err);
@@ -437,8 +437,7 @@ import React, { useRef, useState, useEffect, createContext, useContext } from 'r
 
     // Update the return statement layout
     return (
-      <ApiProvider>
-        <View style={styles.container}>
+      <View style={styles.container}>
         {/* Top section for thumbnails */}
         <View style={styles.topSection}>
           <SafeAreaView>
@@ -532,7 +531,6 @@ import React, { useRef, useState, useEffect, createContext, useContext } from 'r
           </CameraView>
         </View>
       </View>
-      </ApiProvider>
     );
   }
 //tite

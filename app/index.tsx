@@ -107,7 +107,7 @@ export default function HomeScreen() {
 
   // When the check button is pressed, navigate to 'Page-6'
   const handleCheck = () => {
-    navigation.navigate('nutrient-page');
+    navigation.navigate('page-2');
   };
 
   return (

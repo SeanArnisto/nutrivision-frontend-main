@@ -1,6 +1,11 @@
-import React from 'react';
-import AppNavigator from '@/navigation/AppNavigator'; // adjust the path if needed
+import React from "react";
+import AppNavigator from "@/navigation/AppNavigator"; // adjust the path if needed
+import { ApiProvider } from "@/hooks/ApiContext";
 
 export default function App() {
-  return <AppNavigator />;
+  return (
+    <ApiProvider>
+      <AppNavigator />
+    </ApiProvider>
+  );
 }
