@@ -65,7 +65,7 @@ export function ApiProvider({ children }: ApiProviderProps): JSX.Element {
 
       // Use axios.post to upload data to the given endpoint
       const response = await axios.post(
-        'https://nutrivision-backend-textrecog-77tx.onrender.com/extract',
+        'https://nutrivision-backend-textrecog-77tx.onrender.com/extract/',
         formData,
         {
           headers: {

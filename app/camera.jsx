@@ -23,7 +23,7 @@ import React, { useRef, useState, useEffect, createContext, useContext } from 'r
   import { useNavigation } from '@react-navigation/native';
   import { StackNavigationProp } from '@react-navigation/stack';
   import { useIsFocused } from '@react-navigation/native';
-  // import  { useApi} from '../hooks/ApiContext';
+  import  { useApi} from '../hooks/ApiContext';
   import axios from 'axios';
   import PhotoPreviewSection from '@/components/PhotoPreviewSection';
   import { navigate } from 'expo-router/build/global-state/routing';
