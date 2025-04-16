@@ -20,6 +20,7 @@ import { ThemedText } from '@/components/ThemedText';
 import Carousel from 'react-native-reanimated-carousel';
 import { RootStackParamList } from '@/types/types'; // adjust path as needed
 import { SafeAreaView } from 'react-native-safe-area-context';
+import axios from 'axios'; // Add this import
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -106,8 +107,57 @@ export default function HomeScreen() {
   };
 
   // When the check button is pressed, navigate to 'Page-6'
-  const handleCheck = () => {
-    navigation.navigate('loading'); 
+  const [nutritionData, setNutritionData] = useState<any>(null);
+
+  // Function to call the backend API
+  const fetchNutritionRange = async () => {
+    try {
+      // Convert weight to kg if the switch is toggled to lb
+      const weightInKg = isKg ? parseFloat(weightValue) : convertWeightToKg(parseFloat(weightValue));
+
+      // Convert height to cm if the switch is toggled to ft
+      const heightInCm = isFt ? convertHeightToCm(heightValue) : parseFloat(heightValue);
+
+      const response = await axios.post('https://pel1-recommendation.hf.space/get-nutrition-range', {
+        height: heightInCm, // Send height in cm
+        weight: weightInKg, // Send weight in kg
+        age,
+      });
+      return response.data;
+    } catch (error) {
+      if (axios.isAxiosError(error)) {
+        console.error('Error fetching nutrition range:', error.response?.data || error.message);
+      } else {
+        console.error('Error fetching nutrition range:', error);
+      }
+      return null;
+    }
+  };
+ 
+  // Helper functions to convert units
+  const convertHeightToCm = (height: string): number => {
+    const normalizedHeight = height.toLowerCase().replace(/\s+/g, ''); // Normalize the input
+    const match = normalizedHeight.match(/(\d+)[']?(\d+)?[\"ft]?/); // Match patterns like 5'7", 5ft7, etc.
+    if (match) {
+      const feet = parseInt(match[1], 10);
+      const inches = match[2] ? parseInt(match[2], 10) : 0;
+      return Math.round(feet * 30.48 + inches * 2.54); // Convert feet and inches to cm
+    }
+    return parseFloat(height); // If no match, assume it's already in cm
+  };
+
+  const convertWeightToKg = (weight: number): number => {
+    return Math.round(weight / 2.20462); // Convert pounds to kg
+  };
+
+  // Modified handleCheck function
+  const handleCheck = async () => {
+    const data = await fetchNutritionRange();
+    if (data) {
+      setNutritionData(data); // Store the API response
+      navigation.navigate('page-2', { nutritionData: data }); // Pass data to page-2
+      console.log('Nutrition data:', data); // Log the data for debugging
+    }
   };
 
   return (
@@ -219,23 +269,22 @@ export default function HomeScreen() {
                     </ThemedText>
                   </View>
                 </View>
-                
+
                 {/* Right Column for Gender Switch */}
-                {/* Right Column for Gender Switch */}
-<View style={styles.rightColumn}>
-  <View style={styles.formContainer}>
-    <Switch
-      trackColor={{ false: '#e0e0e0', true: '#e0e0e0' }}
-      thumbColor={'#9AB106'}
-      style={[styles.switch, { transform: [{ scaleX: 0.75 }, { scaleY: 0.75 }] }]}
-      value={isMale}
-      onValueChange={(value) => setIsMale(value)}
-    />
-    <ThemedText style={{ fontSize: 14, marginTop: 8 }}>
-      {isMale ? 'Male' : 'Female'}
-    </ThemedText>
-  </View>
-</View>
+                <View style={styles.rightColumn}>
+                  <View style={styles.formContainer}>
+                    <Switch
+                      trackColor={{ false: '#e0e0e0', true: '#e0e0e0' }}
+                      thumbColor={'#9AB106'}
+                      style={[styles.switch, { transform: [{ scaleX: 0.75 }, { scaleY: 0.75 }] }]}
+                      value={isMale}
+                      onValueChange={(value) => setIsMale(value)}
+                    />
+                    <ThemedText style={{ fontSize: 14, marginTop: 8 }}>
+                      {isMale ? 'Male' : 'Female'}
+                    </ThemedText>
+                  </View>
+                </View>
 
               </View>
 
@@ -260,6 +309,7 @@ export default function HomeScreen() {
                       returnKeyType="done"
                       value={weightValue}
                       onChangeText={setWeightValue}
+                      placeholder={isKg ? 'e.g., 70' : 'e.g., 154'} // Placeholder changes based on the toggle
                     />
 
                     <View style={styles.switchRow}>
@@ -294,7 +344,7 @@ export default function HomeScreen() {
                   <View style={styles.formContainer}>
                     <TextInput
                       style={styles.weightInput}
-                      keyboardType="numeric"
+                      keyboardType="numbers-and-punctuation"
                       returnKeyType="done"
                       value={heightValue}
                       onChangeText={setHeightValue}
@@ -453,6 +503,7 @@ const styles = StyleSheet.create({
   counterButton: {
     paddingHorizontal: 6,
   },
+
   counterText: {
     fontSize: 16,
     fontWeight: 'bold',
