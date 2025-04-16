@@ -28,6 +28,16 @@ export default function Page2() {
 
   const carbAvg = (carbsMin + carbsMax) / 2; 
 
+  const proteinMin = nutritionData.nutrition_range.protein[0]; // 56
+  const proteinMax = nutritionData.nutrition_range.protein[1]; // 91
+
+  const proteinAvg = (proteinMin + proteinMax) / 2;
+
+  const sodiumMin = nutritionData.nutrition_range.sodium[0]; // 1500
+  const sodiumMax = nutritionData.nutrition_range.sodium[1]; // 2300
+
+  const sodiumAvg = (sodiumMin + sodiumMax) / 2;
+
   return (
     <SafeAreaView style={styles.safeArea}>
         {/* Logo kept from original */}
@@ -91,7 +101,7 @@ export default function Page2() {
       <View style={[styles.column]}>
         {/* Your content */}
         {<View style={styles.textRow}>
-        <Text style={styles.title}>28g</Text>
+        <Text style={styles.title}>{sodiumAvg}</Text>
         </View>}
         <View style={styles.textRow}>
         <Text style={styles.subtitle}>Sodium</Text>
@@ -131,7 +141,7 @@ export default function Page2() {
       <View style={[styles.column,]}>
         {/* Your content */}
         {<View style={styles.textRow}>
-        <Text style={styles.title}>64g</Text>
+        <Text style={styles.title}>{proteinAvg}</Text>
         </View>}
         <View style={styles.textRow}>
         <Text style={styles.subtitle}>Protein</Text>
@@ -176,7 +186,6 @@ export default function Page2() {
       <Image source={require('@/assets/images/Plus.png')} 
                         style={{ width: 20, height: 20 }}/>
         </TouchableOpacity>
-        <Text>{JSON.stringify(nutritionData)}</Text>
     </SafeAreaView>
   );
 }
