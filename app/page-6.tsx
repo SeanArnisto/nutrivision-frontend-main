@@ -54,21 +54,22 @@ export default function Page6() {
   console.log("Data from page-2:", data);
 
   const [nutritionData, setNutritionData] = useState<NutritionData>({
-    progress: {
+
+    progress: { // these values are what the black and green bars are based on
       carbohydrate: { user: 88, avg: 50 },
       sodium: { user: 33, avg: 50 },
       protein: { user: 45, avg: 50 },
     },
-    values: {
+    values: { // the values that are displayed on the right side of the bars
       carbohydrate: { user: 53, avg: 49 },
       sodium: { user: 15, avg: 11 },
       protein: { user: 180, avg: 147 },
     },
-    intake: {
+    intake: { // these values are what the pie chart is based on, this is dependent on the images from user
       breakdown: { carbohydrate: 94, sodium: 2, protein: 4 },
       total: 93.33,
     },
-    avg: {
+    avg: { // same as intake but from the average data dependent on the user
       breakdown: { carbohydrate: 77, sodium: 7, protein: 16 },
       total: 402,
     },
