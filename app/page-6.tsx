@@ -127,6 +127,9 @@ export default function Page6() {
         },
       }));
     }
+    if (data?.fruits) {
+      
+    }
   }, [data]);
 
   const navigation = useNavigation<Page6ScreenNavigationProp>();

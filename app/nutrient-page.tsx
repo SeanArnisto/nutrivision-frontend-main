@@ -86,7 +86,7 @@ export default function UserNutrientPage() {
     if (data?.fruits) {
       const carbohydrate = data.fruits.total_carbs;
       const protein = data.fruits.total_protein;
-      const sodium =  data.fruits.total_sodium;
+      const sodium = data.fruits.total_sodium;
 
       setNutrients({ carbohydrate, protein, sodium });
 
@@ -98,6 +98,9 @@ export default function UserNutrientPage() {
           total: parseFloat(total),
         },
       });
+    }
+    if (data?.message) {
+      console.log("Nothing received from object detection.");
     }
   }, [data]);
 
@@ -625,7 +628,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginVertical: 7.5,
     marginHorizontal: 8,
-    overflow: "hidden"
+    overflow: "hidden",
   },
   icon: {
     width: 24,
