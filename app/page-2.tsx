@@ -23,6 +23,11 @@ export default function Page2() {
     navigation.navigate('camera');
   };
 
+  const carbsMin = nutritionData.nutrition_range.carbs[0]; // 346
+  const carbsMax = nutritionData.nutrition_range.carbs[1]; // 397
+
+  const carbAvg = (carbsMin + carbsMax) / 2; 
+
   return (
     <SafeAreaView style={styles.safeArea}>
         {/* Logo kept from original */}
@@ -43,7 +48,7 @@ export default function Page2() {
       {/* Container 1 */}
       <View style={[styles.column]}>
         {<View style={styles.textRow}>
-        <Text style={styles.title}>310g</Text>
+        <Text style={styles.title}>{carbAvg}</Text>
         </View>
     }
         <View style={styles.textRow}>
