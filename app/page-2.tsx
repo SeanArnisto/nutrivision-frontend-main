@@ -20,7 +20,7 @@ export default function Page2() {
 
   const { width } = Dimensions.get('window');
   const handleCheck = () => {
-    navigation.navigate('camera');
+    navigation.navigate('camera', { nutritionData});
   };
 
   const carbsMin = nutritionData.nutrition_range.carbs[0]; // 346

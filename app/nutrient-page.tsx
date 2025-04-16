@@ -40,6 +40,9 @@ export default function UserNutrientPage() {
   const route = useRoute();
 
   const { data } = route.params as { data: any };
+  const { nutritionData } = route.params as { nutritionData: any };
+  console.log("working:", nutritionData); // Use this data in your UI
+  console.log("Data:", data); // Use this data in your UI
 
   const [fontsLoaded] = useFonts({
     "SpaceMono-Regular": require("@/assets/fonts/SpaceMono-Regular.ttf"),
@@ -74,7 +77,7 @@ export default function UserNutrientPage() {
 
       setNutrients({ carbohydrate, protein, sodium });
 
-      const total = ((carbohydrate + protein + sodium) / 3).toFixed(2);
+      const total = (carbohydrate + protein + sodium).toFixed(2);
 
       setNutritionData({
         userIntake: {
@@ -88,9 +91,8 @@ export default function UserNutrientPage() {
       const protein = data.fruits.total_protein;
       const sodium = data.fruits.total_sodium;
 
+      const total = (carbohydrate + protein + sodium).toFixed(2);
       setNutrients({ carbohydrate, protein, sodium });
-
-      const total = ((carbohydrate + protein + sodium) / 3).toFixed(2);
 
       setNutritionData({
         userIntake: {
@@ -124,7 +126,7 @@ export default function UserNutrientPage() {
     };
   }
 
-  const [nutritionData, setNutritionData] = useState<NutritionData>({
+  const [nutritionData1, setNutritionData] = useState<NutritionData>({
     userIntake: {
       breakdown: { carbohydrate: 94, sodium: 2, protein: 4 },
       total: 93.33,
@@ -132,22 +134,22 @@ export default function UserNutrientPage() {
   });
 
   const textUserIntakeCarbohydrate = toPercentageText(
-    nutritionData.userIntake.breakdown.carbohydrate
+    nutritionData1.userIntake.breakdown.carbohydrate
   );
   const textUserIntakeSodium = toPercentageText(
-    nutritionData.userIntake.breakdown.sodium
+    nutritionData1.userIntake.breakdown.sodium
   );
   const textUserIntake = toPercentageText(
-    nutritionData.userIntake.breakdown.protein
+    nutritionData1.userIntake.breakdown.protein
   );
 
-  const totalUserIntake = formatValue(nutritionData.userIntake.total);
+  const totalUserIntake = formatValue(nutritionData1.userIntake.total);
 
   const donutSeries = [
-    { value: nutritionData.userIntake.breakdown.protein, color: "#000000" },
-    { value: nutritionData.userIntake.breakdown.sodium, color: "#c0b4b4" },
+    { value: nutritionData1.userIntake.breakdown.protein, color: "#000000" },
+    { value: nutritionData1.userIntake.breakdown.sodium, color: "#c0b4b4" },
     {
-      value: nutritionData.userIntake.breakdown.carbohydrate,
+      value: nutritionData1.userIntake.breakdown.carbohydrate,
       color: "#7ca844",
     },
   ];
@@ -248,7 +250,7 @@ export default function UserNutrientPage() {
   };
 
   const handleCheck = () => {
-    navigation.navigate("page-6", { data });
+    navigation.navigate("page-6", { data: data, nutritionData: nutritionData });
   };
 
   if (!fontsLoaded) {
@@ -431,16 +433,16 @@ export default function UserNutrientPage() {
                       widthAndHeight={150}
                       series={[
                         {
-                          value: nutritionData.userIntake.breakdown.protein,
+                          value: nutritionData1.userIntake.breakdown.protein,
                           color: "#000000",
                         },
                         {
-                          value: nutritionData.userIntake.breakdown.sodium,
+                          value: nutritionData1.userIntake.breakdown.sodium,
                           color: "#c0b4b4",
                         },
                         {
                           value:
-                            nutritionData.userIntake.breakdown.carbohydrate,
+                            nutritionData1.userIntake.breakdown.carbohydrate,
                           color: "#7ca844",
                         },
                       ]}
@@ -459,7 +461,7 @@ export default function UserNutrientPage() {
                       <Text style={styles.legendLabel}>
                         Carbohydrate (
                         {toPercentageText(
-                          nutritionData.userIntake.breakdown.carbohydrate
+                          nutritionData1.userIntake.breakdown.carbohydrate
                         )}
                         )
                       </Text>
@@ -474,7 +476,7 @@ export default function UserNutrientPage() {
                       <Text style={styles.legendLabel}>
                         Sodium (
                         {toPercentageText(
-                          nutritionData.userIntake.breakdown.sodium
+                          nutritionData1.userIntake.breakdown.sodium
                         )}
                         )
                       </Text>
@@ -489,7 +491,7 @@ export default function UserNutrientPage() {
                       <Text style={styles.legendLabel}>
                         Protein (
                         {toPercentageText(
-                          nutritionData.userIntake.breakdown.protein
+                          nutritionData1.userIntake.breakdown.protein
                         )}
                         )
                       </Text>
@@ -497,7 +499,7 @@ export default function UserNutrientPage() {
                     <View style={styles.totalBox}>
                       <Text style={styles.totalText}>
                         Total Nutrient{"\n"}Amount ={" "}
-                        {formatValue(nutritionData.userIntake.total)}
+                        {formatValue(nutritionData1.userIntake.total)}
                       </Text>
                     </View>
                   </View>

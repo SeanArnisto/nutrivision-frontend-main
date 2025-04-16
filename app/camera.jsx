@@ -30,6 +30,7 @@ import { useApi } from "../hooks/ApiContext";
 import axios from "axios";
 import PhotoPreviewSection from "@/components/PhotoPreviewSection";
 import { navigate } from "expo-router/build/global-state/routing";
+import { useRoute } from "@react-navigation/native";
 
 const { height } = Dimensions.get("window");
 
@@ -74,18 +75,25 @@ export async function uploadImagesAxios(images) {
 
 export default function Camera() {
   //const MyContext = createContext();
+  const route = useRoute();
   const [permission, requestPermission] = useCameraPermissions();
   const [photo, setPhoto] = useState(null);
   const [isLabelMode, setIsLabelMode] = useState(true); // Default to label mode
   const [capturedPhotos, setCapturedPhotos] = useState([]);
   const [mediaLibraryPermission, setMediaLibraryPermission] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [submit, setSubmit] = useState(false);
+
   //const { setExtractedData } = useApi();
   // Always vertical (portrait) orientation. No toggle.
   const boxOrientation = "vertical";
 
+  const { nutritionData } = route.params || {}; // Retrieve the passed data
+  console.log("Nutrition data from route params:", nutritionData);
+
   const handleSubmitPhoto = async (photos) => {
     console.log("Button clicked, starting image submission...");
-
+    setSubmit(true);
     const fruitsUrl = "https://leidanielaguila-nutrivision.hf.space/detect"; // object detection
     const labelsUrl =
       "https://nutrivision-backend-textrecog-77tx.onrender.com/extract/"; // nutritional label
@@ -132,7 +140,7 @@ export default function Camera() {
       });
       console.log("✅ Response from server:", response.data);
       //setExtractedData(response.data);
-      navigation.navigate("nutrient-page", { data: response.data });
+      navigation.navigate("nutrient-page", { data: response.data, nutritionData: nutritionData });
       return response.data;
     } catch (err) {
       console.error("❌ Axios upload error:", err);
@@ -573,9 +581,9 @@ export default function Camera() {
 
               {/* RIGHT: Submit Photo (disabled because no photo yet) */}
               <TouchableOpacity
-                style={[styles.roundButton, { opacity: 1 }]}
+                style={[styles.roundButton, { opacity: submit ? 0.5 : 1 }]}
                 onPress={() => handleSubmitPhoto(capturedPhotos)}
-                disabled={false}
+                disabled={submit}
               >
                 <Ionicons name="checkmark" size={28} color="white" />
               </TouchableOpacity>

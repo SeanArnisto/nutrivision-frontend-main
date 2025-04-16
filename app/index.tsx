@@ -152,10 +152,10 @@ export default function HomeScreen() {
 
   // Modified handleCheck function
   const handleCheck = async () => {
-    const data = await fetchNutritionRange();
+    const data = await fetchNutritionRange(); 
     if (data) {
       setNutritionData(data); // Store the API response
-      navigation.navigate('loading'); // Pass data to page-2
+      navigation.navigate('page-2', {nutritionData: data}); // Pass data to page-2
       console.log('Nutrition data:', data); // Log the data for debugging
     }
   };

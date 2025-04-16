@@ -51,9 +51,11 @@ interface NutritionData {
 export default function Page6() {
   const route = useRoute();
   const { data } = route.params as { data: any };
+  const { nutritionData } = route.params as { nutritionData: any }; // Retrieve the passed data
   console.log("Data from page-2:", data);
+  console.log("working page 6:", nutritionData); // Use this data in your UI
 
-  const [nutritionData, setNutritionData] = useState<NutritionData>({
+  const [nutritionData1, setNutritionData] = useState<NutritionData>({
 
     progress: { // these values are what the black and green bars are based on
       carbohydrate: { user: 88, avg: 50 },
@@ -226,7 +228,7 @@ export default function Page6() {
                       styles.userProgress,
                       {
                         width: toProgressWidth(
-                          nutritionData.progress.carbohydrate.user
+                          nutritionData1.progress.carbohydrate.user
                         ),
                       },
                     ]}
@@ -239,7 +241,7 @@ export default function Page6() {
                       styles.avgProgress,
                       {
                         width: toProgressWidth(
-                          nutritionData.progress.carbohydrate.avg
+                          nutritionData1.progress.carbohydrate.avg
                         ),
                       },
                     ]}
@@ -248,10 +250,10 @@ export default function Page6() {
               </View>
               <View style={styles.valueContainer}>
                 <Text style={styles.userValue}>
-                  {formatValue(nutritionData.values.carbohydrate.user)}
+                  {formatValue(nutritionData1.values.carbohydrate.user)}
                 </Text>
                 <Text style={styles.avgValue}>
-                  {formatValue(nutritionData.values.carbohydrate.avg)}
+                  {formatValue(nutritionData1.values.carbohydrate.avg)}
                 </Text>
               </View>
             </View>
@@ -273,7 +275,7 @@ export default function Page6() {
                       styles.userProgress,
                       {
                         width: toProgressWidth(
-                          nutritionData.progress.sodium.user
+                          nutritionData1.progress.sodium.user
                         ),
                       },
                     ]}
@@ -286,7 +288,7 @@ export default function Page6() {
                       styles.avgProgress,
                       {
                         width: toProgressWidth(
-                          nutritionData.progress.sodium.avg
+                          nutritionData1.progress.sodium.avg
                         ),
                       },
                     ]}
@@ -295,10 +297,10 @@ export default function Page6() {
               </View>
               <View style={styles.valueContainer}>
                 <Text style={styles.userValue}>
-                  {formatValue(nutritionData.values.sodium.user)}
+                  {formatValue(nutritionData1.values.sodium.user)}
                 </Text>
                 <Text style={styles.avgValue}>
-                  {formatValue(nutritionData.values.sodium.avg)}
+                  {formatValue(nutritionData1.values.sodium.avg)}
                 </Text>
               </View>
             </View>
@@ -320,7 +322,7 @@ export default function Page6() {
                       styles.userProgress,
                       {
                         width: toProgressWidth(
-                          nutritionData.progress.protein.user
+                          nutritionData1.progress.protein.user
                         ),
                       },
                     ]}
@@ -333,7 +335,7 @@ export default function Page6() {
                       styles.avgProgress,
                       {
                         width: toProgressWidth(
-                          nutritionData.progress.protein.avg
+                          nutritionData1.progress.protein.avg
                         ),
                       },
                     ]}
@@ -342,10 +344,10 @@ export default function Page6() {
               </View>
               <View style={styles.valueContainer}>
                 <Text style={styles.userValue}>
-                  {formatValue(nutritionData.values.protein.user)}
+                  {formatValue(nutritionData1.values.protein.user)}
                 </Text>
                 <Text style={styles.avgValue}>
-                  {formatValue(nutritionData.values.protein.avg)}
+                  {formatValue(nutritionData1.values.protein.avg)}
                 </Text>
               </View>
             </View>
@@ -361,15 +363,15 @@ export default function Page6() {
                     widthAndHeight={150}
                     series={[
                       {
-                        value: nutritionData.intake.breakdown.protein,
+                        value: nutritionData1.intake.breakdown.protein,
                         color: "#000000",
                       },
                       {
-                        value: nutritionData.intake.breakdown.carbohydrate,
+                        value: nutritionData1.intake.breakdown.carbohydrate,
                         color: "#7ca844",
                       },
                       {
-                        value: nutritionData.intake.breakdown.sodium,
+                        value: nutritionData1.intake.breakdown.sodium,
                         color: "#c0b4b4",
                       },
                     ]}
@@ -388,7 +390,7 @@ export default function Page6() {
                     <Text style={styles.legendLabel}>
                       Carbohydrate (
                       {toPercentageText(
-                        nutritionData.intake.breakdown.carbohydrate
+                        nutritionData1.intake.breakdown.carbohydrate
                       )}
                       )
                     </Text>
@@ -402,7 +404,7 @@ export default function Page6() {
                     />
                     <Text style={styles.legendLabel}>
                       Sodium (
-                      {toPercentageText(nutritionData.intake.breakdown.sodium)})
+                      {toPercentageText(nutritionData1.intake.breakdown.sodium)})
                     </Text>
                   </View>
                   <View style={styles.legendItem}>
@@ -414,14 +416,14 @@ export default function Page6() {
                     />
                     <Text style={styles.legendLabel}>
                       Protein (
-                      {toPercentageText(nutritionData.intake.breakdown.protein)}
+                      {toPercentageText(nutritionData1.intake.breakdown.protein)}
                       )
                     </Text>
                   </View>
                   <View style={styles.totalBox}>
                     <Text style={styles.totalText}>
                       Total Nutrient{"\n"}Amount ={" "}
-                      {formatValue(nutritionData.intake.total)}
+                      {formatValue(nutritionData1.intake.total)}
                     </Text>
                   </View>
                 </View>
@@ -436,15 +438,15 @@ export default function Page6() {
                     widthAndHeight={150}
                     series={[
                       {
-                        value: nutritionData.avg.breakdown.protein,
+                        value: nutritionData1.avg.breakdown.protein,
                         color: "#000000",
                       },
                       {
-                        value: nutritionData.avg.breakdown.carbohydrate,
+                        value: nutritionData1.avg.breakdown.carbohydrate,
                         color: "#7ca844",
                       },
                       {
-                        value: nutritionData.avg.breakdown.sodium,
+                        value: nutritionData1.avg.breakdown.sodium,
                         color: "#c0b4b4",
                       },
                     ]}
@@ -463,7 +465,7 @@ export default function Page6() {
                     <Text style={styles.legendLabel}>
                       Carbohydrate (
                       {toPercentageText(
-                        nutritionData.avg.breakdown.carbohydrate
+                        nutritionData1.avg.breakdown.carbohydrate
                       )}
                       )
                     </Text>
@@ -477,7 +479,7 @@ export default function Page6() {
                     />
                     <Text style={styles.legendLabel}>
                       Sodium (
-                      {toPercentageText(nutritionData.avg.breakdown.sodium)})
+                      {toPercentageText(nutritionData1.avg.breakdown.sodium)})
                     </Text>
                   </View>
                   <View style={styles.legendItem}>
@@ -489,13 +491,13 @@ export default function Page6() {
                     />
                     <Text style={styles.legendLabel}>
                       Protein (
-                      {toPercentageText(nutritionData.avg.breakdown.protein)})
+                      {toPercentageText(nutritionData1.avg.breakdown.protein)})
                     </Text>
                   </View>
                   <View style={styles.totalBox}>
                     <Text style={styles.totalText}>
                       Total Nutrient{"\n"}Amount ={" "}
-                      {formatValue(nutritionData.avg.total)}
+                      {formatValue(nutritionData1.avg.total)}
                     </Text>
                   </View>
                 </View>
