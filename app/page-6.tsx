@@ -56,26 +56,80 @@ export default function Page6() {
   console.log("working page 6:", nutritionData); // Use this data in your UI
 
   const [nutritionData1, setNutritionData] = useState<NutritionData>({
-
-    progress: { // these values are what the black and green bars are based on
+    progress: {
+      // these values are what the black and green bars are based on
       carbohydrate: { user: 88, avg: 50 },
       sodium: { user: 33, avg: 50 },
       protein: { user: 45, avg: 50 },
     },
-    values: { // the values that are displayed on the right side of the bars
+    values: {
+      // the values that are displayed on the right side of the bars
       carbohydrate: { user: 53, avg: 49 },
       sodium: { user: 15, avg: 11 },
       protein: { user: 180, avg: 147 },
     },
-    intake: { // these values are what the pie chart is based on, this is dependent on the images from user
+    intake: {
+      // these values are what the pie chart is based on, this is dependent on the images from user
       breakdown: { carbohydrate: 94, sodium: 2, protein: 4 },
       total: 93.33,
     },
-    avg: { // same as intake but from the average data dependent on the user
+    avg: {
+      // same as intake but from the average data dependent on the user
       breakdown: { carbohydrate: 77, sodium: 7, protein: 16 },
       total: 402,
     },
   });
+
+  useEffect(() => {
+    if (nutritionData?.nutrition_range) {
+      const carbsMin = nutritionData.nutrition_range.carbs[0]; // 346
+      const carbsMax = nutritionData.nutrition_range.carbs[1]; // 397
+
+      const carbAvg = Math.round((carbsMin + carbsMax) / 2);
+
+      const proteinMin = nutritionData.nutrition_range.protein[0]; // 56
+      const proteinMax = nutritionData.nutrition_range.protein[1]; // 91
+
+      const proteinAvg = Math.round((proteinMin + proteinMax) / 2);
+
+      const sodiumMin = nutritionData.nutrition_range.sodium[0]; // 1500
+      const sodiumMax = nutritionData.nutrition_range.sodium[1]; // 2300
+
+      const sodiumAvg = Math.round((sodiumMin + sodiumMax) / 2);
+
+      setNutritionData((prev) => ({
+        ...prev,
+        progress: {
+          carbohydrate: {
+            ...prev.progress.carbohydrate,
+            avg: parseFloat(carbAvg.toFixed(1)),
+          },
+          protein: {
+            ...prev.progress.protein,
+            avg: parseFloat(proteinAvg.toFixed(1)),
+          },
+          sodium: {
+            ...prev.progress.sodium,
+            avg: parseFloat(sodiumAvg.toFixed(1)),
+          },
+        },
+        values: {
+          carbohydrate: {
+            ...prev.values.carbohydrate,
+            avg: parseFloat(carbAvg.toFixed(1)),
+          },
+          protein: {
+            ...prev.values.protein,
+            avg: parseFloat(proteinAvg.toFixed(1)),
+          },
+          sodium: {
+            ...prev.values.sodium,
+            avg: parseFloat(sodiumAvg.toFixed(1)),
+          },
+        },
+      }));
+    }
+  }, [nutritionData]);
 
   useEffect(() => {
     if (data?.combined) {
@@ -91,13 +145,25 @@ export default function Page6() {
       const protein = parseGrams(data.combined.protein_total);
       const sodium = parseGrams(data.combined.sodium_total);
 
-      const total = ((carbohydrate + protein + sodium) / 3).toFixed(2);
-
+      const total = (carbohydrate + protein + sodium).toFixed(2);
+      const pieCarb = parseFloat(
+        ((data.fruits.carbs_total / parseFloat(total)) * 100).toFixed(2)
+      );
+      const pieProtein = parseFloat(
+        ((data.fruits.protein_total / parseFloat(total)) * 100).toFixed(2)
+      );
+      const pieSodium = parseFloat(
+        ((data.fruits.sodium_total / parseFloat(total)) * 100).toFixed(2)
+      );
       setNutritionData((prev) => ({
         ...prev,
         intake: {
           ...prev.intake,
-          breakdown: { carbohydrate, protein, sodium },
+          breakdown: {
+            carbohydrate: pieCarb,
+            protein: pieProtein,
+            sodium: pieSodium,
+          },
           total: parseFloat(total),
         },
         values: {
@@ -135,14 +201,24 @@ export default function Page6() {
       const protein = data.fruits.total_protein;
       const sodium = data.fruits.total_sodium;
       const total = (carbohydrate + protein + sodium).toFixed(2);
-      const pieCarb = parseFloat((data.fruits.total_carbs / parseFloat(total) * 100).toFixed(2));
-      const pieProtein = parseFloat((data.fruits.total_protein / parseFloat(total) * 100).toFixed(2));
-      const pieSodium = parseFloat((data.fruits.total_sodium / parseFloat(total) * 100).toFixed(2));
+      const pieCarb = parseFloat(
+        ((data.fruits.total_carbs / parseFloat(total)) * 100).toFixed(2)
+      );
+      const pieProtein = parseFloat(
+        ((data.fruits.total_protein / parseFloat(total)) * 100).toFixed(2)
+      );
+      const pieSodium = parseFloat(
+        ((data.fruits.total_sodium / parseFloat(total)) * 100).toFixed(2)
+      );
       setNutritionData((prev) => ({
         ...prev,
         intake: {
           ...prev.intake,
-          breakdown: { carbohydrate: pieCarb, protein: pieProtein, sodium: pieSodium },
+          breakdown: {
+            carbohydrate: pieCarb,
+            protein: pieProtein,
+            sodium: pieSodium,
+          },
           total: parseFloat(total),
         },
         values: {
@@ -174,7 +250,6 @@ export default function Page6() {
           },
         },
       }));
-
     }
   }, [data]);
 
@@ -404,7 +479,8 @@ export default function Page6() {
                     />
                     <Text style={styles.legendLabel}>
                       Sodium (
-                      {toPercentageText(nutritionData1.intake.breakdown.sodium)})
+                      {toPercentageText(nutritionData1.intake.breakdown.sodium)}
+                      )
                     </Text>
                   </View>
                   <View style={styles.legendItem}>
@@ -416,7 +492,9 @@ export default function Page6() {
                     />
                     <Text style={styles.legendLabel}>
                       Protein (
-                      {toPercentageText(nutritionData1.intake.breakdown.protein)}
+                      {toPercentageText(
+                        nutritionData1.intake.breakdown.protein
+                      )}
                       )
                     </Text>
                   </View>

@@ -26,17 +26,17 @@ export default function Page2() {
   const carbsMin = nutritionData.nutrition_range.carbs[0]; // 346
   const carbsMax = nutritionData.nutrition_range.carbs[1]; // 397
 
-  const carbAvg = (carbsMin + carbsMax) / 2; 
+  const carbAvg = Math.round((carbsMin + carbsMax) / 2);
 
   const proteinMin = nutritionData.nutrition_range.protein[0]; // 56
   const proteinMax = nutritionData.nutrition_range.protein[1]; // 91
 
-  const proteinAvg = (proteinMin + proteinMax) / 2;
+  const proteinAvg = Math.round((proteinMin + proteinMax) / 2);
 
   const sodiumMin = nutritionData.nutrition_range.sodium[0]; // 1500
   const sodiumMax = nutritionData.nutrition_range.sodium[1]; // 2300
 
-  const sodiumAvg = (sodiumMin + sodiumMax) / 2;
+  const sodiumAvg = Math.round((sodiumMin + sodiumMax) / 2);
 
   return (
     <SafeAreaView style={styles.safeArea}>

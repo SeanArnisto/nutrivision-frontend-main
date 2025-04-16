@@ -31,6 +31,7 @@ import axios from "axios";
 import PhotoPreviewSection from "@/components/PhotoPreviewSection";
 import { navigate } from "expo-router/build/global-state/routing";
 import { useRoute } from "@react-navigation/native";
+import Loading from "./loading";
 
 const { height } = Dimensions.get("window");
 
@@ -94,6 +95,7 @@ export default function Camera() {
   const handleSubmitPhoto = async (photos) => {
     console.log("Button clicked, starting image submission...");
     setSubmit(true);
+    setLoading(true); // Set loading state
     const fruitsUrl = "https://leidanielaguila-nutrivision.hf.space/detect"; // object detection
     const labelsUrl =
       "https://nutrivision-backend-textrecog-77tx.onrender.com/extract/"; // nutritional label
@@ -140,6 +142,7 @@ export default function Camera() {
       });
       console.log("✅ Response from server:", response.data);
       //setExtractedData(response.data);
+      setLoading(false); // Turn off loading when response is received
       navigation.navigate("nutrient-page", { data: response.data, nutritionData: nutritionData });
       return response.data;
     } catch (err) {
@@ -467,6 +470,14 @@ export default function Camera() {
         />
       </View>
     );
+  }
+
+  if (loading) {
+    return(
+      <View style={styles.container}>
+        <Loading />
+      </View>
+    )
   }
 
   // Update the return statement layout

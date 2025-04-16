@@ -74,14 +74,14 @@ export default function UserNutrientPage() {
       const carbohydrate = parseGrams(data.combined.carbs_total);
       const protein = parseGrams(data.combined.protein_total);
       const sodium = parseGrams(data.combined.sodium_total);
-
-      setNutrients({ carbohydrate, protein, sodium });
-
       const total = (carbohydrate + protein + sodium).toFixed(2);
-
-      setNutritionData({
+      const pieCarb = parseFloat((data.fruits.carbs_total / parseFloat(total) * 100).toFixed(2));
+      const pieProtein = parseFloat((data.fruits.protein_total / parseFloat(total) * 100).toFixed(2));
+      const pieSodium = parseFloat((data.fruits.sodium_total / parseFloat(total) * 100).toFixed(2));
+      setNutrients({ carbohydrate, protein, sodium}); // editable data
+      setNutritionData({ // pie chart representation
         userIntake: {
-          breakdown: { carbohydrate, protein, sodium },
+          breakdown: { carbohydrate: pieCarb, protein: pieProtein, sodium: pieSodium },
           total: parseFloat(total),
         },
       });
@@ -92,11 +92,14 @@ export default function UserNutrientPage() {
       const sodium = data.fruits.total_sodium;
 
       const total = (carbohydrate + protein + sodium).toFixed(2);
-      setNutrients({ carbohydrate, protein, sodium });
+      const pieCarb = parseFloat((data.fruits.total_carbs / parseFloat(total) * 100).toFixed(2));
+      const pieProtein = parseFloat((data.fruits.total_protein / parseFloat(total) * 100).toFixed(2));
+      const pieSodium = parseFloat((data.fruits.total_sodium / parseFloat(total) * 100).toFixed(2));
+      setNutrients({ carbohydrate, protein, sodium }); // editable data
 
-      setNutritionData({
+      setNutritionData({ // representation data 
         userIntake: {
-          breakdown: { carbohydrate, protein, sodium },
+          breakdown: { carbohydrate: pieCarb, protein: pieProtein, sodium: pieSodium },
           total: parseFloat(total),
         },
       });
