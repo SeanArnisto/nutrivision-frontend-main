@@ -5,16 +5,19 @@ import { ThemedText } from '@/components/ThemedText';
 import { CircularProgressbar } from 'react-circular-progressbar';
 import 'react-circular-progressbar/dist/styles.css';
 import { AnimatedCircularProgress } from 'react-native-circular-progress';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useRoute } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '@/types/types';
-
-
 
 type Page2ScreenNavigationProp = StackNavigationProp<RootStackParamList, 'page-2'>;
 
 export default function Page2() {
   const navigation = useNavigation<Page2ScreenNavigationProp>();
+  const route = useRoute();
+  const { nutritionData } = route.params as { nutritionData: any }; // Retrieve the passed data
+
+  console.log('Nutrition Data:', nutritionData); // Use this data in your UI
+
   const { width } = Dimensions.get('window');
   const handleCheck = () => {
     navigation.navigate('camera');
@@ -168,6 +171,7 @@ export default function Page2() {
       <Image source={require('@/assets/images/Plus.png')} 
                         style={{ width: 20, height: 20 }}/>
         </TouchableOpacity>
+        <Text>{JSON.stringify(nutritionData)}</Text>
     </SafeAreaView>
   );
 }
