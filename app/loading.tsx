@@ -28,13 +28,18 @@ export default function Loading() {
       style={styles.container}
       resizeMode="cover"
     >
-        <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
-            <Image
-            source={require("../assets/images/nutri-logo.png")}
-            style={{ width: 200, height: 200 }}
-            />
-            <LottieView style={styles.loading} source={require('../assets/loading.json')} autoPlay loop />
-        </View>
+      <View style={styles.centeredContainer}>
+        <Image
+          source={require("../assets/images/nutri-logo.png")}
+          style={styles.logo}
+        />
+        <LottieView
+          style={styles.loading}
+          source={require("../assets/loading.json")}
+          autoPlay
+          loop
+        />
+      </View>
     </ImageBackground>
   );
 }
@@ -45,10 +50,19 @@ const styles = StyleSheet.create({
     width: "100%",
     height: "100%",
   },
-  loading: {
+  centeredContainer: {
     flex: 1,
     justifyContent: "center",
-    width: 100,
-    height: 100,
-  }
+    alignItems: "center",
+    paddingVertical: 20, // Add padding to bring elements closer
+  },
+  logo: {
+    width: 200,
+    height: 200,
+    marginBottom: -20, // Adjust spacing between logo and Lottie animation
+  },
+  loading: {
+    width: 150, // Adjust width for better alignment
+    height: 150, // Explicit height for the animation
+  },
 });
