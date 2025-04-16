@@ -129,7 +129,50 @@ export default function Page6() {
       }));
     }
     if (data?.fruits) {
-      
+      const carbohydrate = data.fruits.total_carbs;
+      const protein = data.fruits.total_protein;
+      const sodium = data.fruits.total_sodium;
+      const total = (carbohydrate + protein + sodium).toFixed(2);
+      const pieCarb = parseFloat((data.fruits.total_carbs / parseFloat(total) * 100).toFixed(2));
+      const pieProtein = parseFloat((data.fruits.total_protein / parseFloat(total) * 100).toFixed(2));
+      const pieSodium = parseFloat((data.fruits.total_sodium / parseFloat(total) * 100).toFixed(2));
+      setNutritionData((prev) => ({
+        ...prev,
+        intake: {
+          ...prev.intake,
+          breakdown: { carbohydrate: pieCarb, protein: pieProtein, sodium: pieSodium },
+          total: parseFloat(total),
+        },
+        values: {
+          carbohydrate: {
+            ...prev.values.carbohydrate,
+            user: parseFloat(carbohydrate.toFixed(1)),
+          },
+          protein: {
+            ...prev.values.protein,
+            user: parseFloat(protein.toFixed(1)),
+          },
+          sodium: {
+            ...prev.values.sodium,
+            user: parseFloat(sodium.toFixed(1)),
+          },
+        },
+        progress: {
+          carbohydrate: {
+            ...prev.progress.carbohydrate,
+            user: parseFloat(((carbohydrate / 100) * 100).toFixed(1)), // You can replace 100 with your carb goal
+          },
+          protein: {
+            ...prev.progress.protein,
+            user: parseFloat(((protein / 200) * 100).toFixed(1)), // Replace 200 with your protein goal
+          },
+          sodium: {
+            ...prev.progress.sodium,
+            user: parseFloat(((sodium / 2.3) * 100).toFixed(1)), // 2.3g = 2300mg recommended
+          },
+        },
+      }));
+
     }
   }, [data]);
 
