@@ -133,7 +133,8 @@ export default function Page6() {
 
   useEffect(() => {
     if (data?.combined) {
-      const parseGrams = (value: string): number => {
+      const parseGrams = (value: string | undefined): number => {
+        if (!value) return 0; // Fallback for undefined values
         if (value.toLowerCase().includes("mg")) {
           return parseFloat(value) / 1000;
         } else {
@@ -145,16 +146,15 @@ export default function Page6() {
       const protein = parseGrams(data.combined.protein_total);
       const sodium = parseGrams(data.combined.sodium_total);
 
-      const total = (carbohydrate + protein + sodium).toFixed(2);
-      const pieCarb = parseFloat(
-        ((data.fruits.carbs_total / parseFloat(total)) * 100).toFixed(2)
-      );
-      const pieProtein = parseFloat(
-        ((data.fruits.protein_total / parseFloat(total)) * 100).toFixed(2)
-      );
-      const pieSodium = parseFloat(
-        ((data.fruits.sodium_total / parseFloat(total)) * 100).toFixed(2)
-      );
+      const total = carbohydrate + protein + sodium;
+
+      // Avoid zero total for the donut chart
+      const safeTotal = total > 0 ? total : 1;
+
+      const pieCarb = parseFloat(((carbohydrate / safeTotal) * 100).toFixed(2));
+      const pieProtein = parseFloat(((protein / safeTotal) * 100).toFixed(2));
+      const pieSodium = parseFloat(((sodium / safeTotal) * 100).toFixed(2));
+
       setNutritionData((prev) => ({
         ...prev,
         intake: {
@@ -164,7 +164,7 @@ export default function Page6() {
             protein: pieProtein,
             sodium: pieSodium,
           },
-          total: parseFloat(total),
+          total: parseFloat(total.toFixed(2)),
         },
         values: {
           carbohydrate: {
@@ -183,15 +183,15 @@ export default function Page6() {
         progress: {
           carbohydrate: {
             ...prev.progress.carbohydrate,
-            user: parseFloat(((carbohydrate / 100) * 100).toFixed(1)), // You can replace 100 with your carb goal
+            user: parseFloat(((carbohydrate / 100) * 100).toFixed(1)),
           },
           protein: {
             ...prev.progress.protein,
-            user: parseFloat(((protein / 200) * 100).toFixed(1)), // Replace 200 with your protein goal
+            user: parseFloat(((protein / 200) * 100).toFixed(1)),
           },
           sodium: {
             ...prev.progress.sodium,
-            user: parseFloat(((sodium / 2.3) * 100).toFixed(1)), // 2.3g = 2300mg recommended
+            user: parseFloat(((sodium / 2.3) * 100).toFixed(1)),
           },
         },
       }));
@@ -256,7 +256,7 @@ export default function Page6() {
   const navigation = useNavigation<Page6ScreenNavigationProp>();
 
   const handleCheck = () => {
-    navigation.navigate('feedback', { data, nutritionData});
+    navigation.navigate("feedback", { data, nutritionData });
   };
 
   return (
@@ -303,7 +303,9 @@ export default function Page6() {
                       styles.userProgress,
                       {
                         width: toProgressWidth(
-                          (nutritionData1.progress.carbohydrate.user/nutritionData1.progress.carbohydrate.avg ) *50
+                          (nutritionData1.progress.carbohydrate.user /
+                            nutritionData1.progress.carbohydrate.avg) *
+                            50
                         ),
                       },
                     ]}
@@ -348,7 +350,9 @@ export default function Page6() {
                       styles.userProgress,
                       {
                         width: toProgressWidth(
-                          (nutritionData1.progress.sodium.user/nutritionData1.progress.sodium.avg ) *50
+                          (nutritionData1.progress.sodium.user /
+                            nutritionData1.progress.sodium.avg) *
+                            50
                         ),
                       },
                     ]}
@@ -393,7 +397,9 @@ export default function Page6() {
                       styles.userProgress,
                       {
                         width: toProgressWidth(
-                          (nutritionData1.progress.protein.user/nutritionData1.progress.protein.avg ) *50
+                          (nutritionData1.progress.protein.user /
+                            nutritionData1.progress.protein.avg) *
+                            50
                         ),
                       },
                     ]}

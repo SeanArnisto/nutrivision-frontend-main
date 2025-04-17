@@ -95,6 +95,7 @@ export default function Camera() {
   const handleSubmitPhoto = async (photos) => {
     console.log("Button clicked, starting image submission...");
     setSubmit(true);
+    setTimeout(() => setSubmit(false), 5000);
     setLoading(true); // Set loading state
     const fruitsUrl = "https://leidanielaguila-nutrivision.hf.space/detect"; // object detection
     const labelsUrl =
