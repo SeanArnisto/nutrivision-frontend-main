@@ -256,7 +256,7 @@ export default function Page6() {
   const navigation = useNavigation<Page6ScreenNavigationProp>();
 
   const handleCheck = () => {
-    navigation.navigate("feedback");
+    navigation.navigate('feedback', { data, nutritionData});
   };
 
   return (
