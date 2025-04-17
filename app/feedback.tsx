@@ -30,20 +30,20 @@ type HomeScreenNavigationProp = StackNavigationProp<
   "index"
 >;
 
-type sugar = {
-  sugar: number;
-  approxSugar: number;
-  sugarTablespoon: number;
+type protein = {
+  protein: number;
+  approxProtein: number;
+  proteinTablespoon: number;
 };
 type sodium = {
   sodium: number;
   approxSodium: number;
   sodiumTablespoon: number;
 };
-type calories = {
-  calories: number;
-  approxCalories: number;
-  caloriesTablepoon: number;
+type carbs = {
+  carbs: number;
+  approxCarbs: number;
+  carbsTablepoon: number;
 };
 
 function Feedback() {
@@ -53,8 +53,9 @@ function Feedback() {
   console.log("Data from page-2:", data);
   console.log("working page 6:", nutritionData); // Use this data in your UI
 
-  const [carbsTablespoon, setCarbsTablespoon] = useState<number>(0);
-
+  const [carbsTablespoon, setCarbsTablespoon] = useState<carbs>({carbs: 0, approxCarbs: 0, carbsTablepoon: 0});
+  const [proteinTablespoon, setProteinTablespoon] = useState<protein>({protein: 0, approxProtein: 0, proteinTablespoon: 0});
+  const [sodiumTablespoon, setSodiumTablespoon] = useState<sodium>({sodium: 0, approxSodium: 0, sodiumTablespoon: 0});
   useEffect(() => {
     if (nutritionData?.nutrition_range && data?.combined) {
       const carbsMin = nutritionData.nutrition_range.carbs[0];
@@ -83,8 +84,9 @@ function Feedback() {
 
       const total = carbohydrate + protein + sodium;
 
-      setCarbsTablespoon(FindTablespoons(carbohydrate, carbsMin, carbsMax));
-
+      setCarbsTablespoon({carbs: carbohydrate, approxCarbs: 0,carbsTablepoon: FindTablespoons(carbohydrate, carbsMin, carbsMax)});
+      setProteinTablespoon({protein, approxProtein: 0, proteinTablespoon: FindTablespoons(protein, proteinMin, proteinMax)});
+      setSodiumTablespoon({sodium, approxSodium: 0, sodiumTablespoon: FindTablespoons(sodium, sodiumMin, sodiumMax)});
       // Do something with carbAvg, proteinAvg, sodiumAvg
     }
 
@@ -107,6 +109,10 @@ function Feedback() {
       const total = (carbohydrate + protein + sodium).toFixed(2);
 
       // Find table spoon
+
+      setCarbsTablespoon({carbs: carbohydrate, approxCarbs: 0,carbsTablepoon: FindTablespoons(carbohydrate, carbsMin, carbsMax)});
+      setProteinTablespoon({protein, approxProtein: 0, proteinTablespoon: FindTablespoons(protein, proteinMin, proteinMax)});
+      setSodiumTablespoon({sodium, approxSodium: 0, sodiumTablespoon: FindTablespoons(sodium, sodiumMin, sodiumMax)});
 
       // Do something with carbAvg, proteinAvg, sodiumAvg
     }
@@ -259,11 +265,11 @@ function Feedback() {
         break;
 
       case 13: // oneGreenLess
-      imageToDisplay = require("@/assets/images/1greenwithless.png");
+        imageToDisplay = require("@/assets/images/1greenwithless.png");
         break;
 
       case 14: // oneRedLess
-      imageToDisplay = require("@/assets/images/1redwithless.png");
+        imageToDisplay = require("@/assets/images/1redwithless.png");
         break;
     }
 
@@ -317,40 +323,40 @@ function Feedback() {
               </View>
             </View>
 
-            {/* sugar table */}
+            {/* protein table */}
             <View style={styles.sugarContainer}>
               <View style={styles.textContainer}>
-                <Text style={styles.textHeader}>Protein: 0 g</Text>
-                <Text style={styles.textSubHeader}>Approx Sugar: 0 grams</Text>
+                <Text style={styles.textHeader}>Protein: {proteinTablespoon.protein} g</Text>
+                <Text style={styles.textSubHeader}>Approx Protein: 0 grams</Text>
                 <Text style={styles.textSubHeader}>
                   Equivalent to: 0 tablespoons
                 </Text>
               </View>
-              <SpoonImages spoonDisplay={1} />
+              <SpoonImages spoonDisplay={proteinTablespoon.proteinTablespoon} />
             </View>
             {/* sodium table */}
             <View style={styles.sugarContainer}>
               <View style={styles.textContainer}>
-                <Text style={styles.textHeader}>Sodium: 0 g</Text>
+                <Text style={styles.textHeader}>Sodium: {sodiumTablespoon.sodiumTablespoon} g</Text>
                 <Text style={styles.textSubHeader}>Approx Sodium: 0 grams</Text>
                 <Text style={styles.textSubHeader}>
                   Equivalent to: 0 tablespoons
                 </Text>
               </View>
-              <SpoonImages spoonDisplay={1} />
+              <SpoonImages spoonDisplay={sodiumTablespoon.sodiumTablespoon} />
             </View>
-            {/* calories table */}
+            {/* carbs table */}
             <View style={styles.sugarContainer}>
               <View style={styles.textContainer}>
-                <Text style={styles.textHeader}>Carbohydrates: 0 g</Text>
+                <Text style={styles.textHeader}>Carbs: {carbsTablespoon.carbs} g</Text>
                 <Text style={styles.textSubHeader}>
-                  Approx calories: 0 grams
+                  Approx carbs: 0 grams
                 </Text>
                 <Text style={styles.textSubHeader}>
                   Equivalent to: 0 tablespoons
                 </Text>
               </View>
-              <SpoonImages spoonDisplay={1} />
+              <SpoonImages spoonDisplay={carbsTablespoon.carbsTablepoon} />
             </View>
             <View style={styles.FeedbackContainer}>
               <View style={styles.textContainer}>
