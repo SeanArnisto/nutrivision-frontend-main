@@ -113,7 +113,7 @@ function Feedback() {
     
 
     const handleCheck = () => {
-        navigation.navigate('page-2');
+        navigation.navigate('index');
       };
 
     const testRequest = async () => {
