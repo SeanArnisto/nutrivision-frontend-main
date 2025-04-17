@@ -29,7 +29,11 @@ type HomeScreenNavigationProp = StackNavigationProp<
   "index"
 >;
 
-type sugar = { sugar: number; approxSugar: number; sugarTablespoon: number };
+type sugar = {
+  sugar: number;
+  approxSugar: number;
+  sugarTablespoon: number;
+};
 type sodium = {
   sodium: number;
   approxSodium: number;
@@ -47,6 +51,54 @@ function Feedback() {
   const { nutritionData } = route.params as { nutritionData: any }; // Retrieve the passed data
   console.log("Data from page-2:", data);
   console.log("working page 6:", nutritionData); // Use this data in your UI
+
+  useEffect(() => {
+    if (nutritionData?.nutrition_range) {
+      const carbsMin = nutritionData.nutrition_range.carbs[0]; // 346
+      const carbsMax = nutritionData.nutrition_range.carbs[1]; // 397
+
+      const carbAvg = Math.round((carbsMin + carbsMax) / 2);
+
+      const proteinMin = nutritionData.nutrition_range.protein[0]; // 56
+      const proteinMax = nutritionData.nutrition_range.protein[1]; // 91
+
+      const proteinAvg = Math.round((proteinMin + proteinMax) / 2);
+
+      const sodiumMin = nutritionData.nutrition_range.sodium[0]; // 1500
+      const sodiumMax = nutritionData.nutrition_range.sodium[1]; // 2300
+
+      const sodiumAvg = Math.round((sodiumMin + sodiumMax) / 2);
+    }
+  }, [nutritionData]);
+
+  useEffect(() => {
+    if (data?.combined) {
+      const parseGrams = (value: string | undefined): number => {
+        if (!value) return 0; // Fallback for undefined values
+        if (value.toLowerCase().includes("mg")) {
+          return parseFloat(value) / 1000;
+        } else {
+          return parseFloat(value);
+        }
+      };
+      const carbohydrate = parseGrams(data.combined.carbs_total);
+      const protein = parseGrams(data.combined.protein_total);
+      const sodium = parseGrams(data.combined.sodium_total);
+
+      const total = carbohydrate + protein + sodium;
+    }
+  }, [data]);
+
+  useEffect(() => {
+    if (data?.fruits) {
+      const carbohydrate = data.fruits.total_carbs;
+      const protein = data.fruits.total_protein;
+      const sodium = data.fruits.total_sodium;
+      const total = (carbohydrate + protein + sodium).toFixed(2);
+    }
+    
+  }, [data]);
+
   const navigation = useNavigation() as HomeScreenNavigationProp;
   const [capturedPhotos, setCapturedPhotos] = useState<
     { uri: string; type: string; orientation: string }[]
@@ -145,7 +197,7 @@ function Feedback() {
   };
 
   const handleCheck = () => {
-    navigation.navigate("page-2", {nutritionData});
+    navigation.navigate("page-2", { nutritionData });
   };
 
   const testRequest = async () => {
@@ -155,6 +207,8 @@ function Feedback() {
       // axios.get()
     };
   };
+
+  const spoonDisplay = () => {};
 
   function SpoonImages({ spoonDisplay }: { spoonDisplay: number }) {
     let imageToDisplay = require("@/assets/images/neutral.png"); // Default image
