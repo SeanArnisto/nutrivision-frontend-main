@@ -12,6 +12,7 @@ import {
   Dimensions,
   KeyboardAvoidingView,
   Platform,
+  Text,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
@@ -101,7 +102,7 @@ export default function HomeScreen() {
   const renderDetailBox = ({ item }: { item: typeof carouselItems[0] }) => {
     return (
       <View style={styles.carouselDetailBox}>
-        <ThemedText style={styles.carouselText}>{item.text}</ThemedText>
+        <Text style={styles.carouselText}>{item.text}</Text>
       </View>
     );
   };
@@ -133,7 +134,6 @@ export default function HomeScreen() {
       return null;
     }
   };
- 
   // Helper functions to convert units
   const convertHeightToCm = (height: string): number => {
     const normalizedHeight = height.toLowerCase().replace(/\s+/g, ''); // Normalize the input
@@ -180,9 +180,9 @@ export default function HomeScreen() {
               {/* Logo kept from original */}
               {/* ===== NEW PROFILE BOX ===== */}
               <View style={styles.profileBox}>
-                <ThemedText style={styles.profileBoxText}>
+                <Text style={styles.profileBoxText}>
                   User <ThemedText style={styles.profileText}>Profile</ThemedText> Details
-                </ThemedText>
+                </Text>
               </View>
 
               {/* ========== CAROUSEL (ANIMATED DETAIL BOXES) ========== */}
@@ -225,7 +225,7 @@ export default function HomeScreen() {
                   <View style={styles.formContainer}>
                     <View style={styles.counterWrapper}>
                       <TouchableOpacity style={styles.counterButton} onPress={handleDecrement}>
-                        <ThemedText style={styles.counterText}>{'<'}</ThemedText>
+                        <Text style={styles.counterText}>{'<'}</Text>
                       </TouchableOpacity>
 
                       <TextInput
@@ -244,7 +244,7 @@ export default function HomeScreen() {
                       />
 
                       <TouchableOpacity style={styles.counterButton} onPress={handleIncrement}>
-                        <ThemedText style={styles.counterText}>{'>'}</ThemedText>
+                        <Text style={styles.counterText}>{'>'}</Text>
                       </TouchableOpacity>
                     </View>
 
@@ -261,12 +261,12 @@ export default function HomeScreen() {
               <View style={styles.ageContainer}>
                 <View style={styles.leftColumn}>
                   <View style={styles.topLeft}>
-                    <ThemedText style={styles.containerTitle}>Gender</ThemedText>
+                    <Text style={styles.containerTitle}>Gender</Text>
                   </View>
                   <View style={styles.bottomLeft}>
-                    <ThemedText style={styles.containerSubtitle}>
+                    <Text style={styles.containerSubtitle}>
                       Gender influences nutrition through hormonal and physiological differences.
-                    </ThemedText>
+                    </Text>
                   </View>
                 </View>
 
@@ -280,9 +280,9 @@ export default function HomeScreen() {
                       value={isMale}
                       onValueChange={(value) => setIsMale(value)}
                     />
-                    <ThemedText style={{ fontSize: 14, marginTop: 8 }}>
+                    <Text style={{ fontSize: 14, marginTop: 8 }}>
                       {isMale ? 'Male' : 'Female'}
-                    </ThemedText>
+                    </Text>
                   </View>
                 </View>
 
