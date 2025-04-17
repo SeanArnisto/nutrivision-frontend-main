@@ -303,7 +303,7 @@ export default function Page6() {
                       styles.userProgress,
                       {
                         width: toProgressWidth(
-                          nutritionData1.progress.carbohydrate.user
+                          (nutritionData1.progress.carbohydrate.user/nutritionData1.progress.carbohydrate.avg ) *50
                         ),
                       },
                     ]}
@@ -315,9 +315,7 @@ export default function Page6() {
                       styles.progressBar,
                       styles.avgProgress,
                       {
-                        width: toProgressWidth(
-                          nutritionData1.progress.carbohydrate.avg
-                        ),
+                        width: toProgressWidth(50),
                       },
                     ]}
                   />
@@ -350,7 +348,7 @@ export default function Page6() {
                       styles.userProgress,
                       {
                         width: toProgressWidth(
-                          nutritionData1.progress.sodium.user
+                          (nutritionData1.progress.sodium.user/nutritionData1.progress.sodium.avg ) *50
                         ),
                       },
                     ]}
@@ -362,9 +360,7 @@ export default function Page6() {
                       styles.progressBar,
                       styles.avgProgress,
                       {
-                        width: toProgressWidth(
-                          nutritionData1.progress.sodium.avg
-                        ),
+                        width: toProgressWidth(50),
                       },
                     ]}
                   />
@@ -397,7 +393,7 @@ export default function Page6() {
                       styles.userProgress,
                       {
                         width: toProgressWidth(
-                          nutritionData1.progress.protein.user
+                          (nutritionData1.progress.protein.user/nutritionData1.progress.protein.avg ) *50
                         ),
                       },
                     ]}
@@ -409,9 +405,7 @@ export default function Page6() {
                       styles.progressBar,
                       styles.avgProgress,
                       {
-                        width: toProgressWidth(
-                          nutritionData1.progress.protein.avg
-                        ),
+                        width: toProgressWidth(50),
                       },
                     ]}
                   />
