@@ -21,6 +21,7 @@ import { RootStackParamList } from "@/types/types";
 import * as MediaLibrary from "expo-media-library";
 import axios from "axios";
 import { useRoute } from "@react-navigation/native";
+import { FindTablespoons } from "./HelperFunctions";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 
@@ -52,52 +53,64 @@ function Feedback() {
   console.log("Data from page-2:", data);
   console.log("working page 6:", nutritionData); // Use this data in your UI
 
-  useEffect(() => {
-    if (nutritionData?.nutrition_range) {
-      const carbsMin = nutritionData.nutrition_range.carbs[0]; // 346
-      const carbsMax = nutritionData.nutrition_range.carbs[1]; // 397
+  const [carbsTablespoon, setCarbsTablespoon] = useState<number>(0);
 
+  useEffect(() => {
+    if (nutritionData?.nutrition_range && data?.combined) {
+      const carbsMin = nutritionData.nutrition_range.carbs[0];
+      const carbsMax = nutritionData.nutrition_range.carbs[1];
       const carbAvg = Math.round((carbsMin + carbsMax) / 2);
 
-      const proteinMin = nutritionData.nutrition_range.protein[0]; // 56
-      const proteinMax = nutritionData.nutrition_range.protein[1]; // 91
-
+      const proteinMin = nutritionData.nutrition_range.protein[0];
+      const proteinMax = nutritionData.nutrition_range.protein[1];
       const proteinAvg = Math.round((proteinMin + proteinMax) / 2);
 
-      const sodiumMin = nutritionData.nutrition_range.sodium[0]; // 1500
-      const sodiumMax = nutritionData.nutrition_range.sodium[1]; // 2300
-
+      const sodiumMin = nutritionData.nutrition_range.sodium[0];
+      const sodiumMax = nutritionData.nutrition_range.sodium[1];
       const sodiumAvg = Math.round((sodiumMin + sodiumMax) / 2);
-    }
-  }, [nutritionData]);
 
-  useEffect(() => {
-    if (data?.combined) {
       const parseGrams = (value: string | undefined): number => {
-        if (!value) return 0; // Fallback for undefined values
+        if (!value) return 0;
         if (value.toLowerCase().includes("mg")) {
           return parseFloat(value) / 1000;
-        } else {
-          return parseFloat(value);
         }
+        return parseFloat(value);
       };
+
       const carbohydrate = parseGrams(data.combined.carbs_total);
       const protein = parseGrams(data.combined.protein_total);
       const sodium = parseGrams(data.combined.sodium_total);
 
       const total = carbohydrate + protein + sodium;
-    }
-  }, [data]);
 
-  useEffect(() => {
-    if (data?.fruits) {
+      setCarbsTablespoon(FindTablespoons(carbohydrate, carbsMin, carbsMax));
+
+      // Do something with carbAvg, proteinAvg, sodiumAvg
+    }
+
+    if (nutritionData?.nutrition_range && data?.fruits) {
+      const carbsMin = nutritionData.nutrition_range.carbs[0];
+      const carbsMax = nutritionData.nutrition_range.carbs[1];
+      const carbAvg = Math.round((carbsMin + carbsMax) / 2);
+
+      const proteinMin = nutritionData.nutrition_range.protein[0];
+      const proteinMax = nutritionData.nutrition_range.protein[1];
+      const proteinAvg = Math.round((proteinMin + proteinMax) / 2);
+
+      const sodiumMin = nutritionData.nutrition_range.sodium[0];
+      const sodiumMax = nutritionData.nutrition_range.sodium[1];
+      const sodiumAvg = Math.round((sodiumMin + sodiumMax) / 2);
+
       const carbohydrate = data.fruits.total_carbs;
       const protein = data.fruits.total_protein;
       const sodium = data.fruits.total_sodium;
       const total = (carbohydrate + protein + sodium).toFixed(2);
+
+      // Find table spoon
+
+      // Do something with carbAvg, proteinAvg, sodiumAvg
     }
-    
-  }, [data]);
+  }, [nutritionData, data]);
 
   const navigation = useNavigation() as HomeScreenNavigationProp;
   const [capturedPhotos, setCapturedPhotos] = useState<
@@ -106,21 +119,7 @@ function Feedback() {
   const [mediaLibraryPermission, setMediaLibraryPermission] = useState<
     boolean | null
   >(null);
-  const [sugar, setSugar] = useState<sugar>({
-    sugar: 0,
-    approxSugar: 0,
-    sugarTablespoon: 0,
-  });
-  const [sodium, setSodium] = useState<sodium>({
-    sodium: 0,
-    approxSodium: 0,
-    sodiumTablespoon: 0,
-  });
-  const [calories, setCalories] = useState<calories>({
-    calories: 0,
-    approxCalories: 0,
-    caloriesTablepoon: 0,
-  });
+
   const [requrestMessage, setRequestMessage] = useState<string>("");
 
   // Request media library permissions on mount
@@ -208,10 +207,65 @@ function Feedback() {
     };
   };
 
-  const spoonDisplay = () => {};
-
   function SpoonImages({ spoonDisplay }: { spoonDisplay: number }) {
     let imageToDisplay = require("@/assets/images/neutral.png"); // Default image
+    switch (spoonDisplay) {
+      case 1: // oneGreen
+        imageToDisplay = require("@/assets/images/1green.png");
+        break;
+
+      case 2: // twoGreen
+        imageToDisplay = require("@/assets/images/2green.png");
+        break;
+
+      case 3: // threeGreen
+        imageToDisplay = require("@/assets/images/3green.png");
+        break;
+
+      case 4: // fourGreen
+        imageToDisplay = require("@/assets/images/4green.png");
+        break;
+
+      case 5: // fiveGreen
+        imageToDisplay = require("@/assets/images/5green.png");
+        break;
+
+      case 6: // fiveGreenPlus
+        imageToDisplay = require("@/assets/images/5greenwithplus.png");
+        break;
+
+      case 7: // oneRed
+        imageToDisplay = require("@/assets/images/1red.png");
+        break;
+
+      case 8: // twoRed
+        imageToDisplay = require("@/assets/images/2red.png");
+        break;
+
+      case 9: // threeRed
+        imageToDisplay = require("@/assets/images/3red.png");
+        break;
+
+      case 10: // fourRed
+        imageToDisplay = require("@/assets/images/4red.png");
+        break;
+
+      case 11: // fiveRed
+        imageToDisplay = require("@/assets/images/5red.png");
+        break;
+
+      case 12: // fiveRedPlus
+        imageToDisplay = require("@/assets/images/5redwithplus.png");
+        break;
+
+      case 13: // oneGreenLess
+      imageToDisplay = require("@/assets/images/1greenwithless.png");
+        break;
+
+      case 14: // oneRedLess
+      imageToDisplay = require("@/assets/images/1redwithless.png");
+        break;
+    }
 
     return (
       <View style={styles.rightContainer}>
@@ -266,12 +320,10 @@ function Feedback() {
             {/* sugar table */}
             <View style={styles.sugarContainer}>
               <View style={styles.textContainer}>
-                <Text style={styles.textHeader}>Sugar: {sugar.sugar} g</Text>
+                <Text style={styles.textHeader}>Protein: 0 g</Text>
+                <Text style={styles.textSubHeader}>Approx Sugar: 0 grams</Text>
                 <Text style={styles.textSubHeader}>
-                  Approx Sugar: {sugar.approxSugar} grams
-                </Text>
-                <Text style={styles.textSubHeader}>
-                  Equivalent to: {sugar.sugarTablespoon} tablespoons
+                  Equivalent to: 0 tablespoons
                 </Text>
               </View>
               <SpoonImages spoonDisplay={1} />
@@ -279,12 +331,10 @@ function Feedback() {
             {/* sodium table */}
             <View style={styles.sugarContainer}>
               <View style={styles.textContainer}>
-                <Text style={styles.textHeader}>Sodium: {sodium.sodium} g</Text>
+                <Text style={styles.textHeader}>Sodium: 0 g</Text>
+                <Text style={styles.textSubHeader}>Approx Sodium: 0 grams</Text>
                 <Text style={styles.textSubHeader}>
-                  Approx Sodium: {sodium.approxSodium} grams
-                </Text>
-                <Text style={styles.textSubHeader}>
-                  Equivalent to: {sodium.approxSodium} tablespoons
+                  Equivalent to: 0 tablespoons
                 </Text>
               </View>
               <SpoonImages spoonDisplay={1} />
@@ -292,14 +342,12 @@ function Feedback() {
             {/* calories table */}
             <View style={styles.sugarContainer}>
               <View style={styles.textContainer}>
-                <Text style={styles.textHeader}>
-                  Calories: {calories.calories} g
+                <Text style={styles.textHeader}>Carbohydrates: 0 g</Text>
+                <Text style={styles.textSubHeader}>
+                  Approx calories: 0 grams
                 </Text>
                 <Text style={styles.textSubHeader}>
-                  Approx calories: {calories.approxCalories} grams
-                </Text>
-                <Text style={styles.textSubHeader}>
-                  Equivalent to: {calories.caloriesTablepoon} tablespoons
+                  Equivalent to: 0 tablespoons
                 </Text>
               </View>
               <SpoonImages spoonDisplay={1} />

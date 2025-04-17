@@ -75,9 +75,9 @@ export default function UserNutrientPage() {
       const protein = parseGrams(data.combined.protein_total);
       const sodium = parseGrams(data.combined.sodium_total);
       const total = (carbohydrate + protein + sodium).toFixed(2);
-      const pieCarb = parseFloat((data.combined.carbs_total / parseFloat(total) * 100).toFixed(2));
-      const pieProtein = parseFloat((data.combined.protein_total / parseFloat(total) * 100).toFixed(2));
-      const pieSodium = parseFloat((data.combined.sodium_total / parseFloat(total) * 100).toFixed(2));
+      const pieCarb = parseFloat(((carbohydrate / parseFloat(total)) * 100).toFixed(2));
+      const pieProtein = parseFloat(((protein / parseFloat(total)) * 100).toFixed(2));
+      const pieSodium = parseFloat(((sodium / parseFloat(total)) * 100).toFixed(2));
       setNutrients({ carbohydrate, protein, sodium}); // editable data
       setNutritionData({ // pie chart representation
         userIntake: {
