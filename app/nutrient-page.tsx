@@ -62,7 +62,7 @@ export default function UserNutrientPage() {
     if (data?.combined) {
       const parseGrams = (value: string): number => {
         if (!value) {
-          return 0; // Fallback for empty or undefined values
+          return 0; // fix for later add validation to tell the user that the value should be manually input
         }
         if (value.toLowerCase().includes("mg")) {
           return parseFloat(value) / 1000;
@@ -71,54 +71,41 @@ export default function UserNutrientPage() {
         }
       };
 
-      // Validate that carbs_total, protein_total, and sodium_total exist
-      const carbsTotal = data.combined.carbs_total ?? "0"; // Fallback to "0" if undefined
-      const proteinTotal = data.combined.protein_total ?? "0"; // Fallback to "0" if undefined
-      const sodiumTotal = data.combined.sodium_total ?? "0"; // Fallback to "0" if undefined
+      const carbohydrate = parseGrams(data.combined.carbs_total);
+      const protein = parseGrams(data.combined.protein_total);
+      const sodium = parseGrams(data.combined.sodium_total);
+      const total = (carbohydrate + protein + sodium).toFixed(2);
+      const pieCarb = parseFloat((data.combined.carbs_total / parseFloat(total) * 100).toFixed(2));
+      const pieProtein = parseFloat((data.combined.protein_total / parseFloat(total) * 100).toFixed(2));
+      const pieSodium = parseFloat((data.combined.sodium_total / parseFloat(total) * 100).toFixed(2));
+      setNutrients({ carbohydrate, protein, sodium}); // editable data
+      setNutritionData({ // pie chart representation
+        userIntake: {
+          breakdown: { carbohydrate: pieCarb, protein: pieProtein, sodium: pieSodium },
+          total: parseFloat(total),
+        },
+      });
+    }
+    if (data?.fruits) {
+      const carbohydrate = data.fruits.total_carbs;
+      const protein = data.fruits.total_protein;
+      const sodium = data.fruits.total_sodium;
 
-      if (carbsTotal === "0" || proteinTotal === "0" || sodiumTotal === "0") {
-        console.warn(
-          "One or more nutrient values are missing in data.combined. Using fallback values."
-        );
-      }
+      const total = (carbohydrate + protein + sodium).toFixed(2);
+      const pieCarb = parseFloat((data.fruits.total_carbs / parseFloat(total) * 100).toFixed(2));
+      const pieProtein = parseFloat((data.fruits.total_protein / parseFloat(total) * 100).toFixed(2));
+      const pieSodium = parseFloat((data.fruits.total_sodium / parseFloat(total) * 100).toFixed(2));
+      setNutrients({ carbohydrate, protein, sodium }); // editable data
 
-      const carbohydrate = parseGrams(carbsTotal);
-      const protein = parseGrams(proteinTotal);
-      const sodium = parseGrams(sodiumTotal);
-      const total = carbohydrate + protein + sodium;
-
-      if (total > 0) {
-        const pieCarb = parseFloat(
-          (((data.fruits?.carbs_total ?? 0) / total) * 100).toFixed(2)
-        );
-        const pieProtein = parseFloat(
-          (((data.fruits?.protein_total ?? 0) / total) * 100).toFixed(2)
-        );
-        const pieSodium = parseFloat(
-          (((data.fruits?.sodium_total ?? 0) / total) * 100).toFixed(2)
-        );
-
-        const seriesSum = pieCarb + pieProtein + pieSodium;
-
-        if (seriesSum > 0) {
-          setNutrients({ carbohydrate, protein, sodium }); // Editable data
-          setNutritionData({
-            // Pie chart representation
-            userIntake: {
-              breakdown: {
-                carbohydrate: pieCarb,
-                protein: pieProtein,
-                sodium: pieSodium,
-              },
-              total: parseFloat(total.toFixed(2)),
-            },
-          });
-        } else {
-          console.warn("Sum of series is zero. Pie chart data not set.");
-        }
-      } else {
-        console.warn("Total nutrient sum is zero. Pie chart data not set.");
-      }
+      setNutritionData({ // representation data 
+        userIntake: {
+          breakdown: { carbohydrate: pieCarb, protein: pieProtein, sodium: pieSodium },
+          total: parseFloat(total),
+        },
+      });
+    }
+    if (data?.message) {
+      console.log("Nothing received from object detection.");
     }
   }, [data]);
 
