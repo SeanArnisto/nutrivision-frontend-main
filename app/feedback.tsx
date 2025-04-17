@@ -26,18 +26,26 @@ const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 type HomeScreenNavigationProp = StackNavigationProp<RootStackParamList, 'index'>;
 
-type sugar = {sugar: number, approxSugar: number, sugarTablespoon: number}
+type carbohydrate = {carbohydrate: number, approxCarbohydrate: number, carbohydrateTablespoon: number}
 type sodium = {sodium: number, approxSodium: number, sodiumTablespoon: number}
-type calories = {calories: number, approxCalories: number, caloriesTablepoon: number}
+type protein = {protein: number, approxProtein: number, proteinTablepoon: number}
 
 function Feedback() {
     const navigation = useNavigation() as HomeScreenNavigationProp;
     const [capturedPhotos, setCapturedPhotos] = useState<{ uri: string; type: string; orientation: string }[]>([]);
     const [mediaLibraryPermission, setMediaLibraryPermission] = useState<boolean | null>(null);
-    const [sugar, setSugar] = useState<sugar>({sugar: 0, approxSugar: 0, sugarTablespoon: 0});
+    const [carbohydrate, setCarbohydrate] = useState<carbohydrate>({carbohydrate: 200, approxCarbohydrate: 0, carbohydrateTablespoon: 0});
     const [sodium, setSodium] = useState<sodium>({sodium: 0, approxSodium: 0, sodiumTablespoon: 0});
-    const [calories, setCalories] = useState<calories>({calories: 0, approxCalories: 0, caloriesTablepoon: 0});
+    const [protein, setCalories] = useState<protein>({protein: 0, approxProtein: 0, proteinTablepoon: 0});
     const [requrestMessage, setRequestMessage] = useState<string>('');
+    const [feedback, setFeedback] = useState('');
+    const [loading, setLoading] = useState(true);
+
+
+    // TEMP test values — rename to avoid conflict with existing state
+    const testProtein = 60;
+    const testCarbs = 150;
+    const testSodium = 1800;
 
 
     // Request media library permissions on mount
@@ -47,6 +55,21 @@ function Feedback() {
           setMediaLibraryPermission(status === 'granted');
         })();
       }, []);
+
+      useEffect(() => {
+      const fetchFeedback = async () => {
+        const result = await getNutritionFeedback(
+          testProtein.toString(),
+          testCarbs.toString(),
+          testSodium.toString(),
+        );
+        setFeedback(result);
+        setLoading(false);
+      };
+
+      fetchFeedback();
+    }, []);
+
     
       // Load previously captured photos on mount
       useFocusEffect(
@@ -81,7 +104,7 @@ function Feedback() {
             mediaType: 'photo',
             sortBy: ['creationTime']
           });
-      
+          
           const recentPhotos = [];
           for (const asset of assets) {
             let uriToUse = asset.uri;
@@ -111,6 +134,45 @@ function Feedback() {
         }
       };
     
+    const getNutritionFeedback = async (
+      protein: string,
+      carbs: string,
+      sodium: string,
+    ): Promise<string> => {
+      //const API_URL = '';
+      //const API_TOKEN = ''; // Replace this
+
+      const headers = {
+        Authorization: `Bearer ${API_TOKEN}`,
+        'Content-Type': 'application/json',
+      };
+
+      const prompt = `
+    You're a nutritionist. Give a short, clear feedback on this nutrient info:
+
+    Protein: ${testProtein}  
+    Carbs: ${testCarbs}  
+    Sodium: ${testSodium}  
+
+    Mention if it's balanced or not, and provide suggestions and assume that this is an average male with average everything.
+    `;
+
+      try {
+        const response = await axios.post(API_URL, { inputs: prompt }, { headers });
+        const result = response.data;
+
+        if (Array.isArray(result) && result[0]?.generated_text) {
+          return result[0].generated_text;
+        } else if (result?.generated_text) {
+          return result.generated_text;
+        } else {
+          return 'No feedback generated.';
+        }
+      } catch (error) {
+        console.error('Hugging Face API error:', error);
+        return 'Error fetching feedback.';
+      }
+    };
 
     const handleCheck = () => {
         navigation.navigate('index');
@@ -182,26 +244,47 @@ function Feedback() {
                         </View>
 
                         {/* sugar table */}
-                        <View style={styles.sugarContainer}>
-                         <View style={styles.textContainer}>
+                      <View style={styles.sugarContainer}>
+                        <View style={styles.textContainer}>
+                          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                            <Image
+                              source={require('@/assets/images/Carbohydrate Icon.png')} // update path if needed
+                              style={{ width: 15, height: 15, marginRight: 5 }}
+                            />
                             <Text style={styles.textHeader}>
-                              Sugar: {sugar.sugar} g
-                            </Text>
-                            <Text style={styles.textSubHeader}>
-                              Approx Sugar: {sugar.approxSugar} grams
-                            </Text>
-                            <Text style={styles.textSubHeader}>
-                              Equivalent to: {sugar.sugarTablespoon} tablespoons
+                              Carbs: {carbohydrate.carbohydrate} g
                             </Text>
                           </View>
+                          <Text style={styles.textSubHeader}>
+                            Approx calories: {carbohydrate.approxCarbohydrate} grams
+                          </Text>
+                          <Text style={styles.textSubHeader}>
+                            Equivalent to: {carbohydrate.carbohydrateTablespoon} tablespoons
+                          </Text>
+                        </View>
+
+                        {/* Wrapper for legend and spoon */}
+                        <View style={{ alignItems: 'flex-end' }}>
+                          <Text style={{ fontSize: 10, color: '#b9b2b2', marginBottom: 4 }}>
+                            1 tbsp = 15 grams
+                          </Text>
                           <SpoonImages spoonDisplay={1} />
                         </View>
+                      </View>
+
+
                         {/* sodium table */}
                         <View style={styles.sugarContainer}>
                           <View style={styles.textContainer}>
-                            <Text style={styles.textHeader}>
-                              Sodium: {sodium.sodium} g
-                            </Text>
+                            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                              <Image
+                                source={require('@/assets/images/Sodium Icon.png')} // update the path as needed
+                                style={{ width: 20, height: 20, marginRight: 5 }}
+                              />
+                              <Text style={styles.textHeader}>
+                                Sodium: {sodium.sodium} g
+                              </Text>
+                            </View>
                             <Text style={styles.textSubHeader}>
                               Approx Sodium: {sodium.approxSodium} grams
                             </Text>
@@ -210,32 +293,40 @@ function Feedback() {
                             </Text>
                           </View>
                           <SpoonImages spoonDisplay={1} />
-                      </View>  
+                        </View>
+
                       {/* calories table */}
-                      <View style={styles.sugarContainer}>
+                        <View style={styles.sugarContainer}>
                           <View style={styles.textContainer}>
-                          <Text style={styles.textHeader}>
-                            Calories: {calories.calories} g
+                            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                              <Image
+                                source={require('@/assets/images/Protein Icon.png')} // update path if needed
+                                style={{ width: 20, height: 20, marginRight: 5 }}
+                              />
+                              <Text style={styles.textHeader}>
+                                Protein: {protein.protein} g
+                              </Text>
+                            </View>
+                            <Text style={styles.textSubHeader}>
+                              Approx Protein: {protein.approxProtein} grams
                             </Text>
                             <Text style={styles.textSubHeader}>
-                              Approx calories: {calories.approxCalories} grams
-                            </Text>
-                            <Text style={styles.textSubHeader}>
-                              Equivalent to: {calories.caloriesTablepoon} tablespoons
+                              Equivalent to: {protein.proteinTablepoon} tablespoons
                             </Text>
                           </View>
                           <SpoonImages spoonDisplay={1} />
-                        </View>  
+                        </View>
                         <View style={styles.FeedbackContainer}>  
                           <View style={styles.textContainer}>
-                            <Text>
-                              to follow up dependent on the user input.
-                            </Text>
+                          {loading ? (
+                            <Text className="text-center text-gray-500">Generating feedback...</Text>
+                          ) : (
+                            <Text className="text-base text-gray-800 mt-4">{feedback}</Text>
+                          )}
                           </View>
                         </View>
                     </View>
                       
-                                                   
                 </ScrollView>                
             </KeyboardAvoidingView>
             <TouchableOpacity style={styles.checkButton} onPress={handleCheck} disabled={false}>
@@ -267,7 +358,7 @@ const styles = StyleSheet.create({
   sugarContainer: {
     flexDirection: 'row',
     width: SCREEN_WIDTH * 0.9,
-    height: 70,
+    height: 80,
     paddingVertical: 10,
     borderRadius: 10,
     justifyContent: 'space-between', // Changed from 'center' to better distribute content
