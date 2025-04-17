@@ -108,6 +108,34 @@ function Feedback() {
         sodiumTablespoon: FindTablespoons(sodium, sodiumMin, sodiumMax),
       });
     }
+    if (nutritionData?.nutrition_range && data?.fruits) {
+      const carbsMin = nutritionData.nutrition_range.carbs[0];
+      const carbsMax = nutritionData.nutrition_range.carbs[1];
+      const proteinMin = nutritionData.nutrition_range.protein[0];
+      const proteinMax = nutritionData.nutrition_range.protein[1];
+      const sodiumMin = nutritionData.nutrition_range.sodium[0];
+      const sodiumMax = nutritionData.nutrition_range.sodium[1];
+
+      const carbohydrate = data.fruits.total_carbs;
+      const protein = data.fruits.total_protein;
+      const sodium = data.fruits.total_sodium;
+
+      setCarbsTablespoon({
+        carbs: carbohydrate,
+        approxCarbs: 0,
+        carbsTablepoon: FindTablespoons(carbohydrate, carbsMin, carbsMax),
+      });
+      setProteinTablespoon({
+        protein,
+        approxProtein: 0,
+        proteinTablespoon: FindTablespoons(protein, proteinMin, proteinMax),
+      });
+      setSodiumTablespoon({
+        sodium,
+        approxSodium: 0,
+        sodiumTablespoon: FindTablespoons(sodium, sodiumMin, sodiumMax),
+      });
+    }
   }, [nutritionData, data]);
 
   const fetchFeedback = async () => {
@@ -143,8 +171,14 @@ function Feedback() {
   };
 
   useEffect(() => {
-    fetchFeedback(); // Fetch feedback on component mount
-  }, []);
+    if (
+      carbsTablespoon.carbs !== 0 &&
+      proteinTablespoon.protein !== 0 &&
+      sodiumTablespoon.sodium !== 0
+    ) {
+      fetchFeedback();
+    }
+  }, [carbsTablespoon, proteinTablespoon, sodiumTablespoon]);
 
   const navigation = useNavigation() as HomeScreenNavigationProp;
   const [capturedPhotos, setCapturedPhotos] = useState<
