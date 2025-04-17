@@ -68,19 +68,17 @@ function Feedback() {
     approxSodium: 0,
     sodiumTablespoon: 0,
   });
+  const [requestMessage, setRequestMessage] = useState<string>(""); // Feedback message
+  const [loading, setLoading] = useState<boolean>(true); // Loading state
+
   useEffect(() => {
     if (nutritionData?.nutrition_range && data?.combined) {
       const carbsMin = nutritionData.nutrition_range.carbs[0];
       const carbsMax = nutritionData.nutrition_range.carbs[1];
-      const carbAvg = Math.round((carbsMin + carbsMax) / 2);
-
       const proteinMin = nutritionData.nutrition_range.protein[0];
       const proteinMax = nutritionData.nutrition_range.protein[1];
-      const proteinAvg = Math.round((proteinMin + proteinMax) / 2);
-
       const sodiumMin = nutritionData.nutrition_range.sodium[0];
       const sodiumMax = nutritionData.nutrition_range.sodium[1];
-      const sodiumAvg = Math.round((sodiumMin + sodiumMax) / 2);
 
       const parseGrams = (value: string | undefined): number => {
         if (!value) return 0;
@@ -94,8 +92,6 @@ function Feedback() {
       const protein = parseGrams(data.combined.protein_total);
       const sodium = parseGrams(data.combined.sodium_total);
 
-      const total = carbohydrate + protein + sodium;
-
       setCarbsTablespoon({
         carbs: carbohydrate,
         approxCarbs: 0,
@@ -111,48 +107,44 @@ function Feedback() {
         approxSodium: 0,
         sodiumTablespoon: FindTablespoons(sodium, sodiumMin, sodiumMax),
       });
-      // Do something with carbAvg, proteinAvg, sodiumAvg
-    }
-
-    if (nutritionData?.nutrition_range && data?.fruits) {
-      const carbsMin = nutritionData.nutrition_range.carbs[0];
-      const carbsMax = nutritionData.nutrition_range.carbs[1];
-      const carbAvg = Math.round((carbsMin + carbsMax) / 2);
-
-      const proteinMin = nutritionData.nutrition_range.protein[0];
-      const proteinMax = nutritionData.nutrition_range.protein[1];
-      const proteinAvg = Math.round((proteinMin + proteinMax) / 2);
-
-      const sodiumMin = nutritionData.nutrition_range.sodium[0];
-      const sodiumMax = nutritionData.nutrition_range.sodium[1];
-      const sodiumAvg = Math.round((sodiumMin + sodiumMax) / 2);
-
-      const carbohydrate = data.fruits.total_carbs;
-      const protein = data.fruits.total_protein;
-      const sodium = data.fruits.total_sodium;
-      const total = (carbohydrate + protein + sodium).toFixed(2);
-
-      // Find table spoon
-
-      setCarbsTablespoon({
-        carbs: carbohydrate,
-        approxCarbs: 0,
-        carbsTablepoon: FindTablespoons(carbohydrate, carbsMin, carbsMax),
-      });
-      setProteinTablespoon({
-        protein,
-        approxProtein: 0,
-        proteinTablespoon: FindTablespoons(protein, proteinMin, proteinMax),
-      });
-      setSodiumTablespoon({
-        sodium,
-        approxSodium: 0,
-        sodiumTablespoon: FindTablespoons(sodium, sodiumMin, sodiumMax),
-      });
-
-      // Do something with carbAvg, proteinAvg, sodiumAvg
     }
   }, [nutritionData, data]);
+
+  const fetchFeedback = async () => {
+    try {
+      setLoading(true); // Start loading
+      const response = await axios.post(
+        "https://pel1-recommendation.hf.space/get-nutrient-feedback",
+        {
+          carbs_total: carbsTablespoon.carbs, // User's carbohydrate intake
+          sodium_total: sodiumTablespoon.sodium, // User's sodium intake
+          protein_total: proteinTablespoon.protein, // User's protein intake
+          recommended_carbs: nutritionData.nutrition_range.carbs, // Recommended range for carbohydrates
+          recommended_sodium: nutritionData.nutrition_range.sodium, // Recommended range for sodium
+          recommended_protein: nutritionData.nutrition_range.protein, // Recommended range for protein
+        }
+      );
+
+      if (response.data && response.data.feedback) {
+        const { comparison_analysis, range_assessment, health_implications } =
+          response.data.feedback;
+        setRequestMessage(
+          `${comparison_analysis}\n\n${range_assessment}\n\n${health_implications}`
+        );
+      } else {
+        setRequestMessage("No feedback available.");
+      }
+    } catch (error) {
+      console.error("Error fetching feedback:", error);
+      setRequestMessage("Error fetching feedback.");
+    } finally {
+      setLoading(false); // Stop loading
+    }
+  };
+
+  useEffect(() => {
+    fetchFeedback(); // Fetch feedback on component mount
+  }, []);
 
   const navigation = useNavigation() as HomeScreenNavigationProp;
   const [capturedPhotos, setCapturedPhotos] = useState<
@@ -161,8 +153,6 @@ function Feedback() {
   const [mediaLibraryPermission, setMediaLibraryPermission] = useState<
     boolean | null
   >(null);
-
-  const [requrestMessage, setRequestMessage] = useState<string>("");
 
   // Request media library permissions on mount
   useEffect(() => {
@@ -401,9 +391,16 @@ function Feedback() {
               <SpoonImages spoonDisplay={carbsTablespoon.carbsTablepoon} />
             </View>
             <View style={styles.FeedbackContainer}>
-              <View style={styles.textContainer}>
-                <Text>to follow up dependent on the user input.</Text>
-              </View>
+              <ScrollView
+                style={styles.feedbackScroll}
+                contentContainerStyle={styles.feedbackContent}
+              >
+                {loading ? (
+                  <Text style={styles.loadingText}>Generating feedback...</Text>
+                ) : (
+                  <Text style={styles.feedbackText}>{requestMessage}</Text>
+                )}
+              </ScrollView>
             </View>
           </View>
         </ScrollView>
@@ -580,6 +577,24 @@ const styles = StyleSheet.create({
     fontSize: 25,
     color: "#9AB206",
     fontWeight: "bold",
+  },
+  feedbackScroll: {
+    flex: 1,
+    width: "100%",
+  },
+  feedbackContent: {
+    flexGrow: 1,
+    justifyContent: "flex-start",
+  },
+  feedbackText: {
+    fontSize: 14,
+    color: "#333",
+    textAlign: "left",
+  },
+  loadingText: {
+    fontSize: 14,
+    color: "gray",
+    textAlign: "center",
   },
 });
 
