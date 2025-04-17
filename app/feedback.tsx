@@ -53,9 +53,21 @@ function Feedback() {
   console.log("Data from page-2:", data);
   console.log("working page 6:", nutritionData); // Use this data in your UI
 
-  const [carbsTablespoon, setCarbsTablespoon] = useState<carbs>({carbs: 0, approxCarbs: 0, carbsTablepoon: 0});
-  const [proteinTablespoon, setProteinTablespoon] = useState<protein>({protein: 0, approxProtein: 0, proteinTablespoon: 0});
-  const [sodiumTablespoon, setSodiumTablespoon] = useState<sodium>({sodium: 0, approxSodium: 0, sodiumTablespoon: 0});
+  const [carbsTablespoon, setCarbsTablespoon] = useState<carbs>({
+    carbs: 0,
+    approxCarbs: 0,
+    carbsTablepoon: 0,
+  });
+  const [proteinTablespoon, setProteinTablespoon] = useState<protein>({
+    protein: 0,
+    approxProtein: 0,
+    proteinTablespoon: 0,
+  });
+  const [sodiumTablespoon, setSodiumTablespoon] = useState<sodium>({
+    sodium: 0,
+    approxSodium: 0,
+    sodiumTablespoon: 0,
+  });
   useEffect(() => {
     if (nutritionData?.nutrition_range && data?.combined) {
       const carbsMin = nutritionData.nutrition_range.carbs[0];
@@ -84,9 +96,21 @@ function Feedback() {
 
       const total = carbohydrate + protein + sodium;
 
-      setCarbsTablespoon({carbs: carbohydrate, approxCarbs: 0,carbsTablepoon: FindTablespoons(carbohydrate, carbsMin, carbsMax)});
-      setProteinTablespoon({protein, approxProtein: 0, proteinTablespoon: FindTablespoons(protein, proteinMin, proteinMax)});
-      setSodiumTablespoon({sodium, approxSodium: 0, sodiumTablespoon: FindTablespoons(sodium, sodiumMin, sodiumMax)});
+      setCarbsTablespoon({
+        carbs: carbohydrate,
+        approxCarbs: 0,
+        carbsTablepoon: FindTablespoons(carbohydrate, carbsMin, carbsMax),
+      });
+      setProteinTablespoon({
+        protein,
+        approxProtein: 0,
+        proteinTablespoon: FindTablespoons(protein, proteinMin, proteinMax),
+      });
+      setSodiumTablespoon({
+        sodium,
+        approxSodium: 0,
+        sodiumTablespoon: FindTablespoons(sodium, sodiumMin, sodiumMax),
+      });
       // Do something with carbAvg, proteinAvg, sodiumAvg
     }
 
@@ -110,9 +134,21 @@ function Feedback() {
 
       // Find table spoon
 
-      setCarbsTablespoon({carbs: carbohydrate, approxCarbs: 0,carbsTablepoon: FindTablespoons(carbohydrate, carbsMin, carbsMax)});
-      setProteinTablespoon({protein, approxProtein: 0, proteinTablespoon: FindTablespoons(protein, proteinMin, proteinMax)});
-      setSodiumTablespoon({sodium, approxSodium: 0, sodiumTablespoon: FindTablespoons(sodium, sodiumMin, sodiumMax)});
+      setCarbsTablespoon({
+        carbs: carbohydrate,
+        approxCarbs: 0,
+        carbsTablepoon: FindTablespoons(carbohydrate, carbsMin, carbsMax),
+      });
+      setProteinTablespoon({
+        protein,
+        approxProtein: 0,
+        proteinTablespoon: FindTablespoons(protein, proteinMin, proteinMax),
+      });
+      setSodiumTablespoon({
+        sodium,
+        approxSodium: 0,
+        sodiumTablespoon: FindTablespoons(sodium, sodiumMin, sodiumMax),
+      });
 
       // Do something with carbAvg, proteinAvg, sodiumAvg
     }
@@ -326,8 +362,12 @@ function Feedback() {
             {/* protein table */}
             <View style={styles.sugarContainer}>
               <View style={styles.textContainer}>
-                <Text style={styles.textHeader}>Protein: {proteinTablespoon.protein} g</Text>
-                <Text style={styles.textSubHeader}>Approx Protein: 0 grams</Text>
+                <Text style={styles.textHeader}>
+                  Protein: {proteinTablespoon.protein} g
+                </Text>
+                <Text style={styles.textSubHeader}>
+                  Approx Protein: 0 grams
+                </Text>
                 <Text style={styles.textSubHeader}>
                   Equivalent to: 0 tablespoons
                 </Text>
@@ -337,7 +377,9 @@ function Feedback() {
             {/* sodium table */}
             <View style={styles.sugarContainer}>
               <View style={styles.textContainer}>
-                <Text style={styles.textHeader}>Sodium: {sodiumTablespoon.sodiumTablespoon} g</Text>
+                <Text style={styles.textHeader}>
+                  Sodium: {sodiumTablespoon.sodiumTablespoon} g
+                </Text>
                 <Text style={styles.textSubHeader}>Approx Sodium: 0 grams</Text>
                 <Text style={styles.textSubHeader}>
                   Equivalent to: 0 tablespoons
@@ -348,10 +390,10 @@ function Feedback() {
             {/* carbs table */}
             <View style={styles.sugarContainer}>
               <View style={styles.textContainer}>
-                <Text style={styles.textHeader}>Carbs: {carbsTablespoon.carbs} g</Text>
-                <Text style={styles.textSubHeader}>
-                  Approx carbs: 0 grams
+                <Text style={styles.textHeader}>
+                  Carbs: {carbsTablespoon.carbs} g
                 </Text>
+                <Text style={styles.textSubHeader}>Approx carbs: 0 grams</Text>
                 <Text style={styles.textSubHeader}>
                   Equivalent to: 0 tablespoons
                 </Text>
