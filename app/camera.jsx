@@ -135,9 +135,8 @@ export default function Camera() {
       console.log("Sending request to backend endpoint...");
 
       // Let axios set the Content-Type header automatically with the boundary
-      const response = await fetch(urlToSend, {
-        method: "POST",
-        body: formData,
+      const response = await axios.post(urlToSend, formData, {
+        // Don't set Content-Type header at all, let axios handle it
         headers: {
           Accept: "application/json",
         },
@@ -145,10 +144,7 @@ export default function Camera() {
       console.log("✅ Response from server:", response.data);
       //setExtractedData(response.data);
       setLoading(false); // Turn off loading when response is received
-      navigation.navigate("nutrient-page", {
-        data: response.data,
-        nutritionData: nutritionData,
-      });
+      navigation.navigate("nutrient-page", { data: response.data, nutritionData: nutritionData });
       return response.data;
     } catch (err) {
       console.error("❌ Axios upload error:", err);
@@ -478,11 +474,11 @@ export default function Camera() {
   }
 
   if (loading) {
-    return (
+    return(
       <View style={styles.container}>
         <Loading />
       </View>
-    );
+    )
   }
 
   // Update the return statement layout
