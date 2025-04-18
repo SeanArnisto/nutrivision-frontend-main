@@ -54,8 +54,8 @@ function Feedback() {
   const route = useRoute();
   const { data } = route.params as { data: any };
   const { nutritionData } = route.params as { nutritionData: any }; // Retrieve the passed data
-  console.log("Data from page-2:", data);
-  console.log("working page 6:", nutritionData); // Use this data in your UI
+  //console.log("Data from page-2:", data);
+  //console.log("working page 6:", nutritionData); // Use this data in your UI
 
   const [carbsTablespoon, setCarbsTablespoon] = useState<carbs>({
     carbs: 0,
@@ -106,17 +106,18 @@ function Feedback() {
         carbsTablepoon: FindTablespoons(carbohydrate, carbsMin, carbsMax),
       });
       setProteinTablespoon({
-        protein,
+        protein: protein,
         approxProtein: 0,
         equivalentTablespoon: EquivalentTablespoon(protein),
         proteinTablespoon: FindTablespoons(protein, proteinMin, proteinMax),
       });
       setSodiumTablespoon({
-        sodium,
+        sodium: sodium,
         approxSodium: 0,
         equivalentTablespoon: EquivalentTablespoon(sodium),
         sodiumTablespoon: FindTablespoons(sodium, sodiumMin, sodiumMax),
       });
+      console.log(sodiumTablespoon.sodiumTablespoon);
     }
     if (nutritionData?.nutrition_range && data?.fruits) {
       const carbsMin = nutritionData.nutrition_range.carbs[0];
@@ -137,13 +138,13 @@ function Feedback() {
         carbsTablepoon: FindTablespoons(carbohydrate, carbsMin, carbsMax),
       });
       setProteinTablespoon({
-        protein,
+        protein: protein,
         approxProtein: 0,
         equivalentTablespoon: EquivalentTablespoon(protein),
         proteinTablespoon: FindTablespoons(protein, proteinMin, proteinMax),
       });
       setSodiumTablespoon({
-        sodium,
+        sodium: sodium,
         approxSodium: 0,
         equivalentTablespoon: EquivalentTablespoon(sodium),
         sodiumTablespoon: FindTablespoons(sodium, sodiumMin, sodiumMax),
@@ -405,9 +406,7 @@ function Feedback() {
                   }}
                   resizeMode="contain"
                 />
-                <Text style={styles.textLegend}>
-                  = 15 grams
-                </Text>
+                <Text style={styles.textLegend}>= 15 grams</Text>
               </View>
             </View>
             {/* carbs table */}
@@ -427,7 +426,7 @@ function Feedback() {
             <View style={styles.sugarContainer}>
               <View style={styles.textContainer}>
                 <Text style={styles.textHeader}>
-                  Sodium: {sodiumTablespoon.sodiumTablespoon} g
+                  Sodium: {sodiumTablespoon.sodium} g
                 </Text>
                 <Text style={styles.textSubHeader}>Approx Sodium: 0 grams</Text>
                 <Text style={styles.textSubHeader}>
@@ -589,7 +588,6 @@ const styles = StyleSheet.create({
     backgroundColor: "white",
     alignItems: "center",
     justifyContent: "center",
-
   },
   textContainer: {
     flex: 1, // Take available space
