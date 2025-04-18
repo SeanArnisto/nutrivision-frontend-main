@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "nutrinitional",
+    "name": "NutriVision",
     "slug": "nutrinitional",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -15,7 +15,8 @@
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#ffffff"
-      }
+      },
+      "package": "com.jamescarillo.nutrivision"
     },
     "web": {
       "bundler": "metro",
@@ -35,6 +36,14 @@
     ],
     "experiments": {
       "typedRoutes": true
+    },
+    "extra": {
+      "router": {
+        "origin": false
+      },
+      "eas": {
+        "projectId": "b7728a37-fe39-41a4-8aa8-f913accb9fb1"
+      }
     }
   }
 }
