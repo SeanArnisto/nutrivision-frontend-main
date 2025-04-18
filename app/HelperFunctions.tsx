@@ -26,10 +26,10 @@ export const FindTablespoons = (value: number, minIntake: number, maxIntake: num
     // For values greater than 5 tablespoons (75)
     if (value > fiveTablespoons && value > maxIntake) {
         number = fiveRedPlus;
-    } else if (value > fiveTablespoons && (value < maxIntake || value > minIntake)) {
+    } else if (value > fiveTablespoons && (value < maxIntake && value > minIntake)) {
         number = fiveGreenPlus;
     } else if (value > fiveTablespoons && value < minIntake) {
-        number = fiveRedPlus;
+        number = fiveRed;
     }
     
     // For values equal to 5 tablespoons (75)
@@ -96,4 +96,17 @@ export const FindTablespoons = (value: number, minIntake: number, maxIntake: num
     }
 
     return number;
+}
+
+export function EquivalentTablespoon(value: number): string {
+    let tbpsCount = '';
+
+    if (value < 15) {
+        tbpsCount = 'less than 1 tbsp';
+    } else {
+        value = Math.round(value / 15);
+        tbpsCount = `${value} tbsp${value > 1 ? '`s' : ''}`;
+    }
+
+    return tbpsCount;
 }

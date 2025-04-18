@@ -22,6 +22,7 @@ import * as MediaLibrary from "expo-media-library";
 import axios from "axios";
 import { useRoute } from "@react-navigation/native";
 import { FindTablespoons } from "./HelperFunctions";
+import { EquivalentTablespoon } from "./HelperFunctions";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 
@@ -33,16 +34,19 @@ type HomeScreenNavigationProp = StackNavigationProp<
 type protein = {
   protein: number;
   approxProtein: number;
+  equivalentTablespoon: string;
   proteinTablespoon: number;
 };
 type sodium = {
   sodium: number;
   approxSodium: number;
+  equivalentTablespoon: string;
   sodiumTablespoon: number;
 };
 type carbs = {
   carbs: number;
   approxCarbs: number;
+  equivalentTablespoon: string;
   carbsTablepoon: number;
 };
 
@@ -56,16 +60,19 @@ function Feedback() {
   const [carbsTablespoon, setCarbsTablespoon] = useState<carbs>({
     carbs: 0,
     approxCarbs: 0,
+    equivalentTablespoon: "",
     carbsTablepoon: 0,
   });
   const [proteinTablespoon, setProteinTablespoon] = useState<protein>({
     protein: 0,
     approxProtein: 0,
+    equivalentTablespoon: "",
     proteinTablespoon: 0,
   });
   const [sodiumTablespoon, setSodiumTablespoon] = useState<sodium>({
     sodium: 0,
     approxSodium: 0,
+    equivalentTablespoon: "",
     sodiumTablespoon: 0,
   });
   const [requestMessage, setRequestMessage] = useState<string>(""); // Feedback message
@@ -95,16 +102,19 @@ function Feedback() {
       setCarbsTablespoon({
         carbs: carbohydrate,
         approxCarbs: 0,
+        equivalentTablespoon: EquivalentTablespoon(carbohydrate),
         carbsTablepoon: FindTablespoons(carbohydrate, carbsMin, carbsMax),
       });
       setProteinTablespoon({
         protein,
         approxProtein: 0,
+        equivalentTablespoon: EquivalentTablespoon(protein),
         proteinTablespoon: FindTablespoons(protein, proteinMin, proteinMax),
       });
       setSodiumTablespoon({
         sodium,
         approxSodium: 0,
+        equivalentTablespoon: EquivalentTablespoon(sodium),
         sodiumTablespoon: FindTablespoons(sodium, sodiumMin, sodiumMax),
       });
     }
@@ -123,16 +133,19 @@ function Feedback() {
       setCarbsTablespoon({
         carbs: carbohydrate,
         approxCarbs: 0,
+        equivalentTablespoon: EquivalentTablespoon(carbohydrate),
         carbsTablepoon: FindTablespoons(carbohydrate, carbsMin, carbsMax),
       });
       setProteinTablespoon({
         protein,
         approxProtein: 0,
+        equivalentTablespoon: EquivalentTablespoon(protein),
         proteinTablespoon: FindTablespoons(protein, proteinMin, proteinMax),
       });
       setSodiumTablespoon({
         sodium,
         approxSodium: 0,
+        equivalentTablespoon: EquivalentTablespoon(sodium),
         sodiumTablespoon: FindTablespoons(sodium, sodiumMin, sodiumMax),
       });
     }
@@ -382,7 +395,47 @@ function Feedback() {
                 </ScrollView>
               </View>
             </View>
-
+            <View style={styles.legendContainer}>
+              <View style={styles.textLegendContainer}>
+                <Image
+                  source={require("@/assets/images/spoon.png")} // Change this to your desired image
+                  style={{
+                    width: 30,
+                    height: 30,
+                  }}
+                  resizeMode="contain"
+                />
+                <Text style={styles.textLegend}>
+                  = 15 grams
+                </Text>
+              </View>
+            </View>
+            {/* carbs table */}
+            <View style={styles.sugarContainer}>
+              <View style={styles.textContainer}>
+                <Text style={styles.textHeader}>
+                  Carbs: {carbsTablespoon.carbs} g
+                </Text>
+                <Text style={styles.textSubHeader}>Approx carbs: 0 grams</Text>
+                <Text style={styles.textSubHeader}>
+                  Equivalent to {carbsTablespoon.equivalentTablespoon}
+                </Text>
+              </View>
+              <SpoonImages spoonDisplay={carbsTablespoon.carbsTablepoon} />
+            </View>
+            {/* sodium table */}
+            <View style={styles.sugarContainer}>
+              <View style={styles.textContainer}>
+                <Text style={styles.textHeader}>
+                  Sodium: {sodiumTablespoon.sodiumTablespoon} g
+                </Text>
+                <Text style={styles.textSubHeader}>Approx Sodium: 0 grams</Text>
+                <Text style={styles.textSubHeader}>
+                  Equivalent to {sodiumTablespoon.equivalentTablespoon}
+                </Text>
+              </View>
+              <SpoonImages spoonDisplay={sodiumTablespoon.sodiumTablespoon} />
+            </View>
             {/* protein table */}
             <View style={styles.sugarContainer}>
               <View style={styles.textContainer}>
@@ -393,36 +446,10 @@ function Feedback() {
                   Approx Protein: 0 grams
                 </Text>
                 <Text style={styles.textSubHeader}>
-                  Equivalent to: 0 tablespoons
+                  Equivalent to {proteinTablespoon.equivalentTablespoon}
                 </Text>
               </View>
               <SpoonImages spoonDisplay={proteinTablespoon.proteinTablespoon} />
-            </View>
-            {/* sodium table */}
-            <View style={styles.sugarContainer}>
-              <View style={styles.textContainer}>
-                <Text style={styles.textHeader}>
-                  Sodium: {sodiumTablespoon.sodiumTablespoon} g
-                </Text>
-                <Text style={styles.textSubHeader}>Approx Sodium: 0 grams</Text>
-                <Text style={styles.textSubHeader}>
-                  Equivalent to: 0 tablespoons
-                </Text>
-              </View>
-              <SpoonImages spoonDisplay={sodiumTablespoon.sodiumTablespoon} />
-            </View>
-            {/* carbs table */}
-            <View style={styles.sugarContainer}>
-              <View style={styles.textContainer}>
-                <Text style={styles.textHeader}>
-                  Carbs: {carbsTablespoon.carbs} g
-                </Text>
-                <Text style={styles.textSubHeader}>Approx carbs: 0 grams</Text>
-                <Text style={styles.textSubHeader}>
-                  Equivalent to: 0 tablespoons
-                </Text>
-              </View>
-              <SpoonImages spoonDisplay={carbsTablespoon.carbsTablepoon} />
             </View>
             <View style={styles.FeedbackContainer}>
               <ScrollView
@@ -468,6 +495,30 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     paddingRight: 5,
     backgroundColor: "white",
+  },
+  legendContainer: {
+    flexDirection: "row",
+    width: SCREEN_WIDTH * 0.9,
+    height: 40,
+    alignItems: "center", // Center the text vertically
+    justifyContent: "center",
+    backgroundColor: "white", // Match the container background color
+    // Use platform-specific styling for consistent shadows
+    ...Platform.select({
+      ios: {
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 6,
+      },
+      android: {
+        elevation: 4,
+      },
+    }),
+    borderRadius: 10,
+    paddingVertical: 10,
+    paddingHorizontal: 15, // Add some horizontal padding
+    marginBottom: 15, // Add some margin between items
   },
   sugarContainer: {
     flexDirection: "row",
@@ -523,6 +574,22 @@ const styles = StyleSheet.create({
     color: "#4D4444",
     paddingBottom: 1,
     paddingLeft: -5,
+  },
+  textLegend: {
+    fontSize: 12,
+    fontWeight: "bold",
+    color: "#4D4444",
+    paddingBottom: 1,
+    paddingLeft: -5,
+  },
+  textLegendContainer: {
+    flexDirection: "row",
+    paddingHorizontal: 5,
+    flex: 1, // Take available space
+    backgroundColor: "white",
+    alignItems: "center",
+    justifyContent: "center",
+
   },
   textContainer: {
     flex: 1, // Take available space
