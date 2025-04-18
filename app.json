@@ -12,11 +12,13 @@
       "supportsTablet": true
     },
     "android": {
+      "permissions": ["INTERNET", "READ_EXTERNAL_STORAGE"],
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "package": "com.jamescarillo.nutrivision"
+      "package": "com.jamescarillo.nutrivision",
+      // Removed invalid networkSecurityConfig property
     },
     "web": {
       "bundler": "metro",
