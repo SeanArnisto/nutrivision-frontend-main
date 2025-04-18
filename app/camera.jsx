@@ -95,67 +95,85 @@ export default function Camera() {
   const handleSubmitPhoto = async (photos) => {
     console.log("Button clicked, starting image submission...");
     setSubmit(true);
-    setTimeout(() => setSubmit(false), 5000);
-    setLoading(true); // Set loading state
-    const fruitsUrl = "https://leidanielaguila-nutrivision.hf.space/detect"; // object detection
-    const labelsUrl =
-      "https://nutrivision-backend-textrecog-77tx.onrender.com/extract/"; // nutritional label
-
+    setTimeout(() => setSubmit(false), 2000);
+    setLoading(true);
+    
+    const fruitsUrl = "https://leidanielaguila-nutrivision.hf.space/detect";
+    const labelsUrl = "https://nutrivision-backend-textrecog-77tx.onrender.com/extract/";
+  
     if (!photos || photos.length === 0) {
       console.log("No photos provided for submission.");
+      setLoading(false);
       return;
     }
-
-    // Create a new FormData object
+  
+    // Log the photos for debugging
+    console.log("Photos to submit:", photos.map(p => ({uri: p.uri})));
+    
     const formData = new FormData();
-
+  
     for (let i = 0; i < photos.length; i++) {
       const photo = photos[i];
-      const uriParts = photo.uri.split(".");
-      const fileType = uriParts[uriParts.length - 1];
-
-      // Properly append file to FormData
+      
+      // Handle URI format differences between platforms
+      const uri = Platform.OS === 'android' ? photo.uri : photo.uri.replace('file://', '');
+      
+      // More reliable way to determine file type
+      let fileType = 'jpeg'; // Default to jpeg
+      if (photo.uri) {
+        const uriParts = photo.uri.split('.');
+        if (uriParts.length > 1) {
+          fileType = uriParts[uriParts.length - 1].toLowerCase();
+        }
+      }
+      
+      // Properly format MIME type
+      const mimeType = `image/${fileType === 'jpg' ? 'jpeg' : fileType}`;
+      
+      console.log(`Adding file ${i} with type ${mimeType} and URI: ${uri}`);
+      
       formData.append("files", {
-        uri: photo.uri,
+        uri: uri,
         name: `photo_${i}.${fileType}`,
-        type: `image/${fileType}`,
+        type: mimeType,
       });
     }
-
-    console.log("FormData constructed with", photos.length, "files.");
-    let urlToSend = "";
-
-    if (isLabelMode) {
-      urlToSend = labelsUrl;
-    } else {
-      urlToSend = fruitsUrl;
-    }
-
+  
+    const urlToSend = isLabelMode ? labelsUrl : fruitsUrl;
+    console.log(`Sending to URL: ${urlToSend}`);
+  
     try {
-      console.log("Sending request to backend endpoint...");
-
-      // Let axios set the Content-Type header automatically with the boundary
+      // Add timeout and more explicit headers
       const response = await axios.post(urlToSend, formData, {
-        // Don't set Content-Type header at all, let axios handle it
         headers: {
           Accept: "application/json",
+          // Let axios set Content-Type for multipart/form-data
         },
+        timeout: 30000, // 30 seconds timeout
       });
+      
       console.log("✅ Response from server:", response.data);
-      //setExtractedData(response.data);
-      setLoading(false); // Turn off loading when response is received
+      setLoading(false);
       navigation.navigate("nutrient-page", { data: response.data, nutritionData: nutritionData });
       return response.data;
     } catch (err) {
-      console.error("❌ Axios upload error:", err);
+      setLoading(false);
+      console.error("❌ Axios upload error:", err.message);
+      
       if (err.response) {
         console.error("Error details:", err.response.data);
         console.error("Status code:", err.response.status);
+      } else if (err.request) {
+        console.error("No response received, request details:", Object.keys(err.request));
+      } else {
+        console.error("Error setting up request:", err.message);
       }
+      
+      // Consider showing an error to the user
+      Alert.alert("Upload Failed", "Could not upload image. Please try again.");
       throw err;
     }
   };
-
   const navigation = useNavigation();
   // Always use the back camera. No toggle.
   const facing = "back";

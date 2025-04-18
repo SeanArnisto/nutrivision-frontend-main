@@ -18,7 +18,6 @@
         "backgroundColor": "#ffffff"
       },
       "package": "com.jamescarillo.nutrivision",
-      // Removed invalid networkSecurityConfig property
     },
     "web": {
       "bundler": "metro",
