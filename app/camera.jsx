@@ -95,82 +95,78 @@ export default function Camera() {
   const handleSubmitPhoto = async (photos) => {
     console.log("Button clicked, starting image submission...");
     setSubmit(true);
-    setTimeout(() => setSubmit(false), 2000);
-    setLoading(true);
-    
-    const fruitsUrl = "https://leidanielaguila-nutrivision.hf.space/detect";
-    const labelsUrl = "https://nutrivision-backend-textrecog-77tx.onrender.com/extract/";
-  
+    setTimeout(() => setSubmit(false), 5000);
+    setLoading(true); // Set loading state
+
+    const fruitsUrl = "https://leidanielaguila-nutrivision.hf.space/detect"; // object detection
+    const labelsUrl =
+      "https://nutrivision-backend-textrecog-77tx.onrender.com/extract/"; // nutritional label
+
     if (!photos || photos.length === 0) {
       console.log("No photos provided for submission.");
       setLoading(false);
       return;
     }
-  
-    // Log the photos for debugging
-    console.log("Photos to submit:", photos.map(p => ({uri: p.uri})));
-    
+
+    // Create a new FormData object
     const formData = new FormData();
-  
+
     for (let i = 0; i < photos.length; i++) {
       const photo = photos[i];
-      
-      // Handle URI format differences between platforms
-      const uri = Platform.OS === 'android' ? photo.uri : photo.uri.replace('file://', '');
-      
-      // More reliable way to determine file type
-      let fileType = 'jpeg'; // Default to jpeg
-      if (photo.uri) {
-        const uriParts = photo.uri.split('.');
-        if (uriParts.length > 1) {
-          fileType = uriParts[uriParts.length - 1].toLowerCase();
-        }
-      }
-      
-      // Properly format MIME type
-      const mimeType = `image/${fileType === 'jpg' ? 'jpeg' : fileType}`;
-      
-      console.log(`Adding file ${i} with type ${mimeType} and URI: ${uri}`);
-      
+      const uriParts = photo.uri.split(".");
+      const fileType = uriParts[uriParts.length - 1];
+
+      // Platform-specific URI handling
+      const uri =
+        Platform.OS === "android"
+          ? photo.uri
+          : photo.uri.replace("file://", "");
+
+      // Properly append file to FormData
       formData.append("files", {
         uri: uri,
         name: `photo_${i}.${fileType}`,
-        type: mimeType,
+        type: `image/${fileType}`,
       });
     }
-  
-    const urlToSend = isLabelMode ? labelsUrl : fruitsUrl;
-    console.log(`Sending to URL: ${urlToSend}`);
-  
+
+    let urlToSend = isLabelMode ? labelsUrl : fruitsUrl;
+
     try {
-      // Add timeout and more explicit headers
-      const response = await axios.post(urlToSend, formData, {
+      console.log("Sending request to backend endpoint using fetch...");
+
+      const response = await fetch(urlToSend, {
+        method: "POST",
+        body: formData,
         headers: {
           Accept: "application/json",
-          // Let axios set Content-Type for multipart/form-data
         },
-        timeout: 30000, // 30 seconds timeout
       });
-      
-      console.log("✅ Response from server:", response.data);
-      setLoading(false);
-      navigation.navigate("nutrient-page", { data: response.data, nutritionData: nutritionData });
-      return response.data;
+
+      if (!response.ok) {
+        throw new Error(`Server responded with status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      console.log("✅ Response from server:", data);
+
+      setLoading(false); // Turn off loading when response is received
+      navigation.navigate("nutrient-page", {
+        data: data,
+        nutritionData: nutritionData,
+      });
+      return data;
     } catch (err) {
       setLoading(false);
-      console.error("❌ Axios upload error:", err.message);
-      
-      if (err.response) {
-        console.error("Error details:", err.response.data);
-        console.error("Status code:", err.response.status);
-      } else if (err.request) {
-        console.error("No response received, request details:", Object.keys(err.request));
-      } else {
-        console.error("Error setting up request:", err.message);
-      }
-      
-      // Consider showing an error to the user
-      Alert.alert("Upload Failed", "Could not upload image. Please try again.");
+      console.error("❌ Fetch upload error:", err.message);
+
+      // Show error to user
+      Alert.alert(
+        "Upload Failed",
+        "Could not upload image. Please try again later.",
+        [{ text: "OK" }]
+      );
+
       throw err;
     }
   };
@@ -492,11 +488,11 @@ export default function Camera() {
   }
 
   if (loading) {
-    return(
+    return (
       <View style={styles.container}>
         <Loading />
       </View>
-    )
+    );
   }
 
   // Update the return statement layout
