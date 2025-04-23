@@ -87,9 +87,10 @@ export default function Camera() {
   // Always vertical (portrait) orientation. No toggle.
   const boxOrientation = "vertical";
 
-  const setCarbs = useNutrientsStore((state) => state.carbs);
-  const setProtein = useNutrientsStore((state) => state.protein);
-  const setSodium = useNutrientsStore((state) => state.sodium);
+  const setCarbs = useNutrientsStore((state) => state.setCarbs);
+  const setProtein = useNutrientsStore((state) => state.setProtein);
+  const setSodium = useNutrientsStore((state) => state.setSodium);
+  
 
   const { nutritionData } = route.params || {}; // Retrieve the passed data
   console.log("Nutrition data from route params:", nutritionData);
@@ -99,14 +100,12 @@ export default function Camera() {
     setSubmit(true);
     setTimeout(() => setSubmit(false), 5000);
     setLoading(true); // Set loading state
-
     const fruitsUrl = "https://leidanielaguila-nutrivision.hf.space/detect"; // object detection
     const labelsUrl =
       "https://nutrivision-backend-textrecog-77tx.onrender.com/extract/"; // nutritional label
 
     if (!photos || photos.length === 0) {
       console.log("No photos provided for submission.");
-      setLoading(false);
       return;
     }
 
@@ -118,73 +117,62 @@ export default function Camera() {
       const uriParts = photo.uri.split(".");
       const fileType = uriParts[uriParts.length - 1];
 
-      // Platform-specific URI handling
-      const uri =
-        Platform.OS === "android"
-          ? photo.uri
-          : photo.uri.replace("file://", "");
-
       // Properly append file to FormData
       formData.append("files", {
-        uri: uri,
+        uri: photo.uri,
         name: `photo_${i}.${fileType}`,
         type: `image/${fileType}`,
       });
     }
 
-    let urlToSend = isLabelMode ? labelsUrl : fruitsUrl;
+    console.log("FormData constructed with", photos.length, "files.");
+    let urlToSend = "";
+
+    if (isLabelMode) {
+      urlToSend = labelsUrl;
+    } else {
+      urlToSend = fruitsUrl;
+    }
 
     try {
-      console.log("Sending request to backend endpoint using fetch...");
-
-      const response = await fetch(urlToSend, {
-        method: "POST",
-        body: formData,
+      console.log("Sending request to backend endpoint...");
+      const response = await axios.post(urlToSend, formData, {
         headers: {
           Accept: "application/json",
         },
       });
-
-      if (!response.ok) {
-        throw new Error(`Server responded with status: ${response.status}`);
-      }
-
-      const data = await response.json();
-
-      if (data?.combined) {
-        console.log("data from nutrilabel");
-        setCarbs(data.combined.carbs_total);
-        setProtein(data.combined.protein_total);
-        setSodium(data.combined, sodium_total);
-      }
-
-      if (data?.fruits) {
-        console.log("data from fruits");
-        setCarbs(data.fruits.total_carbs);
-        setProtein(data.fruits.total_protein);
-        setSodium(data.fruits.total_sodium);
+      console.log("✅ Response from server:", response.data);
+      
+      if (isLabelMode) {
+        // nutritional label url used
+        const {carbs_total, protein_total, sodium_total} = response.data.combined;
+        setCarbs(carbs_total);
+        setProtein(protein_total);
+        setSodium(sodium_total);
+      } else {
+        // fruits url was used
+        const {total_carbs, total_protein, total_sodium} = response.data.fruits;
+        setCarbs(total_carbs);
+        setProtein(total_protein);
+        setSodium(total_sodium);
       }
 
       setLoading(false); // Turn off loading when response is received
       navigation.navigate("nutrient-page", {
-        data: data,
+        data: response.data,
         nutritionData: nutritionData,
       });
-      return data;
+      return response.data;
     } catch (err) {
-      setLoading(false);
-      console.error("❌ Fetch upload error:", err.message);
-
-      // Show error to user
-      Alert.alert(
-        "Upload Failed",
-        "Could not upload image. Please try again later.",
-        [{ text: "OK" }]
-      );
-
+      console.error("❌ Axios upload error:", err);
+      if (err.response) {
+        console.error("Error details:", err.response.data);
+        console.error("Status code:", err.response.status);
+      }
       throw err;
     }
   };
+
   const navigation = useNavigation();
   // Always use the back camera. No toggle.
   const facing = "back";

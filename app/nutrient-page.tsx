@@ -40,6 +40,10 @@ type HomeScreenNavigationProp = StackNavigationProp<
 export default function UserNutrientPage() {
   const route = useRoute();
 
+  const carbohydrate = useNutrientsStore((state) => state.carbs);
+  const protein = useNutrientsStore((state) => state.protein);
+  const sodium = useNutrientsStore((state) => state.sodium);
+
   //const { data } = route.params as { data: any };
   // const { nutritionData } = route.params as { nutritionData: any };
   // console.log("working:", nutritionData); // Use this data in your UI
@@ -60,44 +64,27 @@ export default function UserNutrientPage() {
   const navigation = useNavigation() as HomeScreenNavigationProp;
 
   useEffect(() => {
-    const parseGrams = (value: string): number => {
-      if (!value) {
-        return 0; // fix for later add validation to tell the user that the value should be manually input
-      }
-      if (value.toLowerCase().includes("mg")) {
-        return parseFloat(value) / 1000;
-      } else {
-        return parseFloat(value);
-      }
-    };
-
-    const carbohydrate = useNutrientsStore((state) => state.carbs);
-    const protein = useNutrientsStore((state) => state.carbs);
-    const sodium = useNutrientsStore((state) => state.carbs);
-    const total = (carbohydrate + protein + sodium).toFixed(2);
-    const pieCarb = parseFloat(
-      ((carbohydrate / parseFloat(total)) * 100).toFixed(2)
-    );
-    const pieProtein = parseFloat(
-      ((protein / parseFloat(total)) * 100).toFixed(2)
-    );
-    const pieSodium = parseFloat(
-      ((sodium / parseFloat(total)) * 100).toFixed(2)
-    );
-    setNutrients({ carbohydrate, protein, sodium }); // editable data
+    const total = carbohydrate + protein + sodium;
+  
+    if (total === 0) return; // Avoid division by 0
+  
+    const pieCarb = parseFloat(((carbohydrate / total) * 100).toFixed(2));
+    const pieProtein = parseFloat(((protein / total) * 100).toFixed(2));
+    const pieSodium = parseFloat(((sodium / total) * 100).toFixed(2));
+  
+    setNutrients({ carbohydrate, protein, sodium });
     setNutritionData({
-      // pie chart representation
       userIntake: {
         breakdown: {
           carbohydrate: pieCarb,
           protein: pieProtein,
           sodium: pieSodium,
         },
-        total: parseFloat(total),
+        total: parseFloat(total.toFixed(2)),
       },
     });
-  });
-
+  }, [carbohydrate, protein, sodium]); // ✅ Add dependencies here
+  
   // State for nutrient inputs (now as numbers without units)
   const [nutrients, setNutrients] = useState({
     carbohydrate: 88,
