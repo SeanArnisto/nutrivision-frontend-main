@@ -12,7 +12,7 @@ type store = {
     setSodium: (nutrients: Nutrients['sodium']) => void;
 }
 
-const useNutrientsStore = create<Nutrients & store>((set) => ({
+export const useNutrientsStore = create<Nutrients & store>((set) => ({
     carbs: 0,
     protein: 0,
     sodium: 0,
@@ -20,3 +20,4 @@ const useNutrientsStore = create<Nutrients & store>((set) => ({
     setProtein: (protein) => set(() => ({protein: protein})),
     setSodium: (sodium) => set(() => ({ sodium })),
 }));
+

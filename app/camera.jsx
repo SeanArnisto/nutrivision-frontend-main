@@ -24,9 +24,7 @@ import { CameraView, useCameraPermissions } from "expo-camera";
 import * as MediaLibrary from "expo-media-library";
 import * as ImageManipulator from "expo-image-manipulator";
 import { useNavigation } from "@react-navigation/native";
-import { StackNavigationProp } from "@react-navigation/stack";
-import { useIsFocused } from "@react-navigation/native";
-import { useApi } from "../hooks/ApiContext";
+import { useNutrientsStore } from "@/hooks/store";
 import axios from "axios";
 import PhotoPreviewSection from "@/components/PhotoPreviewSection";
 import { navigate } from "expo-router/build/global-state/routing";
@@ -89,6 +87,10 @@ export default function Camera() {
   // Always vertical (portrait) orientation. No toggle.
   const boxOrientation = "vertical";
 
+  const setCarbs = useNutrientsStore((state) => state.carbs);
+  const setProtein = useNutrientsStore((state) => state.protein);
+  const setSodium = useNutrientsStore((state) => state.sodium);
+
   const { nutritionData } = route.params || {}; // Retrieve the passed data
   console.log("Nutrition data from route params:", nutritionData);
 
@@ -148,7 +150,20 @@ export default function Camera() {
       }
 
       const data = await response.json();
-      console.log("✅ Response from server:", data);
+
+      if (data?.combined) {
+        console.log("data from nutrilabel");
+        setCarbs(data.combined.carbs_total);
+        setProtein(data.combined.protein_total);
+        setSodium(data.combined, sodium_total);
+      }
+
+      if (data?.fruits) {
+        console.log("data from fruits");
+        setCarbs(data.fruits.total_carbs);
+        setProtein(data.fruits.total_protein);
+        setSodium(data.fruits.total_sodium);
+      }
 
       setLoading(false); // Turn off loading when response is received
       navigation.navigate("nutrient-page", {
@@ -176,10 +191,10 @@ export default function Camera() {
 
   const cameraRef = useRef(null);
 
-  useEffect(() => {
-    console.log("Screen MOUNTED");
-    return () => console.log("Screen UNMOUNTED");
-  }, []);
+  // useEffect(() => {
+  //   console.log("Screen MOUNTED");
+  //   return () => console.log("Screen UNMOUNTED");
+  // }, []);
 
   // Add this function inside the Camera component before the useEffect
   const loadExistingPhotos = async () => {
