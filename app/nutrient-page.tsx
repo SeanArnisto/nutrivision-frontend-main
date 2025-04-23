@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useCallback } from "react";
 import { useFocusEffect, useIsFocused } from "@react-navigation/native";
+import { useNutrientsStore } from "@/hooks/store";
 import {
   View,
   Image,
@@ -39,10 +40,10 @@ type HomeScreenNavigationProp = StackNavigationProp<
 export default function UserNutrientPage() {
   const route = useRoute();
 
-  const { data } = route.params as { data: any };
-  const { nutritionData } = route.params as { nutritionData: any };
-  console.log("working:", nutritionData); // Use this data in your UI
-  console.log("Data:", data); // Use this data in your UI
+  //const { data } = route.params as { data: any };
+  // const { nutritionData } = route.params as { nutritionData: any };
+  // console.log("working:", nutritionData); // Use this data in your UI
+  // console.log("Data:", data); // Use this data in your UI
 
   const [fontsLoaded] = useFonts({
     "SpaceMono-Regular": require("@/assets/fonts/SpaceMono-Regular.ttf"),
@@ -59,77 +60,43 @@ export default function UserNutrientPage() {
   const navigation = useNavigation() as HomeScreenNavigationProp;
 
   useEffect(() => {
-    if (data?.combined) {
-      const parseGrams = (value: string): number => {
-        if (!value) {
-          return 0; // fix for later add validation to tell the user that the value should be manually input
-        }
-        if (value.toLowerCase().includes("mg")) {
-          return parseFloat(value) / 1000;
-        } else {
-          return parseFloat(value);
-        }
-      };
+    const parseGrams = (value: string): number => {
+      if (!value) {
+        return 0; // fix for later add validation to tell the user that the value should be manually input
+      }
+      if (value.toLowerCase().includes("mg")) {
+        return parseFloat(value) / 1000;
+      } else {
+        return parseFloat(value);
+      }
+    };
 
-      const carbohydrate = parseGrams(data.combined.carbs_total);
-      const protein = parseGrams(data.combined.protein_total);
-      const sodium = parseGrams(data.combined.sodium_total);
-      const total = (carbohydrate + protein + sodium).toFixed(2);
-      const pieCarb = parseFloat(
-        ((carbohydrate / parseFloat(total)) * 100).toFixed(2)
-      );
-      const pieProtein = parseFloat(
-        ((protein / parseFloat(total)) * 100).toFixed(2)
-      );
-      const pieSodium = parseFloat(
-        ((sodium / parseFloat(total)) * 100).toFixed(2)
-      );
-      setNutrients({ carbohydrate, protein, sodium }); // editable data
-      setNutritionData({
-        // pie chart representation
-        userIntake: {
-          breakdown: {
-            carbohydrate: pieCarb,
-            protein: pieProtein,
-            sodium: pieSodium,
-          },
-          total: parseFloat(total),
+    const carbohydrate = useNutrientsStore((state) => state.carbs);
+    const protein = useNutrientsStore((state) => state.carbs);
+    const sodium = useNutrientsStore((state) => state.carbs);
+    const total = (carbohydrate + protein + sodium).toFixed(2);
+    const pieCarb = parseFloat(
+      ((carbohydrate / parseFloat(total)) * 100).toFixed(2)
+    );
+    const pieProtein = parseFloat(
+      ((protein / parseFloat(total)) * 100).toFixed(2)
+    );
+    const pieSodium = parseFloat(
+      ((sodium / parseFloat(total)) * 100).toFixed(2)
+    );
+    setNutrients({ carbohydrate, protein, sodium }); // editable data
+    setNutritionData({
+      // pie chart representation
+      userIntake: {
+        breakdown: {
+          carbohydrate: pieCarb,
+          protein: pieProtein,
+          sodium: pieSodium,
         },
-      });
-    }
-    if (data?.fruits) {
-      const carbohydrate = data.fruits.total_carbs;
-      const protein = data.fruits.total_protein;
-      const sodium = data.fruits.total_sodium;
-
-      const total = (carbohydrate + protein + sodium).toFixed(2);
-      const pieCarb = parseFloat(
-        ((data.fruits.total_carbs / parseFloat(total)) * 100).toFixed(2)
-      );
-      const pieProtein = parseFloat(
-        ((data.fruits.total_protein / parseFloat(total)) * 100).toFixed(2)
-      );
-      const pieSodium = parseFloat(
-        ((data.fruits.total_sodium / parseFloat(total)) * 100).toFixed(2)
-      );
-      setNutrients({ carbohydrate, protein, sodium }); // editable data
-
-      setNutritionData({
-        // representation data
-        userIntake: {
-          breakdown: {
-            carbohydrate: pieCarb,
-            protein: pieProtein,
-            sodium: pieSodium,
-          },
-          total: parseFloat(total),
-        },
-      });
-    }
-    if (data?.message) {
-      console.log("Nothing received from object detection.");
-    }
-  }, [data]);
+        total: parseFloat(total),
+      },
+    });
+  });
 
   // State for nutrient inputs (now as numbers without units)
   const [nutrients, setNutrients] = useState({
@@ -307,7 +274,7 @@ export default function UserNutrientPage() {
   };
 
   const handleCheck = () => {
-    navigation.navigate("page-6", { data: data, nutritionData: nutritionData });
+    navigation.navigate("page-6");
   };
 
   if (!fontsLoaded) {
