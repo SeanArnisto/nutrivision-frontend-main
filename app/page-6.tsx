@@ -106,7 +106,7 @@ export default function Page6() {
     const sodiumMin = minSodium; // 1500
     const sodiumMax = maxSodium;
 
-    const sodiumAvg = Math.round((sodiumMin + sodiumMax) / 2) / 1000;
+    const sodiumAvg = Math.round((sodiumMin + sodiumMax) / 2);
 
     setNutritionData((prev) => ({
       ...prev,
@@ -135,7 +135,7 @@ export default function Page6() {
         },
         sodium: {
           ...prev.values.sodium,
-          avg: parseFloat(sodiumAvg.toFixed(1)),
+          avg: parseFloat((sodiumAvg/1000).toFixed(1)),
         },
       },
     }));

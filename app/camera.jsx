@@ -143,11 +143,12 @@ export default function Camera() {
 
       if (isLabelMode) {
         // nutritional label url used
+        
         const { carbs_total, protein_total, sodium_total } =
           response.data.combined;
-        setCarbs(carbs_total);
-        setProtein(protein_total);
-        setSodium(sodium_total / 1000);
+        setCarbs(parseFloat(carbs_total));
+        setProtein(parseFloat(protein_total));
+        setSodium(parseFloat(sodium_total) / 1000);
       } else {
         // fruits url was used
         const { total_carbs, total_protein, total_sodium } =

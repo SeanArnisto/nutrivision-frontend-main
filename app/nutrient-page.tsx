@@ -59,15 +59,18 @@ export default function UserNutrientPage() {
   const navigation = useNavigation() as HomeScreenNavigationProp;
 
   useEffect(() => {
-    const total = carbohydrate + protein + sodium;
+    const carb = Number(carbohydrate) || 0;
+    const prot = Number(protein) || 0;
+    const sod = Number(sodium) || 0;
   
-    if (total === 0) return; // Avoid division by 0
+    const total = carb + prot + sod;
+    if (total === 0) return;
   
-    const pieCarb = parseFloat(((carbohydrate / total) * 100).toFixed(2));
-    const pieProtein = parseFloat(((protein / total) * 100).toFixed(2));
-    const pieSodium = parseFloat(((sodium / total) * 100).toFixed(2));
+    const pieCarb = parseFloat(((carb / total) * 100).toFixed(2));
+    const pieProtein = parseFloat(((prot / total) * 100).toFixed(2));
+    const pieSodium = parseFloat(((sod / total) * 100).toFixed(2));
   
-    setNutrients({ carbohydrate, protein, sodium });
+    setNutrients({ carbohydrate: carb, protein: prot, sodium: sod });
     setNutritionData({
       userIntake: {
         breakdown: {
@@ -78,7 +81,7 @@ export default function UserNutrientPage() {
         total: parseFloat(total.toFixed(2)),
       },
     });
-  }, [carbohydrate, protein, sodium]); // ✅ Add dependencies here
+  }, [carbohydrate, protein, sodium]);
   
   // State for nutrient inputs (now as numbers without units)
   const [nutrients, setNutrients] = useState({
@@ -106,27 +109,6 @@ export default function UserNutrientPage() {
       total: 93.33,
     },
   });
-
-  const textUserIntakeCarbohydrate = toPercentageText(
-    nutritionData1.userIntake.breakdown.carbohydrate
-  );
-  const textUserIntakeSodium = toPercentageText(
-    nutritionData1.userIntake.breakdown.sodium
-  );
-  const textUserIntake = toPercentageText(
-    nutritionData1.userIntake.breakdown.protein
-  );
-
-  const totalUserIntake = formatValue(nutritionData1.userIntake.total);
-
-  const donutSeries = [
-    { value: nutritionData1.userIntake.breakdown.protein, color: "#000000" },
-    { value: nutritionData1.userIntake.breakdown.sodium, color: "#c0b4b4" },
-    {
-      value: nutritionData1.userIntake.breakdown.carbohydrate,
-      color: "#7ca844",
-    },
-  ];
 
   // Toggle edit mode
   const toggleEdit = (key: "sodium" | "protein" | "carbohydrate") => {
@@ -173,6 +155,9 @@ export default function UserNutrientPage() {
       },
     });
   };
+
+  console.log("carbs:", carbohydrate, "protein:", protein, "sodium:", sodium);
+
 
   // Request media library permissions on mount
   useEffect(() => {
