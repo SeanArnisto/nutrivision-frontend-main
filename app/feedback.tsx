@@ -250,7 +250,7 @@ function Feedback() {
   };
 
   const handleCheck = () => {
-    navigation.navigate("page-2");
+    navigation.pop(5);
   };
 
   const testRequest = async () => {
