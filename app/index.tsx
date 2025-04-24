@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState } from "react";
 import {
   Image,
   StyleSheet,
@@ -13,24 +13,37 @@ import {
   KeyboardAvoidingView,
   Platform,
   Text,
-} from 'react-native';
-import { useNavigation } from '@react-navigation/native';
-import { StackNavigationProp } from '@react-navigation/stack';
-import { ThemedView } from '@/components/ThemedView';
-import { ThemedText } from '@/components/ThemedText';
-import Carousel from 'react-native-reanimated-carousel';
-import { RootStackParamList } from '@/types/types'; // adjust path as needed
-import { SafeAreaView } from 'react-native-safe-area-context';
-import axios from 'axios'; // Add this import
+} from "react-native";
+import { useNavigation } from "@react-navigation/native";
+import { StackNavigationProp } from "@react-navigation/stack";
+import { ThemedView } from "@/components/ThemedView";
+import { ThemedText } from "@/components/ThemedText";
+import Carousel from "react-native-reanimated-carousel";
+import { RootStackParamList } from "@/types/types"; // adjust path as needed
+import { SafeAreaView } from "react-native-safe-area-context";
+import axios from "axios"; // Add this import
+import { useRecommStore } from "@/hooks/store";
 
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
+const { width: SCREEN_WIDTH } = Dimensions.get("window");
 
-type HomeScreenNavigationProp = StackNavigationProp<RootStackParamList, 'index'>;
+type HomeScreenNavigationProp = StackNavigationProp<
+  RootStackParamList,
+  "index"
+>;
 
 export default function HomeScreen() {
+  const minCarb = useRecommStore((state) => state.setRecomMinCarb);
+  const maxCarb = useRecommStore((state) => state.setRecomMaxCarb);
+
+  const minProtein = useRecommStore((state) => state.setRecomMinProtein);
+  const maxProtein = useRecommStore((state) => state.setRecomMaxProtein);
+
+  const minSodium = useRecommStore((state) => state.setRecomMinSodium);
+  const maxSodium = useRecommStore((state) => state.setRecomMaxSodium);
+
   // ======== AGE STATE ========
   const [age, setAge] = useState<number>(25);
-  const [inputValue, setInputValue] = useState<string>('25');
+  const [inputValue, setInputValue] = useState<string>("25");
   const [inputError, setInputError] = useState(false);
 
   const handleAgeChange = (text: string) => {
@@ -47,7 +60,7 @@ export default function HomeScreen() {
   };
 
   const handleIncrement = () => {
-    setAge(prev => {
+    setAge((prev) => {
       const newAge = prev + 1;
       setInputValue(newAge.toString());
       return newAge;
@@ -55,7 +68,7 @@ export default function HomeScreen() {
   };
 
   const handleDecrement = () => {
-    setAge(prev => {
+    setAge((prev) => {
       const newAge = Math.max(18, prev - 1);
       setInputValue(newAge.toString());
       return newAge;
@@ -63,14 +76,14 @@ export default function HomeScreen() {
   };
 
   // ======== WEIGHT STATE ========
-  const [weightValue, setWeightValue] = useState<string>('54.2');
+  const [weightValue, setWeightValue] = useState<string>("54.2");
   const [isKg, setIsKg] = useState(true); // true => kg, false => lb
-  const toggleWeightUnit = () => setIsKg(prev => !prev);
+  const toggleWeightUnit = () => setIsKg((prev) => !prev);
 
   // ======== HEIGHT STATE ========
   const [heightValue, setHeightValue] = useState<string>("5'7");
   const [isFt, setIsFt] = useState(true); // true => ft, false => cm
-  const toggleHeightUnit = () => setIsFt(prev => !prev);
+  const toggleHeightUnit = () => setIsFt((prev) => !prev);
 
   // ======== GENDER STATE (NEW) ========
   const [isMale, setIsMale] = useState(true); // true: Male, false: Female
@@ -81,25 +94,25 @@ export default function HomeScreen() {
   // ======== CAROUSEL DATA ========
   const carouselItems = [
     {
-      id: 'slide-1',
-      title: '',
+      id: "slide-1",
+      title: "",
       text: `DISCLAIMER: Any information provided is for educational purposes only and should not be considered medical or professional advice. Always consult a qualified professional for health-related decisions.`,
     },
     {
-      id: 'slide-2',
-      title: '',
+      id: "slide-2",
+      title: "",
       text: `To optimize your experience and provide personalized recommendations, we collect your age, weight, and height. This helps us tailor our services to better suit your needs and preferences.`,
     },
     {
-      id: 'slide-3',
-      title: '',
+      id: "slide-3",
+      title: "",
       text: `Measurements may not always be 100% accurate, and slight variations can occur based on different factors. We recommend using precise measuring tools and consulting experts for the most reliable data.`,
     },
   ];
 
   const [activeIndex, setActiveIndex] = useState(0);
 
-  const renderDetailBox = ({ item }: { item: typeof carouselItems[0] }) => {
+  const renderDetailBox = ({ item }: { item: (typeof carouselItems)[0] }) => {
     return (
       <View style={styles.carouselDetailBox}>
         <Text style={styles.carouselText}>{item.text}</Text>
@@ -114,29 +127,45 @@ export default function HomeScreen() {
   const fetchNutritionRange = async () => {
     try {
       // Convert weight to kg if the switch is toggled to lb
-      const weightInKg = isKg ? parseFloat(weightValue) : convertWeightToKg(parseFloat(weightValue));
+      const weightInKg = isKg
+        ? parseFloat(weightValue)
+        : convertWeightToKg(parseFloat(weightValue));
 
       // Convert height to cm if the switch is toggled to ft
-      const heightInCm = isFt ? convertHeightToCm(heightValue) : parseFloat(heightValue);
+      const heightInCm = isFt
+        ? convertHeightToCm(heightValue)
+        : parseFloat(heightValue);
 
-      const response = await axios.post('https://pel1-recommendation.hf.space/get-nutrition-range', {
-        height: heightInCm, // Send height in cm
-        weight: weightInKg, // Send weight in kg
-        age,
-      });
-      return response.data;
+      const response = await axios.post(
+        "https://pel1-recommendation.hf.space/get-nutrition-range",
+        {
+          height: heightInCm, // Send height in cm
+          weight: weightInKg, // Send weight in kg
+          age,
+        }
+      );
+      const { carbs, protein, sodium } = response.data.nutrition_range;
+      minCarb(carbs[0]);
+      maxCarb(carbs[1]);
+      minSodium(sodium[0]);
+      maxSodium(sodium[1]);
+      minProtein(protein[0]);
+      maxProtein(protein[1]);
     } catch (error) {
       if (axios.isAxiosError(error)) {
-        console.error('Error fetching nutrition range:', error.response?.data || error.message);
+        console.error(
+          "Error fetching nutrition range:",
+          error.response?.data || error.message
+        );
       } else {
-        console.error('Error fetching nutrition range:', error);
+        console.error("Error fetching nutrition range:", error);
       }
       return null;
     }
   };
   // Helper functions to convert units
   const convertHeightToCm = (height: string): number => {
-    const normalizedHeight = height.toLowerCase().replace(/\s+/g, ''); // Normalize the input
+    const normalizedHeight = height.toLowerCase().replace(/\s+/g, ""); // Normalize the input
     const match = normalizedHeight.match(/(\d+)[']?(\d+)?[\"ft]?/); // Match patterns like 5'7", 5ft7, etc.
     if (match) {
       const feet = parseInt(match[1], 10);
@@ -152,11 +181,9 @@ export default function HomeScreen() {
 
   // Modified handleCheck function
   const handleCheck = async () => {
-    const data = await fetchNutritionRange(); 
+    const data = await fetchNutritionRange();
     if (data) {
-      setNutritionData(data); // Store the API response
-      navigation.navigate('page-2', {nutritionData: data}); // Pass data to page-2
-      console.log('Nutrition data:', data); // Log the data for debugging
+      navigation.navigate("page-2"); // Pass data to page-2
     }
   };
 
@@ -164,24 +191,31 @@ export default function HomeScreen() {
     <SafeAreaView style={{ flex: 1 }}>
       <KeyboardAvoidingView
         style={{ flex: 1 }}
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? 20 : 0} // Adjust as needed
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        keyboardVerticalOffset={Platform.OS === "ios" ? 20 : 0} // Adjust as needed
       >
         <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
-          <ScrollView contentContainerStyle={{ flexGrow: 1, paddingBottom: 100 }} keyboardShouldPersistTaps="handled">
+          <ScrollView
+            contentContainerStyle={{ flexGrow: 1, paddingBottom: 100 }}
+            keyboardShouldPersistTaps="handled"
+          >
             {/* Background/Top Image */}
             <Image
-              source={require('@/assets/images/NutriVision.png')}
+              source={require("@/assets/images/NutriVision.png")}
               style={styles.image}
               accessibilityRole="image"
               accessibilityLabel="NutriVision logo"
             />
-            <ThemedView style={[styles.container, { backgroundColor: '#eff1f6' }]}>
+            <ThemedView
+              style={[styles.container, { backgroundColor: "#eff1f6" }]}
+            >
               {/* Logo kept from original */}
               {/* ===== NEW PROFILE BOX ===== */}
               <View style={styles.profileBox}>
                 <Text style={styles.profileBoxText}>
-                  User <ThemedText style={styles.profileText}>Profile</ThemedText> Details
+                  User{" "}
+                  <ThemedText style={styles.profileText}>Profile</ThemedText>{" "}
+                  Details
                 </Text>
               </View>
 
@@ -192,8 +226,8 @@ export default function HomeScreen() {
                   renderItem={renderDetailBox}
                   width={SCREEN_WIDTH - 20}
                   height={160}
-                  style={{ alignSelf: 'center', overflow: 'visible' }} 
-                  onSnapToItem={index => setActiveIndex(index)}
+                  style={{ alignSelf: "center", overflow: "visible" }}
+                  onSnapToItem={(index) => setActiveIndex(index)}
                 />
 
                 {/* Pagination Dots */}
@@ -201,7 +235,13 @@ export default function HomeScreen() {
                   {carouselItems.map((_, i) => (
                     <View
                       key={i}
-                      style={[styles.dot, { backgroundColor: i === activeIndex ? '#385802' : '#ccc' }]}
+                      style={[
+                        styles.dot,
+                        {
+                          backgroundColor:
+                            i === activeIndex ? "#385802" : "#ccc",
+                        },
+                      ]}
                     />
                   ))}
                 </View>
@@ -215,21 +255,28 @@ export default function HomeScreen() {
                   </View>
                   <View style={styles.bottomLeft}>
                     <ThemedText style={styles.containerSubtitle}>
-                      Age affects nutrient intake by changing metabolism, absorption, and dietary needs.
+                      Age affects nutrient intake by changing metabolism,
+                      absorption, and dietary needs.
                     </ThemedText>
                   </View>
                 </View>
-                  
+
                 {/* Right Column for Counter */}
                 <View style={styles.rightColumn}>
                   <View style={styles.formContainer}>
                     <View style={styles.counterWrapper}>
-                      <TouchableOpacity style={styles.counterButton} onPress={handleDecrement}>
-                        <Text style={styles.counterText}>{'<'}</Text>
+                      <TouchableOpacity
+                        style={styles.counterButton}
+                        onPress={handleDecrement}
+                      >
+                        <Text style={styles.counterText}>{"<"}</Text>
                       </TouchableOpacity>
 
                       <TextInput
-                        style={[styles.ageInput, inputError && styles.inputError]}
+                        style={[
+                          styles.ageInput,
+                          inputError && styles.inputError,
+                        ]}
                         keyboardType="numeric"
                         returnKeyType="done"
                         value={inputValue}
@@ -243,8 +290,11 @@ export default function HomeScreen() {
                         }}
                       />
 
-                      <TouchableOpacity style={styles.counterButton} onPress={handleIncrement}>
-                        <Text style={styles.counterText}>{'>'}</Text>
+                      <TouchableOpacity
+                        style={styles.counterButton}
+                        onPress={handleIncrement}
+                      >
+                        <Text style={styles.counterText}>{">"}</Text>
                       </TouchableOpacity>
                     </View>
 
@@ -265,7 +315,8 @@ export default function HomeScreen() {
                   </View>
                   <View style={styles.bottomLeft}>
                     <Text style={styles.containerSubtitle}>
-                      Gender influences nutrition through hormonal and physiological differences.
+                      Gender influences nutrition through hormonal and
+                      physiological differences.
                     </Text>
                   </View>
                 </View>
@@ -274,29 +325,34 @@ export default function HomeScreen() {
                 <View style={styles.rightColumn}>
                   <View style={styles.formContainer}>
                     <Switch
-                      trackColor={{ false: '#e0e0e0', true: '#e0e0e0' }}
-                      thumbColor={'#9AB106'}
-                      style={[styles.switch, { transform: [{ scaleX: 0.75 }, { scaleY: 0.75 }] }]}
+                      trackColor={{ false: "#e0e0e0", true: "#e0e0e0" }}
+                      thumbColor={"#9AB106"}
+                      style={[
+                        styles.switch,
+                        { transform: [{ scaleX: 0.75 }, { scaleY: 0.75 }] },
+                      ]}
                       value={isMale}
                       onValueChange={(value) => setIsMale(value)}
                     />
                     <Text style={{ fontSize: 14, marginTop: 8 }}>
-                      {isMale ? 'Male' : 'Female'}
+                      {isMale ? "Male" : "Female"}
                     </Text>
                   </View>
                 </View>
-
               </View>
 
               {/* =============== WEIGHT CONTAINER =============== */}
               <View style={styles.weightContainer}>
                 <View style={styles.leftColumn}>
                   <View style={styles.topLeft}>
-                    <ThemedText style={styles.containerTitle}>Weight</ThemedText>
+                    <ThemedText style={styles.containerTitle}>
+                      Weight
+                    </ThemedText>
                   </View>
                   <View style={styles.bottomLeft}>
                     <ThemedText style={styles.containerSubtitle}>
-                      Weight affects nutrient needs by influencing metabolism and absorption.
+                      Weight affects nutrient needs by influencing metabolism
+                      and absorption.
                     </ThemedText>
                   </View>
                 </View>
@@ -309,14 +365,14 @@ export default function HomeScreen() {
                       returnKeyType="done"
                       value={weightValue}
                       onChangeText={setWeightValue}
-                      placeholder={isKg ? 'e.g., 70' : 'e.g., 154'} // Placeholder changes based on the toggle
+                      placeholder={isKg ? "e.g., 70" : "e.g., 154"} // Placeholder changes based on the toggle
                     />
 
                     <View style={styles.switchRow}>
                       <ThemedText style={styles.switchLabel}>kg</ThemedText>
                       <Switch
-                        trackColor={{ false: '#e0e0e0', true: '#e0e0e0' }}
-                        thumbColor={'#9AB106'}
+                        trackColor={{ false: "#e0e0e0", true: "#e0e0e0" }}
+                        thumbColor={"#9AB106"}
                         style={styles.switch}
                         value={!isKg}
                         onValueChange={toggleWeightUnit}
@@ -326,16 +382,19 @@ export default function HomeScreen() {
                   </View>
                 </View>
               </View>
-              
+
               {/* =============== HEIGHT CONTAINER =============== */}
               <View style={styles.heightContainer}>
                 <View style={styles.leftColumn}>
                   <View style={styles.topLeft}>
-                    <ThemedText style={styles.containerTitle}>Height</ThemedText>
+                    <ThemedText style={styles.containerTitle}>
+                      Height
+                    </ThemedText>
                   </View>
                   <View style={styles.bottomLeft}>
                     <ThemedText style={styles.containerSubtitle}>
-                      Height affects nutrient needs, growth, and overall development requirements.
+                      Height affects nutrient needs, growth, and overall
+                      development requirements.
                     </ThemedText>
                   </View>
                 </View>
@@ -353,8 +412,8 @@ export default function HomeScreen() {
                     <View style={styles.switchRow}>
                       <ThemedText style={styles.switchLabel}>ft</ThemedText>
                       <Switch
-                        trackColor={{ false: '#e0e0e0', true: '#e0e0e0' }}
-                        thumbColor={'#9AB106'}
+                        trackColor={{ false: "#e0e0e0", true: "#e0e0e0" }}
+                        thumbColor={"#9AB106"}
                         style={styles.switch}
                         value={!isFt}
                         onValueChange={toggleHeightUnit}
@@ -368,7 +427,7 @@ export default function HomeScreen() {
           </ScrollView>
         </TouchableWithoutFeedback>
       </KeyboardAvoidingView>
-      
+
       {/* Floating check button outside the KeyboardAvoidingView */}
       <TouchableOpacity style={styles.checkButton} onPress={handleCheck}>
         <ThemedText style={styles.checkMark}>✓</ThemedText>
@@ -386,34 +445,34 @@ const styles = StyleSheet.create({
   image: {
     width: 200,
     height: 60,
-    resizeMode: 'contain',
-    alignSelf: "flex-start"
+    resizeMode: "contain",
+    alignSelf: "flex-start",
   },
   carouselContainer: {
-    alignItems: 'center',
+    alignItems: "center",
   },
   carouselDetailBox: {
-    backgroundColor: 'white',
+    backgroundColor: "white",
     margin: 4,
     borderRadius: 12,
     padding: 16,
-    shadowColor: '#000',
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.1,
     shadowRadius: 6,
-    elevation: 4, 
+    elevation: 4,
     flex: 1,
-    justifyContent: 'center',
+    justifyContent: "center",
   },
   carouselText: {
     fontSize: 12,
     lineHeight: 22,
-    color: '#333',
-    textAlign: 'left',
+    color: "#333",
+    textAlign: "left",
   },
   paginationContainer: {
-    flexDirection: 'row',
-    justifyContent: 'center',
+    flexDirection: "row",
+    justifyContent: "center",
   },
   dot: {
     width: 8,
@@ -424,13 +483,13 @@ const styles = StyleSheet.create({
   },
   ageContainer: {
     width: SCREEN_WIDTH - 20,
-    alignSelf: 'center',
-    flexDirection: 'row',
-    backgroundColor: 'white',
+    alignSelf: "center",
+    flexDirection: "row",
+    backgroundColor: "white",
     borderRadius: 12,
     height: 100,
     padding: 16,
-    shadowColor: '#000',
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 6,
@@ -438,13 +497,13 @@ const styles = StyleSheet.create({
   },
   weightContainer: {
     width: SCREEN_WIDTH - 20,
-    alignSelf: 'center',
-    flexDirection: 'row',
-    backgroundColor: 'white',
+    alignSelf: "center",
+    flexDirection: "row",
+    backgroundColor: "white",
     borderRadius: 12,
     height: 100,
     padding: 16,
-    shadowColor: '#000',
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 6,
@@ -452,13 +511,13 @@ const styles = StyleSheet.create({
   },
   heightContainer: {
     width: SCREEN_WIDTH - 20,
-    alignSelf: 'center',
-    flexDirection: 'row',
-    backgroundColor: 'white',
+    alignSelf: "center",
+    flexDirection: "row",
+    backgroundColor: "white",
     borderRadius: 12,
     height: 100,
     padding: 16,
-    shadowColor: '#000',
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 6,
@@ -470,35 +529,35 @@ const styles = StyleSheet.create({
   },
   topLeft: {
     flex: 1,
-    justifyContent: 'center',
+    justifyContent: "center",
   },
   bottomLeft: {
     flex: 1,
-    justifyContent: 'flex-start',
+    justifyContent: "flex-start",
   },
   rightColumn: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
   formContainer: {
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
   containerTitle: {
     fontSize: 24,
-    fontWeight: 'bold',
-    color: '#385802',
-    textAlign: 'left',
+    fontWeight: "bold",
+    color: "#385802",
+    textAlign: "left",
   },
   containerSubtitle: {
     fontSize: 10,
     lineHeight: 16,
-    color: '#666',
+    color: "#666",
   },
   counterWrapper: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
   },
   counterButton: {
     paddingHorizontal: 6,
@@ -506,80 +565,80 @@ const styles = StyleSheet.create({
 
   counterText: {
     fontSize: 16,
-    fontWeight: 'bold',
+    fontWeight: "bold",
   },
   ageInput: {
     height: 36,
     width: 60,
     marginHorizontal: 8,
     borderWidth: 1,
-    borderColor: '#e0e0e0',
+    borderColor: "#e0e0e0",
     borderRadius: 15,
     padding: 6,
-    textAlign: 'center',
+    textAlign: "center",
     fontSize: 14,
-    color: '#333',
-    backgroundColor: '#eaeaea',
+    color: "#333",
+    backgroundColor: "#eaeaea",
   },
   inputError: {
-    borderColor: '#ff4444',
-    backgroundColor: '#fff0f0',
+    borderColor: "#ff4444",
+    backgroundColor: "#fff0f0",
   },
   errorText: {
     marginTop: 4,
     fontSize: 12,
-    color: '#ff4444',
+    color: "#ff4444",
   },
   weightInput: {
     height: 36,
     width: 60,
     borderWidth: 1,
-    borderColor: '#e0e0e0',
+    borderColor: "#e0e0e0",
     borderRadius: 15,
     padding: 6,
-    textAlign: 'center',
+    textAlign: "center",
     fontSize: 14,
-    color: '#333',
-    backgroundColor: '#eaeaea',
+    color: "#333",
+    backgroundColor: "#eaeaea",
   },
   switchRow: {
-    width: '20%',
+    width: "20%",
     flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
   },
   switchLabel: {
     fontSize: 14,
-    color: '#333',
-    textAlign: 'center',
+    color: "#333",
+    textAlign: "center",
   },
   switch: {
     transform: [{ scaleX: 0.6 }, { scaleY: 0.6 }],
   },
   checkButton: {
-    position: 'absolute',
+    position: "absolute",
     bottom: 40,
     right: 20,
     width: 60,
     height: 60,
     borderRadius: 30,
-    backgroundColor: '#333',
-    justifyContent: 'center',
-    alignItems: 'center',
+    backgroundColor: "#333",
+    justifyContent: "center",
+    alignItems: "center",
   },
   checkMark: {
     fontSize: 25,
-    color: '#9AB106',
-    fontWeight: 'bold',
+    color: "#9AB106",
+    fontWeight: "bold",
   },
   profileBox: {
     width: 150,
     height: 50,
-    backgroundColor: 'white',
+    backgroundColor: "white",
     borderRadius: 12,
-    justifyContent: 'center',
-    alignItems: 'center',
-    shadowColor: '#000',
+    justifyContent: "center",
+    alignItems: "center",
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 6,
@@ -587,11 +646,11 @@ const styles = StyleSheet.create({
   },
   profileBoxText: {
     fontSize: 12,
-    fontWeight: 'bold',
-    color: '#333',
+    fontWeight: "bold",
+    color: "#333",
   },
   profileText: {
     fontSize: 12,
-    color: '#9AB206',
+    color: "#9AB206",
   },
 });

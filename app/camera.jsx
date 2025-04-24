@@ -90,7 +90,6 @@ export default function Camera() {
   const setCarbs = useNutrientsStore((state) => state.setCarbs);
   const setProtein = useNutrientsStore((state) => state.setProtein);
   const setSodium = useNutrientsStore((state) => state.setSodium);
-  
 
   const { nutritionData } = route.params || {}; // Retrieve the passed data
   console.log("Nutrition data from route params:", nutritionData);
@@ -102,7 +101,7 @@ export default function Camera() {
     setLoading(true); // Set loading state
     const fruitsUrl = "https://leidanielaguila-nutrivision.hf.space/detect"; // object detection
     const labelsUrl =
-      "https://nutrivision-backend-textrecog-77tx.onrender.com/extract/"; // nutritional label
+      "https://dwyght-text-recognition.hf.space/extract/"; // nutritional label
 
     if (!photos || photos.length === 0) {
       console.log("No photos provided for submission.");
@@ -142,16 +141,18 @@ export default function Camera() {
         },
       });
       console.log("✅ Response from server:", response.data);
-      
+
       if (isLabelMode) {
         // nutritional label url used
-        const {carbs_total, protein_total, sodium_total} = response.data.combined;
+        const { carbs_total, protein_total, sodium_total } =
+          response.data.combined;
         setCarbs(carbs_total);
         setProtein(protein_total);
         setSodium(sodium_total);
       } else {
         // fruits url was used
-        const {total_carbs, total_protein, total_sodium} = response.data.fruits;
+        const { total_carbs, total_protein, total_sodium } =
+          response.data.fruits;
         setCarbs(total_carbs);
         setProtein(total_protein);
         setSodium(total_sodium);
