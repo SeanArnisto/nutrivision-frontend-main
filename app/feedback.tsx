@@ -130,9 +130,9 @@ function Feedback() {
           carbs_total: carbsTablespoon.carbs, // User's carbohydrate intake
           sodium_total: sodiumTablespoon.sodium, // User's sodium intake
           protein_total: proteinTablespoon.protein, // User's protein intake
-          recommended_carbs: (minCarb + maxCarb) / 2, // Recommended range for carbohydrates
-          recommended_sodium: (minSodium + maxSodium) / 2, // Recommended range for sodium
-          recommended_protein: (minProtein + maxProtein) / 2, // Recommended range for protein
+          recommended_carbs: [minCarb, maxCarb], // Recommended range for carbohydrates
+          recommended_sodium: [minSodium, maxSodium], // Recommended range for sodium
+          recommended_protein: [minProtein, maxProtein], // Recommended range for protein
         }
       );
 
@@ -159,7 +159,7 @@ function Feedback() {
       proteinTablespoon.protein !== 0 &&
       sodiumTablespoon.sodium !== 0
     ) {
-      // fetchFeedback();
+      fetchFeedback();
     }
   }, [carbsTablespoon, proteinTablespoon, sodiumTablespoon]);
 
