@@ -10,6 +10,8 @@ import Camera from "@/app/camera";
 import Feedback from "@/app/feedback";
 import Loading from "@/app/loading";
 import { create } from "react-test-renderer";
+import LandingPage from "@/app/landing_page";
+
 
 const Stack = createStackNavigator<RootStackParamList>();
 
@@ -24,6 +26,7 @@ export default function AppNavigator() {
         <Stack.Screen name="camera" component={Camera} />
         <Stack.Screen name="feedback" component={Feedback} />
         <Stack.Screen name="loading" component={Loading} /> 
+        <Stack.Screen name="landing_page" component={LandingPage} />
       </Stack.Navigator>
     </NavigationContainer>
   );
