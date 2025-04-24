@@ -22,6 +22,7 @@ import { StackNavigationProp } from "@react-navigation/stack";
 import * as MediaLibrary from "expo-media-library";
 import PieChart from "react-native-pie-chart";
 import { useRoute } from "@react-navigation/native";
+import { Ionicons } from "@expo/vector-icons";
 
 //import  {useApi} from '@/hooks/ApiContext';
 
@@ -54,6 +55,9 @@ export default function UserNutrientPage() {
     boolean | null
   >(null);
 
+  function handleGoBack() {
+    navigation.goBack();
+  }
 
   // Navigation
   const navigation = useNavigation() as HomeScreenNavigationProp;
@@ -496,10 +500,18 @@ export default function UserNutrientPage() {
                   </View>
                 </View>
               </View>
-            </View>
+            </View> 
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
+      <TouchableOpacity
+        style={styles.roundButton}
+        onPress={handleGoBack}
+        disabled={false}
+      >
+        <Ionicons name="arrow-undo-outline" size={28} color="#9AB206" />
+      </TouchableOpacity>
+
 
       {/* Floating check button */}
       <TouchableOpacity style={styles.checkButton} onPress={handleCheck}>
@@ -513,6 +525,17 @@ const screenWidth = Dimensions.get("window").width;
 const styles = StyleSheet.create({
   keyboardAvoidingContainer: {
     flex: 1,
+  },
+  roundButton: {
+    width: 60,
+    height: 60,
+    bottom: 40,
+    left: 20,
+    borderRadius: 30,
+    backgroundColor: "#333",
+    justifyContent: "center",
+    alignItems: "center",
+    position: "absolute",
   },
   safeContainer: {
     flex: 1,

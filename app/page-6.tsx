@@ -18,6 +18,7 @@ import { StackNavigationProp } from "@react-navigation/stack";
 import { useRoute } from "@react-navigation/native";
 import { useNutrientsStore } from "@/hooks/store";
 import { useRecommStore } from "@/hooks/store";
+import { Ionicons } from "@expo/vector-icons";
 
 const toProgressWidth = (value: number) =>
   `${Math.min(value, 100)}%` as DimensionValue;
@@ -140,6 +141,10 @@ export default function Page6() {
       },
     }));
   }, [minCarb, maxCarb, minProtein, maxProtein, minSodium, maxSodium]);
+
+  function handleGoBack() {
+    navigation.goBack();
+  }
 
   useEffect(() => {
     const carbohydrate = carbs; // right side variables are from global state to avoid confusion
@@ -526,6 +531,14 @@ export default function Page6() {
         </ThemedView>
       </ScrollView>
 
+      <TouchableOpacity
+        style={styles.roundButton}
+        onPress={handleGoBack}
+        disabled={false}
+      >
+        <Ionicons name="arrow-undo-outline" size={28} color="#9AB206" />
+      </TouchableOpacity>
+
       <TouchableOpacity style={styles.checkButton} onPress={handleCheck}>
         <ThemedText style={styles.checkMark}>✓</ThemedText>
       </TouchableOpacity>
@@ -537,6 +550,17 @@ const styles = StyleSheet.create({
   safeContainer: {
     flex: 1,
     backgroundColor: "#F5F5F5",
+  },
+  roundButton: {
+    width: 60,
+    height: 60,
+    bottom: 40,
+    left: 20,
+    borderRadius: 30,
+    backgroundColor: "#333",
+    justifyContent: "center",
+    alignItems: "center",
+    position: "absolute",
   },
   scrollContainer: {
     flexGrow: 1,

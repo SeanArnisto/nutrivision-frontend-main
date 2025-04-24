@@ -26,6 +26,7 @@ import EquivalentTablespoon from "./HelperFunctions";
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 import { useRecommStore } from "@/hooks/store";
 import { useNutrientsStore } from "@/hooks/store";
+import { Ionicons } from "@expo/vector-icons";
 
 type HomeScreenNavigationProp = StackNavigationProp<
   RootStackParamList,
@@ -120,6 +121,10 @@ function Feedback() {
       sodiumTablespoon: FindTablespoons(sodium, sodiumMin, sodiumMax),
     });
   }, [carbs, prot, sod, minCarb, maxCarb, minProtein, maxProtein, minSodium, maxSodium]);
+
+  function handleGoBack() {
+    navigation.goBack();
+  }
 
   const fetchFeedback = async () => {
     try {
@@ -435,6 +440,14 @@ function Feedback() {
         </ScrollView>
       </KeyboardAvoidingView>
       <TouchableOpacity
+        style={styles.roundButton}
+        onPress={handleGoBack}
+        disabled={false}
+      >
+        <Ionicons name="arrow-undo-outline" size={28} color="#9AB206" />
+      </TouchableOpacity>
+
+      <TouchableOpacity
         style={styles.checkButton}
         onPress={handleCheck}
         disabled={false}
@@ -611,6 +624,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingVertical: 5,
   },
+  
   thumbnailContainer: {
     width: 60,
     height: 60,
@@ -663,6 +677,17 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: "gray",
     textAlign: "center",
+  },
+  roundButton: {
+    width: 60,
+    height: 60,
+    bottom: 40,
+    left: 20,
+    borderRadius: 30,
+    backgroundColor: "#333",
+    justifyContent: "center",
+    alignItems: "center",
+    position: "absolute",
   },
 });
 

@@ -17,6 +17,7 @@ import { useNavigation, useRoute } from "@react-navigation/native";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { RootStackParamList } from "@/types/types";
 import { useRecommStore } from "@/hooks/store";
+import { Ionicons } from "@expo/vector-icons";
 
 type Page2ScreenNavigationProp = StackNavigationProp<
   RootStackParamList,
@@ -27,15 +28,18 @@ export default function Page2() {
   const navigation = useNavigation<Page2ScreenNavigationProp>();
   const route = useRoute();
 
-  const minCarb = useRecommStore((state) => state.minCarb)
-  const maxCarb = useRecommStore((state) => state.maxCarb)
+  const minCarb = useRecommStore((state) => state.minCarb);
+  const maxCarb = useRecommStore((state) => state.maxCarb);
 
-  const minProtein = useRecommStore((state) => state.minProtein)
-  const maxProtein = useRecommStore((state) => state.maxProtein)
+  const minProtein = useRecommStore((state) => state.minProtein);
+  const maxProtein = useRecommStore((state) => state.maxProtein);
 
-  const minSodium = useRecommStore((state) => state.minSodium)
-  const maxSodium = useRecommStore((state) => state.maxSodium)
+  const minSodium = useRecommStore((state) => state.minSodium);
+  const maxSodium = useRecommStore((state) => state.maxSodium);
 
+  function handleGoBack() {
+    navigation.goBack();
+  }
 
   const { width } = Dimensions.get("window");
   const handleCheck = () => {
@@ -47,15 +51,15 @@ export default function Page2() {
 
   const carbAvg = Math.round((carbsMin + carbsMax) / 2);
 
-  const proteinMin = minProtein
-  const proteinMax = maxProtein
+  const proteinMin = minProtein;
+  const proteinMax = maxProtein;
 
   const proteinAvg = Math.round((proteinMin + proteinMax) / 2);
 
-  const sodiumMin = minSodium
-  const sodiumMax = maxSodium
+  const sodiumMin = minSodium;
+  const sodiumMax = maxSodium;
 
-  const sodiumAvg = (Math.round((sodiumMin + sodiumMax) / 2)) / 1000;
+  const sodiumAvg = Math.round((sodiumMin + sodiumMax) / 2) / 1000;
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -210,6 +214,13 @@ export default function Page2() {
           </Text>
         </View>
       </ThemedView>
+      <TouchableOpacity
+        style={styles.roundButton}
+        onPress={handleGoBack}
+        disabled={false}
+      >
+        <Ionicons name="arrow-undo-outline" size={28} color="#9AB206" />
+      </TouchableOpacity>
       <TouchableOpacity style={styles.checkButton} onPress={handleCheck}>
         <Image
           source={require("@/assets/images/Plus.png")}
@@ -224,6 +235,17 @@ const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
     backgroundColor: "#eff1f6",
+  },
+  roundButton: {
+    width: 60,
+    height: 60,
+    bottom: 40,
+    left: 20,
+    borderRadius: 30,
+    backgroundColor: "#333",
+    justifyContent: "center",
+    alignItems: "center",
+    position: "absolute",
   },
   checkButton: {
     position: "absolute",
