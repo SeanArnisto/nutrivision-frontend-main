@@ -44,11 +44,6 @@ export default function UserNutrientPage() {
   const protein = useNutrientsStore((state) => state.protein);
   const sodium = useNutrientsStore((state) => state.sodium);
 
-  //const { data } = route.params as { data: any };
-  // const { nutritionData } = route.params as { nutritionData: any };
-  // console.log("working:", nutritionData); // Use this data in your UI
-  // console.log("Data:", data); // Use this data in your UI
-
   const [fontsLoaded] = useFonts({
     "SpaceMono-Regular": require("@/assets/fonts/SpaceMono-Regular.ttf"),
   });
@@ -58,7 +53,7 @@ export default function UserNutrientPage() {
   const [mediaLibraryPermission, setMediaLibraryPermission] = useState<
     boolean | null
   >(null);
-  //const { extractedData } = useApi();
+
 
   // Navigation
   const navigation = useNavigation() as HomeScreenNavigationProp;

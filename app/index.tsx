@@ -151,6 +151,7 @@ export default function HomeScreen() {
       maxSodium(sodium[1]);
       minProtein(protein[0]);
       maxProtein(protein[1]);
+      return true;
     } catch (error) {
       if (axios.isAxiosError(error)) {
         console.error(
@@ -160,7 +161,7 @@ export default function HomeScreen() {
       } else {
         console.error("Error fetching nutrition range:", error);
       }
-      return null;
+      return false;
     }
   };
   // Helper functions to convert units
@@ -181,9 +182,9 @@ export default function HomeScreen() {
 
   // Modified handleCheck function
   const handleCheck = async () => {
-    const data = await fetchNutritionRange();
-    if (data) {
-      navigation.navigate("page-2"); // Pass data to page-2
+    const success = await fetchNutritionRange();
+    if (success) {
+      navigation.navigate("page-2");
     }
   };
 

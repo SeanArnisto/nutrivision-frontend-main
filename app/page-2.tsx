@@ -55,7 +55,7 @@ export default function Page2() {
   const sodiumMin = minSodium
   const sodiumMax = maxSodium
 
-  const sodiumAvg = Math.round((sodiumMin + sodiumMax) / 2);
+  const sodiumAvg = (Math.round((sodiumMin + sodiumMax) / 2)) / 1000;
 
   return (
     <SafeAreaView style={styles.safeArea}>

@@ -100,8 +100,7 @@ export default function Camera() {
     setTimeout(() => setSubmit(false), 5000);
     setLoading(true); // Set loading state
     const fruitsUrl = "https://leidanielaguila-nutrivision.hf.space/detect"; // object detection
-    const labelsUrl =
-      "https://dwyght-text-recognition.hf.space/extract/"; // nutritional label
+    const labelsUrl = "https://dwyght-text-recognition.hf.space/extract/"; // nutritional label
 
     if (!photos || photos.length === 0) {
       console.log("No photos provided for submission.");
@@ -148,7 +147,7 @@ export default function Camera() {
           response.data.combined;
         setCarbs(carbs_total);
         setProtein(protein_total);
-        setSodium(sodium_total);
+        setSodium(sodium_total / 1000);
       } else {
         // fruits url was used
         const { total_carbs, total_protein, total_sodium } =
@@ -180,20 +179,10 @@ export default function Camera() {
 
   const cameraRef = useRef(null);
 
-  // useEffect(() => {
-  //   console.log("Screen MOUNTED");
-  //   return () => console.log("Screen UNMOUNTED");
-  // }, []);
-
   // Add this function inside the Camera component before the useEffect
   const loadExistingPhotos = async () => {
     try {
-      const { status } = await MediaLibrary.requestPermissionsAsync();
-      if (status !== "granted") {
-        console.log("Media library permission not granted");
-        return;
-      }
-
+      // Don't request permission here, just load if already granted
       const album = await MediaLibrary.getAlbumAsync("NutriVision");
       if (!album) {
         console.log("NutriVision album not found");
@@ -207,8 +196,6 @@ export default function Camera() {
         sortBy: ["creationTime"],
         reverse: true,
       });
-
-      console.log("Found assets:", assets.length); // Debug log
 
       const photos = await Promise.all(
         assets.map(async (asset) => {
@@ -235,8 +222,6 @@ export default function Camera() {
       );
 
       const validPhotos = photos.filter((photo) => photo !== null);
-      console.log("Valid photos:", validPhotos.length); // Debug log
-
       setCapturedPhotos(validPhotos);
     } catch (error) {
       console.error("Error loading existing photos:", error);
@@ -249,6 +234,7 @@ export default function Camera() {
       const { status } = await MediaLibrary.requestPermissionsAsync();
       setMediaLibraryPermission(status === "granted");
 
+      // Only load photos if permission is granted
       if (status === "granted") {
         await loadExistingPhotos();
       }
