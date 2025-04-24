@@ -83,12 +83,12 @@ const styles = StyleSheet.create({
   },
   bottomContainer: {
     alignItems: 'center',
-    paddingBottom: 40,
+    paddingBottom: 10,
     width: '100%',
   },
   logo: {
-    width: 200,
-    height: 60,
+    width: 250,
+    height: 80,
     resizeMode: 'contain',
   },
   mainImage: {
