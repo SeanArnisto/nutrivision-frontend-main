@@ -66,14 +66,14 @@ export default function UserNutrientPage() {
     const carb = Number(carbohydrate) || 0;
     const prot = Number(protein) || 0;
     const sod = Number(sodium) || 0;
-  
+
     const total = carb + prot + sod;
     if (total === 0) return;
-  
+
     const pieCarb = parseFloat(((carb / total) * 100).toFixed(2));
     const pieProtein = parseFloat(((prot / total) * 100).toFixed(2));
     const pieSodium = parseFloat(((sod / total) * 100).toFixed(2));
-  
+
     setNutrients({ carbohydrate: carb, protein: prot, sodium: sod });
     setNutritionData({
       userIntake: {
@@ -86,7 +86,7 @@ export default function UserNutrientPage() {
       },
     });
   }, [carbohydrate, protein, sodium]);
-  
+
   // State for nutrient inputs (now as numbers without units)
   const [nutrients, setNutrients] = useState({
     carbohydrate: 88,
@@ -119,24 +119,33 @@ export default function UserNutrientPage() {
     setIsEditing((prev) => ({ ...prev, [key]: !prev[key] }));
   };
 
+  const setCarbs = useNutrientsStore((state) => state.setCarbs);
+  const setProtein = useNutrientsStore((state) => state.setProtein);
+  const setSodium = useNutrientsStore((state) => state.setSodium);
+
   // Handle nutrient change
   const handleNutrientChange = (
     key: "sodium" | "protein" | "carbohydrate",
     value: string
   ) => {
     const numValue = parseFloat(value) || 0;
-
-    // Update the nutrients state
-    setNutrients((prev) => ({ ...prev, [key]: numValue }));
-
-    // Calculate new total and percentages for pie chart
+  
+    // Update the Zustand store
+    if (key === "carbohydrate") setCarbs(numValue);
+    if (key === "protein") setProtein(numValue);
+    if (key === "sodium") setSodium(numValue);
+  
+    // Update the local nutrients state
     const updatedNutrients = { ...nutrients, [key]: numValue };
+    setNutrients(updatedNutrients);
+  
     const total =
       updatedNutrients.carbohydrate +
       updatedNutrients.protein +
       updatedNutrients.sodium;
-
-    // Calculate new percentages
+  
+    if (total === 0) return;
+  
     const pieCarb = parseFloat(
       ((updatedNutrients.carbohydrate / total) * 100).toFixed(2)
     );
@@ -146,8 +155,7 @@ export default function UserNutrientPage() {
     const pieSodium = parseFloat(
       ((updatedNutrients.sodium / total) * 100).toFixed(2)
     );
-
-    // Update the nutritionData1 state
+  
     setNutritionData({
       userIntake: {
         breakdown: {
@@ -161,7 +169,6 @@ export default function UserNutrientPage() {
   };
 
   console.log("carbs:", carbohydrate, "protein:", protein, "sodium:", sodium);
-
 
   // Request media library permissions on mount
   useEffect(() => {
@@ -500,7 +507,7 @@ export default function UserNutrientPage() {
                   </View>
                 </View>
               </View>
-            </View> 
+            </View>
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
@@ -511,7 +518,6 @@ export default function UserNutrientPage() {
       >
         <Ionicons name="arrow-undo-outline" size={28} color="#9AB206" />
       </TouchableOpacity>
-
 
       {/* Floating check button */}
       <TouchableOpacity style={styles.checkButton} onPress={handleCheck}>
