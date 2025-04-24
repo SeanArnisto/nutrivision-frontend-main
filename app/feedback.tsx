@@ -22,9 +22,11 @@ import * as MediaLibrary from "expo-media-library";
 import axios from "axios";
 import { useRoute } from "@react-navigation/native";
 import { FindTablespoons } from "./HelperFunctions";
-import { EquivalentTablespoon } from "./HelperFunctions";
-
+import EquivalentTablespoon from "./HelperFunctions";
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
+import { useRecommStore } from "@/hooks/store";
+import { useNutrientsStore } from "@/hooks/store";
+import { Ionicons } from "@expo/vector-icons";
 
 type HomeScreenNavigationProp = StackNavigationProp<
   RootStackParamList,
@@ -52,8 +54,18 @@ type carbs = {
 
 function Feedback() {
   const route = useRoute();
-  const { data } = route.params as { data: any };
-  const { nutritionData } = route.params as { nutritionData: any }; // Retrieve the passed data
+  const carbs = useNutrientsStore((state) => state.carbs);
+  const prot = useNutrientsStore((state) => state.protein);
+  const sod = useNutrientsStore((state) => state.sodium);
+
+  const minCarb = useRecommStore((state) => state.minCarb);
+  const maxCarb = useRecommStore((state) => state.maxCarb);
+
+  const minProtein = useRecommStore((state) => state.minProtein);
+  const maxProtein = useRecommStore((state) => state.maxProtein);
+
+  const minSodium = useRecommStore((state) => state.minSodium);
+  const maxSodium = useRecommStore((state) => state.maxSodium);
   //console.log("Data from page-2:", data);
   //console.log("working page 6:", nutritionData); // Use this data in your UI
 
@@ -79,78 +91,40 @@ function Feedback() {
   const [loading, setLoading] = useState<boolean>(true); // Loading state
 
   useEffect(() => {
-    if (nutritionData?.nutrition_range && data?.combined) {
-      const carbsMin = nutritionData.nutrition_range.carbs[0];
-      const carbsMax = nutritionData.nutrition_range.carbs[1];
-      const proteinMin = nutritionData.nutrition_range.protein[0];
-      const proteinMax = nutritionData.nutrition_range.protein[1];
-      const sodiumMin = nutritionData.nutrition_range.sodium[0];
-      const sodiumMax = nutritionData.nutrition_range.sodium[1];
+    const carbsMin = minCarb;
+    const carbsMax = maxCarb;
+    const proteinMin = minProtein;
+    const proteinMax = maxProtein;
+    const sodiumMin = minSodium;
+    const sodiumMax = maxSodium;
 
-      const parseGrams = (value: string | undefined): number => {
-        if (!value) return 0;
-        if (value.toLowerCase().includes("mg")) {
-          return parseFloat(value) / 1000;
-        }
-        return parseFloat(value);
-      };
+    const carbohydrate = carbs;
+    const protein = prot;
+    const sodium = sod;
 
-      const carbohydrate = parseGrams(data.combined.carbs_total);
-      const protein = parseGrams(data.combined.protein_total);
-      const sodium = parseGrams(data.combined.sodium_total);
+    setCarbsTablespoon({
+      carbs: carbohydrate,
+      approxCarbs: 0,
+      equivalentTablespoon: EquivalentTablespoon(carbohydrate),
+      carbsTablepoon: FindTablespoons(carbohydrate, carbsMin, carbsMax),
+    });
+    setProteinTablespoon({
+      protein: protein,
+      approxProtein: 0,
+      equivalentTablespoon: EquivalentTablespoon(protein),
+      proteinTablespoon: FindTablespoons(protein, proteinMin, proteinMax),
+    });
+    setSodiumTablespoon({
+      sodium: sodium,
+      approxSodium: 0,
+      equivalentTablespoon: EquivalentTablespoon(sodium),
+      sodiumTablespoon: FindTablespoons(sodium, sodiumMin, sodiumMax),
+    });
+  }, [carbs, prot, sod, minCarb, maxCarb, minProtein, maxProtein, minSodium, maxSodium]);
 
-      setCarbsTablespoon({
-        carbs: carbohydrate,
-        approxCarbs: 0,
-        equivalentTablespoon: EquivalentTablespoon(carbohydrate),
-        carbsTablepoon: FindTablespoons(carbohydrate, carbsMin, carbsMax),
-      });
-      setProteinTablespoon({
-        protein: protein,
-        approxProtein: 0,
-        equivalentTablespoon: EquivalentTablespoon(protein),
-        proteinTablespoon: FindTablespoons(protein, proteinMin, proteinMax),
-      });
-      setSodiumTablespoon({
-        sodium: sodium,
-        approxSodium: 0,
-        equivalentTablespoon: EquivalentTablespoon(sodium),
-        sodiumTablespoon: FindTablespoons(sodium, sodiumMin, sodiumMax),
-      });
-      console.log(sodiumTablespoon.sodiumTablespoon);
-    }
-    if (nutritionData?.nutrition_range && data?.fruits) {
-      const carbsMin = nutritionData.nutrition_range.carbs[0];
-      const carbsMax = nutritionData.nutrition_range.carbs[1];
-      const proteinMin = nutritionData.nutrition_range.protein[0];
-      const proteinMax = nutritionData.nutrition_range.protein[1];
-      const sodiumMin = nutritionData.nutrition_range.sodium[0];
-      const sodiumMax = nutritionData.nutrition_range.sodium[1];
-
-      const carbohydrate = data.fruits.total_carbs;
-      const protein = data.fruits.total_protein;
-      const sodium = data.fruits.total_sodium;
-
-      setCarbsTablespoon({
-        carbs: carbohydrate,
-        approxCarbs: 0,
-        equivalentTablespoon: EquivalentTablespoon(carbohydrate),
-        carbsTablepoon: FindTablespoons(carbohydrate, carbsMin, carbsMax),
-      });
-      setProteinTablespoon({
-        protein: protein,
-        approxProtein: 0,
-        equivalentTablespoon: EquivalentTablespoon(protein),
-        proteinTablespoon: FindTablespoons(protein, proteinMin, proteinMax),
-      });
-      setSodiumTablespoon({
-        sodium: sodium,
-        approxSodium: 0,
-        equivalentTablespoon: EquivalentTablespoon(sodium),
-        sodiumTablespoon: FindTablespoons(sodium, sodiumMin, sodiumMax),
-      });
-    }
-  }, [nutritionData, data]);
+  function handleGoBack() {
+    navigation.goBack();
+  }
 
   const fetchFeedback = async () => {
     try {
@@ -161,9 +135,9 @@ function Feedback() {
           carbs_total: carbsTablespoon.carbs, // User's carbohydrate intake
           sodium_total: sodiumTablespoon.sodium, // User's sodium intake
           protein_total: proteinTablespoon.protein, // User's protein intake
-          recommended_carbs: nutritionData.nutrition_range.carbs, // Recommended range for carbohydrates
-          recommended_sodium: nutritionData.nutrition_range.sodium, // Recommended range for sodium
-          recommended_protein: nutritionData.nutrition_range.protein, // Recommended range for protein
+          recommended_carbs: [minCarb, maxCarb], // Recommended range for carbohydrates
+          recommended_sodium: [minSodium, maxSodium], // Recommended range for sodium
+          recommended_protein: [minProtein, maxProtein], // Recommended range for protein
         }
       );
 
@@ -276,7 +250,7 @@ function Feedback() {
   };
 
   const handleCheck = () => {
-    navigation.navigate("page-2", { nutritionData });
+    navigation.pop(5);
   };
 
   const testRequest = async () => {
@@ -466,6 +440,14 @@ function Feedback() {
         </ScrollView>
       </KeyboardAvoidingView>
       <TouchableOpacity
+        style={styles.roundButton}
+        onPress={handleGoBack}
+        disabled={false}
+      >
+        <Ionicons name="arrow-undo-outline" size={28} color="#9AB206" />
+      </TouchableOpacity>
+
+      <TouchableOpacity
         style={styles.checkButton}
         onPress={handleCheck}
         disabled={false}
@@ -642,6 +624,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingVertical: 5,
   },
+  
   thumbnailContainer: {
     width: 60,
     height: 60,
@@ -694,6 +677,17 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: "gray",
     textAlign: "center",
+  },
+  roundButton: {
+    width: 60,
+    height: 60,
+    bottom: 40,
+    left: 20,
+    borderRadius: 30,
+    backgroundColor: "#333",
+    justifyContent: "center",
+    alignItems: "center",
+    position: "absolute",
   },
 });
 

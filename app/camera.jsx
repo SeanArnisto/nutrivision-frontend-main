@@ -24,9 +24,7 @@ import { CameraView, useCameraPermissions } from "expo-camera";
 import * as MediaLibrary from "expo-media-library";
 import * as ImageManipulator from "expo-image-manipulator";
 import { useNavigation } from "@react-navigation/native";
-import { StackNavigationProp } from "@react-navigation/stack";
-import { useIsFocused } from "@react-navigation/native";
-import { useApi } from "../hooks/ApiContext";
+import { useNutrientsStore } from "@/hooks/store";
 import axios from "axios";
 import PhotoPreviewSection from "@/components/PhotoPreviewSection";
 import { navigate } from "expo-router/build/global-state/routing";
@@ -89,6 +87,10 @@ export default function Camera() {
   // Always vertical (portrait) orientation. No toggle.
   const boxOrientation = "vertical";
 
+  const setCarbs = useNutrientsStore((state) => state.setCarbs);
+  const setProtein = useNutrientsStore((state) => state.setProtein);
+  const setSodium = useNutrientsStore((state) => state.setSodium);
+
   const { nutritionData } = route.params || {}; // Retrieve the passed data
   console.log("Nutrition data from route params:", nutritionData);
 
@@ -97,14 +99,11 @@ export default function Camera() {
     setSubmit(true);
     setTimeout(() => setSubmit(false), 5000);
     setLoading(true); // Set loading state
-
     const fruitsUrl = "https://leidanielaguila-nutrivision.hf.space/detect"; // object detection
-    const labelsUrl =
-      "https://nutrivision-backend-textrecog-77tx.onrender.com/extract/"; // nutritional label
+    const labelsUrl = "https://dwyght-text-recognition.hf.space/extract/"; // nutritional label
 
     if (!photos || photos.length === 0) {
       console.log("No photos provided for submission.");
-      setLoading(false);
       return;
     }
 
@@ -116,80 +115,75 @@ export default function Camera() {
       const uriParts = photo.uri.split(".");
       const fileType = uriParts[uriParts.length - 1];
 
-      // Platform-specific URI handling
-      const uri =
-        Platform.OS === "android"
-          ? photo.uri
-          : photo.uri.replace("file://", "");
-
       // Properly append file to FormData
       formData.append("files", {
-        uri: uri,
+        uri: photo.uri,
         name: `photo_${i}.${fileType}`,
         type: `image/${fileType}`,
       });
     }
 
-    let urlToSend = isLabelMode ? labelsUrl : fruitsUrl;
+    console.log("FormData constructed with", photos.length, "files.");
+    let urlToSend = "";
+
+    if (isLabelMode) {
+      urlToSend = labelsUrl;
+    } else {
+      urlToSend = fruitsUrl;
+    }
 
     try {
-      console.log("Sending request to backend endpoint using fetch...");
-
-      const response = await fetch(urlToSend, {
-        method: "POST",
-        body: formData,
+      console.log("Sending request to backend endpoint...");
+      const response = await axios.post(urlToSend, formData, {
         headers: {
           Accept: "application/json",
         },
       });
+      console.log("✅ Response from server:", response.data);
 
-      if (!response.ok) {
-        throw new Error(`Server responded with status: ${response.status}`);
+      if (isLabelMode) {
+        // nutritional label url used
+        
+        const { carbs_total, protein_total, sodium_total } =
+          response.data.combined;
+        setCarbs(parseFloat(carbs_total));
+        setProtein(parseFloat(protein_total));
+        setSodium(parseFloat(sodium_total) / 1000);
+      } else {
+        // fruits url was used
+        const { total_carbs, total_protein, total_sodium } =
+          response.data.fruits;
+        setCarbs(total_carbs);
+        setProtein(total_protein);
+        setSodium(total_sodium);
       }
-
-      const data = await response.json();
-      console.log("✅ Response from server:", data);
 
       setLoading(false); // Turn off loading when response is received
       navigation.navigate("nutrient-page", {
-        data: data,
+        data: response.data,
         nutritionData: nutritionData,
       });
-      return data;
+      return response.data;
     } catch (err) {
-      setLoading(false);
-      console.error("❌ Fetch upload error:", err.message);
-
-      // Show error to user
-      Alert.alert(
-        "Upload Failed",
-        "Could not upload image. Please try again later.",
-        [{ text: "OK" }]
-      );
-
+      console.error("❌ Axios upload error:", err);
+      if (err.response) {
+        console.error("Error details:", err.response.data);
+        console.error("Status code:", err.response.status);
+      }
       throw err;
     }
   };
+
   const navigation = useNavigation();
   // Always use the back camera. No toggle.
   const facing = "back";
 
   const cameraRef = useRef(null);
 
-  useEffect(() => {
-    console.log("Screen MOUNTED");
-    return () => console.log("Screen UNMOUNTED");
-  }, []);
-
   // Add this function inside the Camera component before the useEffect
   const loadExistingPhotos = async () => {
     try {
-      const { status } = await MediaLibrary.requestPermissionsAsync();
-      if (status !== "granted") {
-        console.log("Media library permission not granted");
-        return;
-      }
-
+      // Don't request permission here, just load if already granted
       const album = await MediaLibrary.getAlbumAsync("NutriVision");
       if (!album) {
         console.log("NutriVision album not found");
@@ -203,8 +197,6 @@ export default function Camera() {
         sortBy: ["creationTime"],
         reverse: true,
       });
-
-      console.log("Found assets:", assets.length); // Debug log
 
       const photos = await Promise.all(
         assets.map(async (asset) => {
@@ -231,8 +223,6 @@ export default function Camera() {
       );
 
       const validPhotos = photos.filter((photo) => photo !== null);
-      console.log("Valid photos:", validPhotos.length); // Debug log
-
       setCapturedPhotos(validPhotos);
     } catch (error) {
       console.error("Error loading existing photos:", error);
@@ -245,6 +235,7 @@ export default function Camera() {
       const { status } = await MediaLibrary.requestPermissionsAsync();
       setMediaLibraryPermission(status === "granted");
 
+      // Only load photos if permission is granted
       if (status === "granted") {
         await loadExistingPhotos();
       }

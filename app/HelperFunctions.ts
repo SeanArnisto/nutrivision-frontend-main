@@ -98,7 +98,7 @@ export const FindTablespoons = (value: number, minIntake: number, maxIntake: num
     return number;
 }
 
-export function EquivalentTablespoon(value: number): string {
+export default function EquivalentTablespoon(value: number): string {
     let tbpsCount = '';
 
     if (value < 15) {

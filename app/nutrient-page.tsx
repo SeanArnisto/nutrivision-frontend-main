@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useCallback } from "react";
 import { useFocusEffect, useIsFocused } from "@react-navigation/native";
+import { useNutrientsStore } from "@/hooks/store";
 import {
   View,
   Image,
@@ -21,6 +22,7 @@ import { StackNavigationProp } from "@react-navigation/stack";
 import * as MediaLibrary from "expo-media-library";
 import PieChart from "react-native-pie-chart";
 import { useRoute } from "@react-navigation/native";
+import { Ionicons } from "@expo/vector-icons";
 
 //import  {useApi} from '@/hooks/ApiContext';
 
@@ -39,10 +41,9 @@ type HomeScreenNavigationProp = StackNavigationProp<
 export default function UserNutrientPage() {
   const route = useRoute();
 
-  const { data } = route.params as { data: any };
-  const { nutritionData } = route.params as { nutritionData: any };
-  console.log("working:", nutritionData); // Use this data in your UI
-  console.log("Data:", data); // Use this data in your UI
+  const carbohydrate = useNutrientsStore((state) => state.carbs);
+  const protein = useNutrientsStore((state) => state.protein);
+  const sodium = useNutrientsStore((state) => state.sodium);
 
   const [fontsLoaded] = useFonts({
     "SpaceMono-Regular": require("@/assets/fonts/SpaceMono-Regular.ttf"),
@@ -53,83 +54,38 @@ export default function UserNutrientPage() {
   const [mediaLibraryPermission, setMediaLibraryPermission] = useState<
     boolean | null
   >(null);
-  //const { extractedData } = useApi();
+
+  function handleGoBack() {
+    navigation.goBack();
+  }
 
   // Navigation
   const navigation = useNavigation() as HomeScreenNavigationProp;
 
   useEffect(() => {
-    if (data?.combined) {
-      const parseGrams = (value: string): number => {
-        if (!value) {
-          return 0; // fix for later add validation to tell the user that the value should be manually input
-        }
-        if (value.toLowerCase().includes("mg")) {
-          return parseFloat(value) / 1000;
-        } else {
-          return parseFloat(value);
-        }
-      };
+    const carb = Number(carbohydrate) || 0;
+    const prot = Number(protein) || 0;
+    const sod = Number(sodium) || 0;
 
-      const carbohydrate = parseGrams(data.combined.carbs_total);
-      const protein = parseGrams(data.combined.protein_total);
-      const sodium = parseGrams(data.combined.sodium_total);
-      const total = (carbohydrate + protein + sodium).toFixed(2);
-      const pieCarb = parseFloat(
-        ((carbohydrate / parseFloat(total)) * 100).toFixed(2)
-      );
-      const pieProtein = parseFloat(
-        ((protein / parseFloat(total)) * 100).toFixed(2)
-      );
-      const pieSodium = parseFloat(
-        ((sodium / parseFloat(total)) * 100).toFixed(2)
-      );
-      setNutrients({ carbohydrate, protein, sodium }); // editable data
-      setNutritionData({
-        // pie chart representation
-        userIntake: {
-          breakdown: {
-            carbohydrate: pieCarb,
-            protein: pieProtein,
-            sodium: pieSodium,
-          },
-          total: parseFloat(total),
+    const total = carb + prot + sod;
+    if (total === 0) return;
+
+    const pieCarb = parseFloat(((carb / total) * 100).toFixed(2));
+    const pieProtein = parseFloat(((prot / total) * 100).toFixed(2));
+    const pieSodium = parseFloat(((sod / total) * 100).toFixed(2));
+
+    setNutrients({ carbohydrate: carb, protein: prot, sodium: sod });
+    setNutritionData({
+      userIntake: {
+        breakdown: {
+          carbohydrate: pieCarb,
+          protein: pieProtein,
+          sodium: pieSodium,
         },
-      });
-    }
-    if (data?.fruits) {
-      const carbohydrate = data.fruits.total_carbs;
-      const protein = data.fruits.total_protein;
-      const sodium = data.fruits.total_sodium;
-
-      const total = (carbohydrate + protein + sodium).toFixed(2);
-      const pieCarb = parseFloat(
-        ((data.fruits.total_carbs / parseFloat(total)) * 100).toFixed(2)
-      );
-      const pieProtein = parseFloat(
-        ((data.fruits.total_protein / parseFloat(total)) * 100).toFixed(2)
-      );
-      const pieSodium = parseFloat(
-        ((data.fruits.total_sodium / parseFloat(total)) * 100).toFixed(2)
-      );
-      setNutrients({ carbohydrate, protein, sodium }); // editable data
-
-      setNutritionData({
-        // representation data
-        userIntake: {
-          breakdown: {
-            carbohydrate: pieCarb,
-            protein: pieProtein,
-            sodium: pieSodium,
-          },
-          total: parseFloat(total),
-        },
-      });
-    }
-    if (data?.message) {
-      console.log("Nothing received from object detection.");
-    }
-  }, [data]);
+        total: parseFloat(total.toFixed(2)),
+      },
+    });
+  }, [carbohydrate, protein, sodium]);
 
   // State for nutrient inputs (now as numbers without units)
   const [nutrients, setNutrients] = useState({
@@ -158,31 +114,14 @@ export default function UserNutrientPage() {
     },
   });
 
-  const textUserIntakeCarbohydrate = toPercentageText(
-    nutritionData1.userIntake.breakdown.carbohydrate
-  );
-  const textUserIntakeSodium = toPercentageText(
-    nutritionData1.userIntake.breakdown.sodium
-  );
-  const textUserIntake = toPercentageText(
-    nutritionData1.userIntake.breakdown.protein
-  );
-
-  const totalUserIntake = formatValue(nutritionData1.userIntake.total);
-
-  const donutSeries = [
-    { value: nutritionData1.userIntake.breakdown.protein, color: "#000000" },
-    { value: nutritionData1.userIntake.breakdown.sodium, color: "#c0b4b4" },
-    {
-      value: nutritionData1.userIntake.breakdown.carbohydrate,
-      color: "#7ca844",
-    },
-  ];
-
   // Toggle edit mode
   const toggleEdit = (key: "sodium" | "protein" | "carbohydrate") => {
     setIsEditing((prev) => ({ ...prev, [key]: !prev[key] }));
   };
+
+  const setCarbs = useNutrientsStore((state) => state.setCarbs);
+  const setProtein = useNutrientsStore((state) => state.setProtein);
+  const setSodium = useNutrientsStore((state) => state.setSodium);
 
   // Handle nutrient change
   const handleNutrientChange = (
@@ -190,18 +129,23 @@ export default function UserNutrientPage() {
     value: string
   ) => {
     const numValue = parseFloat(value) || 0;
-
-    // Update the nutrients state
-    setNutrients((prev) => ({ ...prev, [key]: numValue }));
-
-    // Calculate new total and percentages for pie chart
+  
+    // Update the Zustand store
+    if (key === "carbohydrate") setCarbs(numValue);
+    if (key === "protein") setProtein(numValue);
+    if (key === "sodium") setSodium(numValue);
+  
+    // Update the local nutrients state
     const updatedNutrients = { ...nutrients, [key]: numValue };
+    setNutrients(updatedNutrients);
+  
     const total =
       updatedNutrients.carbohydrate +
       updatedNutrients.protein +
       updatedNutrients.sodium;
-
-    // Calculate new percentages
+  
+    if (total === 0) return;
+  
     const pieCarb = parseFloat(
       ((updatedNutrients.carbohydrate / total) * 100).toFixed(2)
     );
@@ -211,8 +155,7 @@ export default function UserNutrientPage() {
     const pieSodium = parseFloat(
       ((updatedNutrients.sodium / total) * 100).toFixed(2)
     );
-
-    // Update the nutritionData1 state
+  
     setNutritionData({
       userIntake: {
         breakdown: {
@@ -224,6 +167,8 @@ export default function UserNutrientPage() {
       },
     });
   };
+
+  console.log("carbs:", carbohydrate, "protein:", protein, "sodium:", sodium);
 
   // Request media library permissions on mount
   useEffect(() => {
@@ -307,7 +252,7 @@ export default function UserNutrientPage() {
   };
 
   const handleCheck = () => {
-    navigation.navigate("page-6", { data: data, nutritionData: nutritionData });
+    navigation.navigate("page-6");
   };
 
   if (!fontsLoaded) {
@@ -566,6 +511,13 @@ export default function UserNutrientPage() {
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
+      <TouchableOpacity
+        style={styles.roundButton}
+        onPress={handleGoBack}
+        disabled={false}
+      >
+        <Ionicons name="arrow-undo-outline" size={28} color="#9AB206" />
+      </TouchableOpacity>
 
       {/* Floating check button */}
       <TouchableOpacity style={styles.checkButton} onPress={handleCheck}>
@@ -579,6 +531,17 @@ const screenWidth = Dimensions.get("window").width;
 const styles = StyleSheet.create({
   keyboardAvoidingContainer: {
     flex: 1,
+  },
+  roundButton: {
+    width: 60,
+    height: 60,
+    bottom: 40,
+    left: 20,
+    borderRadius: 30,
+    backgroundColor: "#333",
+    justifyContent: "center",
+    alignItems: "center",
+    position: "absolute",
   },
   safeContainer: {
     flex: 1,
