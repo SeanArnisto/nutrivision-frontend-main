@@ -129,23 +129,23 @@ export default function UserNutrientPage() {
     value: string
   ) => {
     const numValue = parseFloat(value) || 0;
-  
+
     // Update the Zustand store
     if (key === "carbohydrate") setCarbs(numValue);
     if (key === "protein") setProtein(numValue);
     if (key === "sodium") setSodium(numValue);
-  
+
     // Update the local nutrients state
     const updatedNutrients = { ...nutrients, [key]: numValue };
     setNutrients(updatedNutrients);
-  
+
     const total =
       updatedNutrients.carbohydrate +
       updatedNutrients.protein +
       updatedNutrients.sodium;
-  
+
     if (total === 0) return;
-  
+
     const pieCarb = parseFloat(
       ((updatedNutrients.carbohydrate / total) * 100).toFixed(2)
     );
@@ -155,7 +155,7 @@ export default function UserNutrientPage() {
     const pieSodium = parseFloat(
       ((updatedNutrients.sodium / total) * 100).toFixed(2)
     );
-  
+
     setNutritionData({
       userIntake: {
         breakdown: {
@@ -461,7 +461,7 @@ export default function UserNutrientPage() {
                         ]}
                       />
                       <Text style={styles.legendLabel}>
-                        Carbohydrate (
+                        Carbs (
                         {toPercentageText(
                           nutritionData1.userIntake.breakdown.carbohydrate
                         )}
@@ -521,7 +521,7 @@ export default function UserNutrientPage() {
 
       {/* Floating check button */}
       <TouchableOpacity style={styles.checkButton} onPress={handleCheck}>
-        <ThemedText style={styles.checkMark}>➜</ThemedText>
+        <Ionicons name="arrow-redo-outline" size={28} color="#9AB206" />
       </TouchableOpacity>
     </SafeAreaView>
   );

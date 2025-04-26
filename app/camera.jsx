@@ -585,7 +585,7 @@ export default function Camera() {
                 onPress={handleGoBack}
                 disabled={false}
               >
-                <Ionicons name="arrow-back" size={28} color="white" />
+                <Ionicons name="arrow-undo-outline" size={28} color="white" />
               </TouchableOpacity>
 
               {/* CENTER: Capture */}

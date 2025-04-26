@@ -90,10 +90,6 @@ export default function Page6() {
   });
 
   useEffect(() => {
-    console.log("✅ Sodium from store:", sod); // Is it 1.9 or 1900?
-  }, [sod]);
-
-  useEffect(() => {
     const carbsMin = minCarb; // 346
     const carbsMax = maxCarb;
 
@@ -136,7 +132,7 @@ export default function Page6() {
         },
         sodium: {
           ...prev.values.sodium,
-          avg: parseFloat((sodiumAvg/1000).toFixed(1)),
+          avg: parseFloat((sodiumAvg / 1000).toFixed(1)),
         },
       },
     }));
@@ -188,15 +184,15 @@ export default function Page6() {
       progress: {
         carbohydrate: {
           ...prev.progress.carbohydrate,
-          user: parseFloat(((carbohydrate / 100) * 100).toFixed(1)),
+          user: parseFloat(((carbohydrate / maxCarb) * 100).toFixed(1)),
         },
         protein: {
           ...prev.progress.protein,
-          user: parseFloat(((protein / 200) * 100).toFixed(1)),
+          user: parseFloat(((protein / 200) * maxProtein).toFixed(1)),
         },
         sodium: {
           ...prev.progress.sodium,
-          user: parseFloat(((sodium / 2.3) * 100).toFixed(1)),
+          user: parseFloat(((sodium / 2.3) * maxSodium).toFixed(1)),
         },
       },
     }));
@@ -412,7 +408,7 @@ export default function Page6() {
                       ]}
                     />
                     <Text style={styles.legendLabel}>
-                      Carbohydrate (
+                      Carbs (
                       {toPercentageText(
                         nutritionData.intake.breakdown.carbohydrate
                       )}
@@ -487,7 +483,7 @@ export default function Page6() {
                       ]}
                     />
                     <Text style={styles.legendLabel}>
-                      Carbohydrate (
+                      Carbs (
                       {toPercentageText(
                         nutritionData.avg.breakdown.carbohydrate
                       )}
@@ -540,7 +536,7 @@ export default function Page6() {
       </TouchableOpacity>
 
       <TouchableOpacity style={styles.checkButton} onPress={handleCheck}>
-        <ThemedText style={styles.checkMark}>✓</ThemedText>
+        <Ionicons name="arrow-redo-outline" size={28} color="#9AB206" />
       </TouchableOpacity>
     </SafeAreaView>
   );
@@ -554,7 +550,7 @@ const styles = StyleSheet.create({
   roundButton: {
     width: 60,
     height: 60,
-    bottom: 40,
+    bottom: 20,
     left: 20,
     borderRadius: 30,
     backgroundColor: "#333",

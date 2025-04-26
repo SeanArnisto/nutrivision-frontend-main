@@ -59,7 +59,7 @@ export default function Page2() {
   const sodiumMin = minSodium;
   const sodiumMax = maxSodium;
 
-  const sodiumAvg = Math.round((sodiumMin + sodiumMax) / 2) /1000;
+  const sodiumAvg = Math.round((sodiumMin + sodiumMax) / 2) / 1000;
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -222,10 +222,7 @@ export default function Page2() {
         <Ionicons name="arrow-undo-outline" size={28} color="#9AB206" />
       </TouchableOpacity>
       <TouchableOpacity style={styles.checkButton} onPress={handleCheck}>
-        <Image
-          source={require("@/assets/images/Plus.png")}
-          style={{ width: 20, height: 20 }}
-        />
+        <Ionicons name="camera-outline" size={33} color="#9AB206" />
       </TouchableOpacity>
     </SafeAreaView>
   );

@@ -120,7 +120,17 @@ function Feedback() {
       equivalentTablespoon: EquivalentTablespoon(sodium),
       sodiumTablespoon: FindTablespoons(sodium, sodiumMin, sodiumMax),
     });
-  }, [carbs, prot, sod, minCarb, maxCarb, minProtein, maxProtein, minSodium, maxSodium]);
+  }, [
+    carbs,
+    prot,
+    sod,
+    minCarb,
+    maxCarb,
+    minProtein,
+    maxProtein,
+    minSodium,
+    maxSodium,
+  ]);
 
   function handleGoBack() {
     navigation.goBack();
@@ -148,11 +158,11 @@ function Feedback() {
           `${comparison_analysis}\n\n${range_assessment}\n\n${health_implications}`
         );
       } else {
-        setRequestMessage("No feedback available.");
+        setRequestMessage("No feedback available, if values are 0 make sure to manually input");
       }
     } catch (error) {
-      console.error("Error fetching feedback:", error);
-      setRequestMessage("Error fetching feedback.");
+      
+      setRequestMessage("Error fetching feedback, if values are 0 make sure to manually input");
     } finally {
       setLoading(false); // Stop loading
     }
@@ -165,6 +175,10 @@ function Feedback() {
       sodiumTablespoon.sodium !== 0
     ) {
       fetchFeedback();
+    } else {
+      setRequestMessage(
+        "Some nutrient values are detected to be 0, in order to maximize the feedback result make sure to manually input the possible amount of nutrients."
+      );
     }
   }, [carbsTablespoon, proteinTablespoon, sodiumTablespoon]);
 
@@ -624,7 +638,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingVertical: 5,
   },
-  
+
   thumbnailContainer: {
     width: 60,
     height: 60,
