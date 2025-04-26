@@ -159,10 +159,7 @@ export default function Camera() {
       }
 
       setLoading(false); // Turn off loading when response is received
-      navigation.navigate("nutrient-page", {
-        data: response.data,
-        nutritionData: nutritionData,
-      });
+      navigation.navigate("nutrient-page");
       return response.data;
     } catch (err) {
       console.error("❌ Axios upload error:", err);

@@ -143,7 +143,7 @@ function Feedback() {
         "https://pel1-recommendation.hf.space/get-nutrient-feedback",
         {
           carbs_total: carbsTablespoon.carbs, // User's carbohydrate intake
-          sodium_total: sodiumTablespoon.sodium, // User's sodium intake
+          sodium_total: (sodiumTablespoon.sodium) * 1000, // User's sodium intake
           protein_total: proteinTablespoon.protein, // User's protein intake
           recommended_carbs: [minCarb, maxCarb], // Recommended range for carbohydrates
           recommended_sodium: [minSodium, maxSodium], // Recommended range for sodium

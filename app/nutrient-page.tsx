@@ -74,7 +74,7 @@ export default function UserNutrientPage() {
     const pieProtein = parseFloat(((prot / total) * 100).toFixed(2));
     const pieSodium = parseFloat(((sod / total) * 100).toFixed(2));
 
-    setNutrients({ carbohydrate: carb, protein: prot, sodium: sod });
+    setNutrients({ carbohydrate: carb.toString(), protein: prot.toString(), sodium: sod.toString() });
     setNutritionData({
       userIntake: {
         breakdown: {
@@ -89,9 +89,9 @@ export default function UserNutrientPage() {
 
   // State for nutrient inputs (now as numbers without units)
   const [nutrients, setNutrients] = useState({
-    carbohydrate: 88,
-    sodium: 1.83,
-    protein: 3.5,
+    carbohydrate: "88",
+    sodium: "1.83",
+    protein: "3.5",
   });
 
   const [isEditing, setIsEditing] = useState({
@@ -124,49 +124,63 @@ export default function UserNutrientPage() {
   const setSodium = useNutrientsStore((state) => state.setSodium);
 
   // Handle nutrient change
-  const handleNutrientChange = (
-    key: "sodium" | "protein" | "carbohydrate",
-    value: string
-  ) => {
-    const numValue = parseFloat(value) || 0;
-
-    // Update the Zustand store
-    if (key === "carbohydrate") setCarbs(numValue);
-    if (key === "protein") setProtein(numValue);
-    if (key === "sodium") setSodium(numValue);
-
-    // Update the local nutrients state
-    const updatedNutrients = { ...nutrients, [key]: numValue };
+  // Handle nutrient change
+const handleNutrientChange = (
+  key: "sodium" | "protein" | "carbohydrate",
+  value: string
+) => {
+  // Special handling for decimal point
+  if (value === '.' || value === '0.') {
+    // For decimal point only, just update the display value without converting
+    const updatedNutrients = { ...nutrients, [key]: value };
     setNutrients(updatedNutrients);
+    
+    // Update the Zustand store with 0 for now
+    if (key === "carbohydrate") setCarbs(0);
+    if (key === "protein") setProtein(0);
+    if (key === "sodium") setSodium(0);
+    return;
+  }
 
-    const total =
-      updatedNutrients.carbohydrate +
-      updatedNutrients.protein +
-      updatedNutrients.sodium;
+  const numValue = parseFloat(value) || 0;
 
-    if (total === 0) return;
+  // Update the Zustand store
+  if (key === "carbohydrate") setCarbs(numValue);
+  if (key === "protein") setProtein(numValue);
+  if (key === "sodium") setSodium(numValue);
 
-    const pieCarb = parseFloat(
-      ((updatedNutrients.carbohydrate / total) * 100).toFixed(2)
-    );
-    const pieProtein = parseFloat(
-      ((updatedNutrients.protein / total) * 100).toFixed(2)
-    );
-    const pieSodium = parseFloat(
-      ((updatedNutrients.sodium / total) * 100).toFixed(2)
-    );
+  // Update the local nutrients state
+  const updatedNutrients = { ...nutrients, [key]: value };  // Keep as string for display
+  setNutrients(updatedNutrients);
 
-    setNutritionData({
-      userIntake: {
-        breakdown: {
-          carbohydrate: pieCarb,
-          protein: pieProtein,
-          sodium: pieSodium,
-        },
-        total: total,
+  const total =
+    (parseFloat(updatedNutrients.carbohydrate) || 0) +
+    (parseFloat(updatedNutrients.protein) || 0) +
+    (parseFloat(updatedNutrients.sodium) || 0);
+
+  if (total === 0) return;
+
+  const pieCarb = parseFloat(
+    ((parseFloat(updatedNutrients.carbohydrate) || 0) / total * 100).toFixed(2)
+  );
+  const pieProtein = parseFloat(
+    ((parseFloat(updatedNutrients.protein) || 0) / total * 100).toFixed(2)
+  );
+  const pieSodium = parseFloat(
+    ((parseFloat(updatedNutrients.sodium) || 0) / total * 100).toFixed(2)
+  );
+
+  setNutritionData({
+    userIntake: {
+      breakdown: {
+        carbohydrate: pieCarb,
+        protein: pieProtein,
+        sodium: pieSodium,
       },
-    });
-  };
+      total: total,
+    },
+  });
+};
 
   console.log("carbs:", carbohydrate, "protein:", protein, "sodium:", sodium);
 
@@ -327,7 +341,7 @@ export default function UserNutrientPage() {
                       }
                       autoFocus
                       onBlur={() => toggleEdit("carbohydrate")}
-                      keyboardType="numeric"
+                      keyboardType="decimal-pad"
                       textAlign="center"
                     />
                   ) : (
@@ -367,7 +381,7 @@ export default function UserNutrientPage() {
                       }
                       autoFocus
                       onBlur={() => toggleEdit("sodium")}
-                      keyboardType="numeric"
+                      keyboardType="decimal-pad"
                       textAlign="center"
                     />
                   ) : (
@@ -405,7 +419,7 @@ export default function UserNutrientPage() {
                       }
                       autoFocus
                       onBlur={() => toggleEdit("protein")}
-                      keyboardType="numeric"
+                      keyboardType="decimal-pad"
                       textAlign="center"
                     />
                   ) : (
@@ -452,7 +466,7 @@ export default function UserNutrientPage() {
                     />
                   </View>
                   <View style={styles.legendWrapper}>
-                    <Text style={styles.chartTitle}>User Intake</Text>
+                    <Text style={styles.chartTitle}>Your Intake</Text>
                     <View style={styles.legendItem}>
                       <View
                         style={[
