@@ -87,7 +87,7 @@ export default function Page2() {
               </View>
             }
             <View style={styles.textRow}>
-              <Text style={styles.subtitle}>Carbohydrate</Text>
+              <Text style={styles.subtitle}>Carbohydrates</Text>
             </View>
             {/* Circular Progress with Image */}
 
