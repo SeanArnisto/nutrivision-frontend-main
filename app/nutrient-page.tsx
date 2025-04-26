@@ -461,7 +461,7 @@ export default function UserNutrientPage() {
                         ]}
                       />
                       <Text style={styles.legendLabel}>
-                        Carbohydrate (
+                        Carbs (
                         {toPercentageText(
                           nutritionData1.userIntake.breakdown.carbohydrate
                         )}
@@ -586,15 +586,13 @@ const styles = StyleSheet.create({
   },
   userText: {
     color: "#9AB206",
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: "bold",
-    fontFamily: "SpaceMono-Regular",
   },
   intakeText: {
     color: "#4D4444",
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: "bold",
-    fontFamily: "SpaceMono-Regular",
   },
   thumbnailSection: {
     backgroundColor: "white",
