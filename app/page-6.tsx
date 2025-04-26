@@ -248,8 +248,8 @@ export default function Page6() {
                       styles.userProgress,
                       {
                         width: toProgressWidth(
-                          (nutritionData.progress.carbohydrate.user /
-                            nutritionData.progress.carbohydrate.avg) *
+                          (nutritionData.values.carbohydrate.user /
+                            nutritionData.values.carbohydrate.avg) *
                             50
                         ),
                       },
@@ -295,8 +295,8 @@ export default function Page6() {
                       styles.userProgress,
                       {
                         width: toProgressWidth(
-                          (nutritionData.progress.sodium.user /
-                            nutritionData.progress.sodium.avg) *
+                          (nutritionData.values.sodium.user /
+                            nutritionData.values.sodium.avg) *
                             50
                         ),
                       },
@@ -342,8 +342,8 @@ export default function Page6() {
                       styles.userProgress,
                       {
                         width: toProgressWidth(
-                          (nutritionData.progress.protein.user /
-                            nutritionData.progress.protein.avg) *
+                          (nutritionData.values.protein.user /
+                            nutritionData.values.protein.avg) *
                             50
                         ),
                       },
