@@ -1,4 +1,4 @@
-import React from 'react';
+import React from "react";
 import {
   SafeAreaView,
   View,
@@ -6,26 +6,26 @@ import {
   Image,
   TouchableOpacity,
   Text,
-} from 'react-native';
-import { useNavigation } from '@react-navigation/native';
-import { StackNavigationProp } from '@react-navigation/stack';
-import { RootStackParamList } from '@/types/types';
+} from "react-native";
+import { useNavigation } from "@react-navigation/native";
+import { StackNavigationProp } from "@react-navigation/stack";
+import { RootStackParamList } from "@/types/types";
 
 // Navigation prop type for this screen
 type Page2ScreenNavigationProp = StackNavigationProp<
   RootStackParamList,
-  'page-2'
+  "page-2"
 >;
 
 export default function Page2() {
   const navigation = useNavigation<Page2ScreenNavigationProp>();
 
   const handleGetStarted = () => {
-    navigation.navigate('landing_page'); // TODO: confirm route
+    navigation.navigate("landing_page"); // TODO: confirm route
   };
 
   const handleLogin = () => {
-    navigation.navigate('landing_page'); // TODO: confirm route
+    navigation.navigate("landing_page"); // TODO: confirm route
   };
 
   return (
@@ -33,7 +33,7 @@ export default function Page2() {
       {/* Top: App logo */}
       <View style={styles.topContainer}>
         <Image
-          source={require('@/assets/images/nutrivision_headstarted.png')}
+          source={require("@/assets/images/nutrivision_headstarted.png")}
           style={styles.logo}
         />
       </View>
@@ -41,7 +41,7 @@ export default function Page2() {
       {/* Middle: Main image */}
       <View style={styles.middleContainer}>
         <Image
-          source={require('@/assets/images/middlepic_started.png')}
+          source={require("@/assets/images/middlepic_started.png")}
           style={styles.mainImage}
         />
       </View>
@@ -54,10 +54,7 @@ export default function Page2() {
         >
           <Text style={styles.buttonText}>Get Started</Text>
         </TouchableOpacity>
-        <TouchableOpacity
-          style={styles.buttonSecondary}
-          onPress={handleLogin}
-        >
+        <TouchableOpacity style={styles.buttonSecondary} onPress={handleLogin}>
           <Text style={styles.buttonTextSecondary}>
             I already have an account
           </Text>
@@ -70,57 +67,57 @@ export default function Page2() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#eff1f6',
+    backgroundColor: "#eff1f6",
   },
   topContainer: {
-    alignItems: 'center',
+    alignItems: "center",
     paddingTop: 20,
   },
   middleContainer: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
   bottomContainer: {
-    alignItems: 'center',
+    alignItems: "center",
     paddingBottom: 10,
-    width: '100%',
+    width: "100%",
   },
   logo: {
     width: 250,
     height: 80,
-    resizeMode: 'contain',
+    resizeMode: "contain",
   },
   mainImage: {
     width: 400,
     height: 400,
-    resizeMode: 'contain',
+    resizeMode: "contain",
   },
   buttonPrimary: {
-    width: '90%',
+    width: "90%",
     padding: 15,
-    backgroundColor: '#9AB106',
+    backgroundColor: "#9AB106",
     borderRadius: 8,
-    alignItems: 'center',
+    alignItems: "center",
     marginBottom: 15,
   },
   buttonText: {
-    color: '#fff',
+    color: "#fff",
     fontSize: 16,
-    fontWeight: 'bold',
+    fontWeight: "bold",
   },
   buttonSecondary: {
-    width: '90%',
+    width: "90%",
     padding: 15,
-    backgroundColor: 'transparent',
+    backgroundColor: "transparent",
     borderWidth: 1,
-    borderColor: '#9AB106',
+    borderColor: "#9AB106",
     borderRadius: 8,
-    alignItems: 'center',
+    alignItems: "center",
   },
   buttonTextSecondary: {
-    color: '#9AB106',
+    color: "#9AB106",
     fontSize: 16,
-    fontWeight: 'bold',
+    fontWeight: "bold",
   },
 });
