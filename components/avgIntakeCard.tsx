@@ -10,17 +10,31 @@ import {
   TouchableOpacity,
 } from "react-native";
 
-export default function () {
+interface AvgIntakeCardProps {
+  iconSource: any; 
+  tintColor: string;
+  subtitle: string;
+  value: number | string;
+  fill?: number;
+}
+
+export default function AvgIntakeCard({ 
+  iconSource, 
+  tintColor, 
+  subtitle, 
+  value,
+  fill = 100 
+}: AvgIntakeCardProps) {
   return (
     <>
       <View style={[styles.column]}>
         {
           <View style={styles.textRow}>
-            <Text style={styles.title}>{/*carbAvg*/} g</Text>
+            <Text style={styles.title}>{value} g</Text>
           </View>
         }
         <View style={styles.textRow}>
-          <Text style={styles.subtitle}>Carbohydrate</Text>
+          <Text style={styles.subtitle}>{subtitle}</Text>
         </View>
         {/* Circular Progress with Image */}
 
@@ -31,13 +45,13 @@ export default function () {
                 style={{ transform: [{ rotate: "90deg" }, { scaleX: -1 }] }}
                 size={95}
                 width={10}
-                fill={100} // Percentage fill
-                tintColor="#d5cd3a"
+                fill={fill} // Percentage fill
+                tintColor={tintColor}
                 backgroundColor="#dddddd"
               >
                 {() => (
                   <Image
-                    source={require("@/assets/images/Carbohydrate Icon.png")} // Change this to your desired image
+                    source={iconSource}
                     style={{
                       width: 40,
                       height: 40,

@@ -10,14 +10,14 @@ import {
 } from "react-native";
 import { ThemedView } from "@/components/ThemedView";
 import { ThemedText } from "@/components/ThemedText";
-import { CircularProgressbar } from "react-circular-progressbar";
 import "react-circular-progressbar/dist/styles.css";
-import { AnimatedCircularProgress } from "react-native-circular-progress";
 import { useNavigation, useRoute } from "@react-navigation/native";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { RootStackParamList } from "@/types/types";
 import { useRecommStore } from "@/hooks/store";
 import { Ionicons } from "@expo/vector-icons";
+import AvgIntakeCard from "@/components/avgIntakeCard";
+import { nutrients } from "@/constants/nutrientIcons";
 
 type Page2ScreenNavigationProp = StackNavigationProp<
   RootStackParamList,
@@ -41,12 +41,11 @@ export default function Page2() {
     navigation.goBack();
   }
 
-  const { width } = Dimensions.get("window");
   const handleCheck = () => {
     navigation.navigate("camera");
   };
 
-  const carbsMin = minCarb; // 346
+  const carbsMin = minCarb;
   const carbsMax = maxCarb;
 
   const carbAvg = Math.round((carbsMin + carbsMax) / 2);
@@ -80,126 +79,28 @@ export default function Page2() {
         </View>
         <View style={styles.rowContainer}>
           {/* Container 1 */}
-          <View style={[styles.column]}>
-            {
-              <View style={styles.textRow}>
-                <Text style={styles.title}>{carbAvg} g</Text>
-              </View>
-            }
-            <View style={styles.textRow}>
-              <Text style={styles.subtitle}>Carbohydrate</Text>
-            </View>
-            {/* Circular Progress with Image */}
-
-            <View style={styles.textRow}>
-              <View style={styles.progressRow}>
-                <View style={{ alignItems: "flex-start", marginTop: 10 }}>
-                  <AnimatedCircularProgress
-                    style={{ transform: [{ rotate: "90deg" }, { scaleX: -1 }] }}
-                    size={95}
-                    width={10}
-                    fill={100} // Percentage fill
-                    tintColor="#d5cd3a"
-                    backgroundColor="#dddddd"
-                  >
-                    {() => (
-                      <Image
-                        source={require("@/assets/images/Carbohydrate Icon.png")} // Change this to your desired image
-                        style={{
-                          width: 40,
-                          height: 40,
-                          borderRadius: 20,
-                          transform: [{ rotate: "450deg" }, { scaleX: -1 }],
-                        }}
-                        resizeMode="contain"
-                      />
-                    )}
-                  </AnimatedCircularProgress>
-                </View>
-              </View>
-            </View>
-          </View>
+          <AvgIntakeCard
+            iconSource={nutrients.carbohydrate.icon}
+            tintColor={nutrients.carbohydrate.tintColor}
+            subtitle="Carbohydrate"
+            value={carbAvg}
+          />
 
           {/* Container 2 */}
-          <View style={[styles.column]}>
-            {/* Your content */}
-            {
-              <View style={styles.textRow}>
-                <Text style={styles.title}>{sodiumAvg} g</Text>
-              </View>
-            }
-            <View style={styles.textRow}>
-              <Text style={styles.subtitle}>Sodium</Text>
-            </View>
-            {/* Circular Progress with Image */}
-            <View style={styles.textRow}>
-              <View style={styles.progressRow}>
-                <View style={{ alignItems: "flex-start", marginTop: 10 }}>
-                  <AnimatedCircularProgress
-                    style={{ transform: [{ rotate: "90deg" }, { scaleX: -1 }] }}
-                    size={95}
-                    width={10}
-                    fill={100} // Percentage fill
-                    tintColor="#aa7b08"
-                    backgroundColor="#dddddd"
-                  >
-                    {() => (
-                      <Image
-                        source={require("@/assets/images/Sodium Icon.png")} // Change this to your desired image
-                        style={{
-                          width: 40,
-                          height: 40,
-                          borderRadius: 20,
-                          transform: [{ rotate: "450deg" }, { scaleX: 1 }],
-                        }}
-                        resizeMode="contain"
-                      />
-                    )}
-                  </AnimatedCircularProgress>
-                </View>
-              </View>
-            </View>
-          </View>
+          <AvgIntakeCard
+            iconSource={nutrients.sodium.icon}
+            tintColor={nutrients.sodium.tintColor}
+            subtitle="Sodium"
+            value={sodiumAvg}
+          />
 
           {/* Container 3 */}
-          <View style={[styles.column]}>
-            {/* Your content */}
-            {
-              <View style={styles.textRow}>
-                <Text style={styles.title}>{proteinAvg} g</Text>
-              </View>
-            }
-            <View style={styles.textRow}>
-              <Text style={styles.subtitle}>Protein</Text>
-            </View>
-            <View style={styles.textRow}>
-              <View style={styles.progressRow}>
-                <View style={{ alignItems: "flex-start", marginTop: 10 }}>
-                  <AnimatedCircularProgress
-                    style={{ transform: [{ rotate: "90deg" }, { scaleX: -1 }] }}
-                    size={95}
-                    width={10}
-                    fill={100} // Percentage fill
-                    tintColor="#9ab106"
-                    backgroundColor="#dddddd"
-                  >
-                    {() => (
-                      <Image
-                        source={require("@/assets/images/Protein Icon.png")} // Change this to your desired image
-                        style={{
-                          width: 40,
-                          height: 40,
-                          borderRadius: 20,
-                          transform: [{ rotate: "450deg" }, { scaleX: -1 }],
-                        }}
-                        resizeMode="contain"
-                      />
-                    )}
-                  </AnimatedCircularProgress>
-                </View>
-              </View>
-            </View>
-          </View>
+          <AvgIntakeCard
+            iconSource={nutrients.protein.icon}
+            tintColor={nutrients.protein.tintColor}
+            subtitle="Protein"
+            value={proteinAvg}
+          />
         </View>
         <View style={styles.paragraphContainer}>
           <Text style={styles.paragraphText}>
