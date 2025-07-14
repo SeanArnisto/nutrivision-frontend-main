@@ -18,6 +18,9 @@ import { useRecommStore } from "@/hooks/store";
 import { Ionicons } from "@expo/vector-icons";
 import AvgIntakeCard from "@/components/avgIntakeCard";
 import { nutrients } from "@/constants/nutrientIcons";
+import { strings } from "@/constants/strings";
+import AppLogo from "@/components/appLogo";
+import GoBack from "@/components/ReturnButton";
 
 type Page2ScreenNavigationProp = StackNavigationProp<
   RootStackParamList,
@@ -25,9 +28,9 @@ type Page2ScreenNavigationProp = StackNavigationProp<
 >;
 
 export default function Page2() {
+  
   const navigation = useNavigation<Page2ScreenNavigationProp>();
-  const route = useRoute();
-
+  
   const minCarb = useRecommStore((state) => state.minCarb);
   const maxCarb = useRecommStore((state) => state.maxCarb);
 
@@ -36,10 +39,6 @@ export default function Page2() {
 
   const minSodium = useRecommStore((state) => state.minSodium);
   const maxSodium = useRecommStore((state) => state.maxSodium);
-
-  function handleGoBack() {
-    navigation.goBack();
-  }
 
   const handleCheck = () => {
     navigation.navigate("camera");
@@ -62,13 +61,7 @@ export default function Page2() {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      {/* Logo kept from original */}
-      <Image
-        source={require("@/assets/images/NutriVision.png")}
-        style={styles.logo}
-        accessibilityRole="image"
-        accessibilityLabel="NutriVision logo"
-      />
+      <AppLogo />
       <ThemedView style={styles.container}>
         {/* Add your new page-2 content here */}
         <View style={styles.profileBox}>
@@ -104,24 +97,11 @@ export default function Page2() {
         </View>
         <View style={styles.paragraphContainer}>
           <Text style={styles.paragraphText}>
-            The information provided by Nutrivision is for educational and
-            informational purposes only. It is not intended as medical advice,
-            diagnosis, or treatment. Nutrient values are estimated based on
-            available data and may not reflect exact amounts due to variations
-            in food composition and labeling. While we strive for accuracy,
-            individual nutritional needs may differ. Always consult a healthcare
-            professional or registered dietitian for personalized dietary
-            recommendations and health-related decisions.
+            {strings.disclaimer}
           </Text>
         </View>
       </ThemedView>
-      <TouchableOpacity
-        style={styles.roundButton}
-        onPress={handleGoBack}
-        disabled={false}
-      >
-        <Ionicons name="arrow-undo-outline" size={28} color="#9AB206" />
-      </TouchableOpacity>
+      <GoBack />
       <TouchableOpacity style={styles.checkButton} onPress={handleCheck}>
         <Ionicons name="camera-outline" size={33} color="#9AB206" />
       </TouchableOpacity>
@@ -133,17 +113,6 @@ const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
     backgroundColor: "#eff1f6",
-  },
-  roundButton: {
-    width: 60,
-    height: 60,
-    bottom: 40,
-    left: 20,
-    borderRadius: 30,
-    backgroundColor: "#333",
-    justifyContent: "center",
-    alignItems: "center",
-    position: "absolute",
   },
   checkButton: {
     position: "absolute",
@@ -185,12 +154,6 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     color: "#385802",
   },
-  subtitle: {
-    fontSize: 12,
-    color: "#666",
-    paddingHorizontal: 2,
-    fontWeight: "bold",
-  },
   profileBox: {
     width: 150,
     height: 50,
@@ -218,21 +181,6 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     gap: 7,
   },
-  column: {
-    flex: 1,
-    backgroundColor: "white",
-    borderRadius: 8,
-    padding: 10,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 6,
-    elevation: 4,
-  },
-  textRow: {
-    alignItems: "flex-start",
-  },
-  progressRow: {},
   paragraphContainer: {
     backgroundColor: "white",
     borderRadius: 8,
@@ -244,7 +192,6 @@ const styles = StyleSheet.create({
     shadowRadius: 6,
     elevation: 4,
   },
-
   paragraphText: {
     fontSize: 16,
     color: "#333",
