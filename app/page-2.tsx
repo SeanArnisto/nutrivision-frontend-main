@@ -21,6 +21,7 @@ import { nutrients } from "@/constants/nutrientIcons";
 import { strings } from "@/constants/strings";
 import AppLogo from "@/components/appLogo";
 import GoBack from "@/components/ReturnButton";
+import GoNext from "@/components/NextButton";
 
 type Page2ScreenNavigationProp = StackNavigationProp<
   RootStackParamList,
@@ -101,10 +102,9 @@ export default function Page2() {
           </Text>
         </View>
       </ThemedView>
+      {/* navigations */}
       <GoBack />
-      <TouchableOpacity style={styles.checkButton} onPress={handleCheck}>
-        <Ionicons name="camera-outline" size={33} color="#9AB206" />
-      </TouchableOpacity>
+      <GoNext next="camera"/>
     </SafeAreaView>
   );
 }
