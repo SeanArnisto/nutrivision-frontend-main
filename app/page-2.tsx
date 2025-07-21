@@ -22,6 +22,7 @@ import { strings } from "@/constants/strings";
 import AppLogo from "@/components/appLogo";
 import GoBack from "@/components/ReturnButton";
 import GoNext from "@/components/NextButton";
+import ProfileBox from "@/components/ProfileBox";
 
 type Page2ScreenNavigationProp = StackNavigationProp<
   RootStackParamList,
@@ -64,13 +65,8 @@ export default function Page2() {
     <SafeAreaView style={styles.safeArea}>
       <AppLogo />
       <ThemedView style={styles.container}>
-        {/* Add your new page-2 content here */}
-        <View style={styles.profileBox}>
-          <ThemedText style={styles.profileBoxText}>
-            Average <ThemedText style={styles.profileText}>Daily</ThemedText>{" "}
-            Intake
-          </ThemedText>
-        </View>
+        {/* Add your new page-2 content here */}     
+        <ProfileBox primaryText="Average" highlightedText="Daily" secondaryText="Intake"/>
         <View style={styles.rowContainer}>
           {/* Container 1 */}
           <AvgIntakeCard
@@ -114,67 +110,11 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#eff1f6",
   },
-  checkButton: {
-    position: "absolute",
-    bottom: 40,
-    right: 20,
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    backgroundColor: "#333",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  checkMark: {
-    fontSize: 25,
-    color: "#9AB106",
-    fontWeight: "bold",
-  },
   container: {
     flex: 1,
     backgroundColor: "#eff1f6",
     gap: 15,
     padding: 15,
-  },
-  // Logo style from original
-  logo: {
-    width: 200,
-    height: 60,
-    resizeMode: "contain",
-    alignSelf: "flex-start",
-  },
-  // New styles for page-2
-  content: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "flex-start",
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: "bold",
-    color: "#385802",
-  },
-  profileBox: {
-    width: 150,
-    height: 50,
-    backgroundColor: "white",
-    borderRadius: 12,
-    justifyContent: "center",
-    alignItems: "center",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 6,
-    elevation: 4,
-  },
-  profileBoxText: {
-    fontSize: 12,
-    fontWeight: "bold",
-    color: "#333",
-  },
-  profileText: {
-    fontSize: 12,
-    color: "#9AB206",
   },
   rowContainer: {
     flexDirection: "row",
