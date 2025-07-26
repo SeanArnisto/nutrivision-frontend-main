@@ -23,6 +23,7 @@ import * as MediaLibrary from "expo-media-library";
 import PieChart from "react-native-pie-chart";
 import { useRoute } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
+import AppLogo from "@/components/appLogo";
 
 //import  {useApi} from '@/hooks/ApiContext';
 
@@ -39,8 +40,6 @@ type HomeScreenNavigationProp = StackNavigationProp<
 >;
 
 export default function UserNutrientPage() {
-  const route = useRoute();
-
   const carbohydrate = useNutrientsStore((state) => state.carbs);
   const protein = useNutrientsStore((state) => state.protein);
   const sodium = useNutrientsStore((state) => state.sodium);
@@ -282,12 +281,7 @@ const handleNutrientChange = (
       >
         <ScrollView contentContainerStyle={styles.scrollContainer}>
           <View style={styles.container}>
-            <View style={styles.header}>
-              <Image
-                source={require("@/assets/images/NutriVision.png")}
-                style={styles.logo}
-              />
-            </View>
+            <AppLogo />
 
             <View style={styles.userIntakeCard}>
               <Text style={styles.userText}>User </Text>

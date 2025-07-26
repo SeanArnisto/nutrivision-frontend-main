@@ -25,7 +25,7 @@ export default function Page2() {
   };
 
   const handleLogin = () => {
-    navigation.navigate("landing_page"); // TODO: confirm route
+    navigation.navigate("nutrient-page"); // TODO: confirm route
   };
 
   return (
