@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback } from "react";
-import { useFocusEffect, useIsFocused } from "@react-navigation/native";
+import { useFocusEffect } from "@react-navigation/native";
 import { useNutrientsStore } from "@/hooks/store";
 import {
   View,
@@ -7,37 +7,25 @@ import {
   Text,
   StyleSheet,
   Dimensions,
-  TouchableOpacity,
   Platform,
   ScrollView,
   SafeAreaView,
-  TextInput,
   KeyboardAvoidingView,
 } from "react-native";
 import { useFonts } from "expo-font";
-import { ThemedText } from "@/components/ThemedText";
-import { useNavigation } from "expo-router";
-import { RootStackParamList } from "@/types/types";
-import { StackNavigationProp } from "@react-navigation/stack";
 import * as MediaLibrary from "expo-media-library";
 import PieChart from "react-native-pie-chart";
-import { useRoute } from "@react-navigation/native";
-import { Ionicons } from "@expo/vector-icons";
 import AppLogo from "@/components/appLogo";
+import NutrientInputSection from "@/components/NutrientInput";
+import GoBack from "@/components/ReturnButton";
+import GoNext from "@/components/NextButton";
+import ProfileBox from "@/components/ProfileBox";
 
-//import  {useApi} from '@/hooks/ApiContext';
-
-const { width, height } = Dimensions.get("window");
 
 // Helper Function
 const toPercentageText = (value: number): string => `${value}%`;
 const formatValue = (value: number, unit: string = "g"): string =>
   `${value} ${unit}`;
-
-type HomeScreenNavigationProp = StackNavigationProp<
-  RootStackParamList,
-  "index"
->;
 
 export default function UserNutrientPage() {
   const carbohydrate = useNutrientsStore((state) => state.carbs);
@@ -54,13 +42,6 @@ export default function UserNutrientPage() {
     boolean | null
   >(null);
 
-  function handleGoBack() {
-    navigation.goBack();
-  }
-
-  // Navigation
-  const navigation = useNavigation() as HomeScreenNavigationProp;
-
   useEffect(() => {
     const carb = Number(carbohydrate) || 0;
     const prot = Number(protein) || 0;
@@ -73,7 +54,11 @@ export default function UserNutrientPage() {
     const pieProtein = parseFloat(((prot / total) * 100).toFixed(2));
     const pieSodium = parseFloat(((sod / total) * 100).toFixed(2));
 
-    setNutrients({ carbohydrate: carb.toString(), protein: prot.toString(), sodium: sod.toString() });
+    setNutrients({
+      carbohydrate: carb.toString(),
+      protein: prot.toString(),
+      sodium: sod.toString(),
+    });
     setNutritionData({
       userIntake: {
         breakdown: {
@@ -124,62 +109,65 @@ export default function UserNutrientPage() {
 
   // Handle nutrient change
   // Handle nutrient change
-const handleNutrientChange = (
-  key: "sodium" | "protein" | "carbohydrate",
-  value: string
-) => {
-  // Special handling for decimal point
-  if (value === '.' || value === '0.') {
-    // For decimal point only, just update the display value without converting
-    const updatedNutrients = { ...nutrients, [key]: value };
+  const handleNutrientChange = (
+    key: "sodium" | "protein" | "carbohydrate",
+    value: string
+  ) => {
+    // Special handling for decimal point
+    if (value === "." || value === "0.") {
+      // For decimal point only, just update the display value without converting
+      const updatedNutrients = { ...nutrients, [key]: value };
+      setNutrients(updatedNutrients);
+
+      // Update the Zustand store with 0 for now
+      if (key === "carbohydrate") setCarbs(0);
+      if (key === "protein") setProtein(0);
+      if (key === "sodium") setSodium(0);
+      return;
+    }
+
+    const numValue = parseFloat(value) || 0;
+
+    // Update the Zustand store
+    if (key === "carbohydrate") setCarbs(numValue);
+    if (key === "protein") setProtein(numValue);
+    if (key === "sodium") setSodium(numValue);
+
+    // Update the local nutrients state
+    const updatedNutrients = { ...nutrients, [key]: value }; // Keep as string for display
     setNutrients(updatedNutrients);
-    
-    // Update the Zustand store with 0 for now
-    if (key === "carbohydrate") setCarbs(0);
-    if (key === "protein") setProtein(0);
-    if (key === "sodium") setSodium(0);
-    return;
-  }
 
-  const numValue = parseFloat(value) || 0;
+    const total =
+      (parseFloat(updatedNutrients.carbohydrate) || 0) +
+      (parseFloat(updatedNutrients.protein) || 0) +
+      (parseFloat(updatedNutrients.sodium) || 0);
 
-  // Update the Zustand store
-  if (key === "carbohydrate") setCarbs(numValue);
-  if (key === "protein") setProtein(numValue);
-  if (key === "sodium") setSodium(numValue);
+    if (total === 0) return;
 
-  // Update the local nutrients state
-  const updatedNutrients = { ...nutrients, [key]: value };  // Keep as string for display
-  setNutrients(updatedNutrients);
+    const pieCarb = parseFloat(
+      (
+        ((parseFloat(updatedNutrients.carbohydrate) || 0) / total) *
+        100
+      ).toFixed(2)
+    );
+    const pieProtein = parseFloat(
+      (((parseFloat(updatedNutrients.protein) || 0) / total) * 100).toFixed(2)
+    );
+    const pieSodium = parseFloat(
+      (((parseFloat(updatedNutrients.sodium) || 0) / total) * 100).toFixed(2)
+    );
 
-  const total =
-    (parseFloat(updatedNutrients.carbohydrate) || 0) +
-    (parseFloat(updatedNutrients.protein) || 0) +
-    (parseFloat(updatedNutrients.sodium) || 0);
-
-  if (total === 0) return;
-
-  const pieCarb = parseFloat(
-    ((parseFloat(updatedNutrients.carbohydrate) || 0) / total * 100).toFixed(2)
-  );
-  const pieProtein = parseFloat(
-    ((parseFloat(updatedNutrients.protein) || 0) / total * 100).toFixed(2)
-  );
-  const pieSodium = parseFloat(
-    ((parseFloat(updatedNutrients.sodium) || 0) / total * 100).toFixed(2)
-  );
-
-  setNutritionData({
-    userIntake: {
-      breakdown: {
-        carbohydrate: pieCarb,
-        protein: pieProtein,
-        sodium: pieSodium,
+    setNutritionData({
+      userIntake: {
+        breakdown: {
+          carbohydrate: pieCarb,
+          protein: pieProtein,
+          sodium: pieSodium,
+        },
+        total: total,
       },
-      total: total,
-    },
-  });
-};
+    });
+  };
 
   console.log("carbs:", carbohydrate, "protein:", protein, "sodium:", sodium);
 
@@ -264,10 +252,6 @@ const handleNutrientChange = (
     }
   };
 
-  const handleCheck = () => {
-    navigation.navigate("page-6");
-  };
-
   if (!fontsLoaded) {
     return <Text>Loading...</Text>;
   }
@@ -283,10 +267,7 @@ const handleNutrientChange = (
           <View style={styles.container}>
             <AppLogo />
 
-            <View style={styles.userIntakeCard}>
-              <Text style={styles.userText}>User </Text>
-              <Text style={styles.intakeText}>Intake</Text>
-            </View>
+            <ProfileBox primaryText="Average" highlightedText="Intake"/>
 
             {/* Thumbnail section */}
             <View style={styles.thumbnailSection}>
@@ -316,123 +297,12 @@ const handleNutrientChange = (
             </View>
 
             {/* Input section */}
-            <View style={styles.inputSection}>
-              {/* Sugar Input */}
-              <View style={styles.inputRow}>
-                <Image
-                  source={require("@/assets/images/Carbohydrate Icon.png")}
-                  style={styles.icon}
-                />
-                <Text style={styles.nutrientText}>Carbs</Text>
-                <View style={styles.divider} />
-                <View style={styles.inputBox}>
-                  {isEditing.carbohydrate ? (
-                    <TextInput
-                      style={styles.input}
-                      value={nutrients.carbohydrate.toString()}
-                      onChangeText={(text) =>
-                        handleNutrientChange("carbohydrate", text)
-                      }
-                      autoFocus
-                      onBlur={() => toggleEdit("carbohydrate")}
-                      keyboardType="decimal-pad"
-                      textAlign="center"
-                    />
-                  ) : (
-                    <>
-                      <Text style={styles.inputText}>
-                        {nutrients.carbohydrate}
-                      </Text>
-                      <TouchableOpacity
-                        style={styles.editButtonInside}
-                        onPress={() => toggleEdit("carbohydrate")}
-                      >
-                        <Image
-                          source={require("@/assets/images/Edit Icon.png")}
-                          style={styles.editIcon}
-                        />
-                      </TouchableOpacity>
-                    </>
-                  )}
-                </View>
-              </View>
-
-              {/* Sodium Input */}
-              <View style={styles.inputRow}>
-                <Image
-                  source={require("@/assets/images/Sodium Icon.png")}
-                  style={styles.icon}
-                />
-                <Text style={styles.nutrientText}>Sodium</Text>
-                <View style={styles.divider} />
-                <View style={styles.inputBox}>
-                  {isEditing.sodium ? (
-                    <TextInput
-                      style={styles.input}
-                      value={nutrients.sodium.toString()}
-                      onChangeText={(text) =>
-                        handleNutrientChange("sodium", text)
-                      }
-                      autoFocus
-                      onBlur={() => toggleEdit("sodium")}
-                      keyboardType="decimal-pad"
-                      textAlign="center"
-                    />
-                  ) : (
-                    <>
-                      <Text style={styles.inputText}>{nutrients.sodium}</Text>
-                      <TouchableOpacity
-                        style={styles.editButtonInside}
-                        onPress={() => toggleEdit("sodium")}
-                      >
-                        <Image
-                          source={require("@/assets/images/Edit Icon.png")}
-                          style={styles.editIcon}
-                        />
-                      </TouchableOpacity>
-                    </>
-                  )}
-                </View>
-              </View>
-
-              {/* Calories Input */}
-              <View style={styles.inputRow}>
-                <Image
-                  source={require("@/assets/images/Protein Icon.png")}
-                  style={styles.icon}
-                />
-                <Text style={styles.nutrientText}>Protein</Text>
-                <View style={styles.divider} />
-                <View style={styles.inputBox}>
-                  {isEditing.protein ? (
-                    <TextInput
-                      style={styles.input}
-                      value={nutrients.protein.toString()}
-                      onChangeText={(text) =>
-                        handleNutrientChange("protein", text)
-                      }
-                      autoFocus
-                      onBlur={() => toggleEdit("protein")}
-                      keyboardType="decimal-pad"
-                      textAlign="center"
-                    />
-                  ) : (
-                    <>
-                      <Text style={styles.inputText}>{nutrients.protein}</Text>
-                      <TouchableOpacity
-                        style={styles.editButtonInside}
-                        onPress={() => toggleEdit("protein")}
-                      >
-                        <Image
-                          source={require("@/assets/images/Edit Icon.png")}
-                          style={styles.editIcon}
-                        />
-                      </TouchableOpacity>
-                    </>
-                  )}
-                </View>
-              </View>
-            </View>
+            <NutrientInputSection
+              nutrients={nutrients}
+              isEditing={isEditing}
+              handleNutrientChange={handleNutrientChange}
+              toggleEdit={toggleEdit}
+            />
 
             <View style={styles.chartsContainer}>
               {/* User Intake Donut Chart */}
@@ -519,18 +389,9 @@ const handleNutrientChange = (
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
-      <TouchableOpacity
-        style={styles.roundButton}
-        onPress={handleGoBack}
-        disabled={false}
-      >
-        <Ionicons name="arrow-undo-outline" size={28} color="#9AB206" />
-      </TouchableOpacity>
-
-      {/* Floating check button */}
-      <TouchableOpacity style={styles.checkButton} onPress={handleCheck}>
-        <Ionicons name="arrow-redo-outline" size={28} color="#9AB206" />
-      </TouchableOpacity>
+      {/* navigations */}
+      <GoBack />
+      <GoNext next="page-6" />
     </SafeAreaView>
   );
 }
@@ -650,60 +511,6 @@ const styles = StyleSheet.create({
     shadowRadius: 6,
     elevation: 4,
     marginBottom: 20,
-  },
-  inputRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginVertical: 7.5,
-    marginHorizontal: 8,
-    overflow: "hidden",
-  },
-  icon: {
-    width: 24,
-    height: 24,
-    marginRight: 10,
-  },
-  nutrientText: {
-    fontSize: 14,
-    fontWeight: "bold",
-    color: "#4D4444",
-  },
-  editIcon: {
-    width: 13,
-    height: 13,
-  },
-  editButtonInside: {
-    position: "absolute",
-    right: 5,
-    top: "50%",
-    transform: [{ translateY: -8 }], // Center vertically (half of icon height)
-  },
-  inputBox: {
-    backgroundColor: "#F0F0F0",
-    borderRadius: 8,
-    width: 90,
-    height: 40,
-    justifyContent: "center",
-    position: "relative", // Added to position the edit icon inside
-  },
-  inputText: {
-    fontSize: 14,
-    color: "#333",
-    textAlign: "center",
-  },
-  input: {
-    width: "100%",
-    height: "100%",
-    fontSize: 14,
-    color: "#333",
-    padding: 0,
-    textAlign: "center",
-  },
-  divider: {
-    height: 1,
-    backgroundColor: "#DDDDDD",
-    flex: 1, // Makes it take up available space
-    marginHorizontal: 10,
   },
   innerRow: {
     flexDirection: "row",

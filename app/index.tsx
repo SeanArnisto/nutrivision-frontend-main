@@ -10,6 +10,7 @@ import {
 import { useNavigation } from "@react-navigation/native";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { RootStackParamList } from "@/types/types";
+import NutrientInputSection from "@/components/NutrientInput";
 
 // Navigation prop type for this screen
 type Page2ScreenNavigationProp = StackNavigationProp<
@@ -37,6 +38,7 @@ export default function Page2() {
           style={styles.logo}
         />
       </View>
+
 
       {/* Middle: Main image */}
       <View style={styles.middleContainer}>
