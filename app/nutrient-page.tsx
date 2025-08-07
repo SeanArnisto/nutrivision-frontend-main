@@ -20,7 +20,8 @@ import NutrientInputSection from "@/components/NutrientInput";
 import GoBack from "@/components/ReturnButton";
 import GoNext from "@/components/NextButton";
 import ProfileBox from "@/components/ProfileBox";
-
+import NutritionDonutChart from "@/components/DonuteChart";
+import PhotoThumbnailGallery from "@/components/PhotoThumbnailGallery";
 
 // Helper Function
 const toPercentageText = (value: number): string => `${value}%`;
@@ -266,34 +267,11 @@ export default function UserNutrientPage() {
         <ScrollView contentContainerStyle={styles.scrollContainer}>
           <View style={styles.container}>
             <AppLogo />
+            <ProfileBox primaryText="Average" highlightedText="Intake" />
 
-            <ProfileBox primaryText="Average" highlightedText="Intake"/>
-
-            {/* Thumbnail section */}
-            <View style={styles.thumbnailSection}>
-              <View style={styles.thumbnailWrapper}>
-                <ScrollView
-                  horizontal
-                  showsHorizontalScrollIndicator={false}
-                  contentContainerStyle={styles.thumbnailsRow}
-                >
-                  {capturedPhotos.map((item, index) => (
-                    <View key={index} style={styles.thumbnailContainer}>
-                      {item.uri ? (
-                        <Image
-                          source={{ uri: item.uri }}
-                          style={styles.thumbnail}
-                          onError={() => console.log("Image failed to load")}
-                        />
-                      ) : (
-                        <View style={styles.thumbnail}>
-                          <Text style={styles.placeholderText}>No Image</Text>
-                        </View>
-                      )}
-                    </View>
-                  ))}
-                </ScrollView>
-              </View>
+            {/* Thumbnail section with added top margin */}
+            <View style={{ marginTop: 20 }}>
+              <PhotoThumbnailGallery photos={capturedPhotos} />
             </View>
 
             {/* Input section */}
@@ -306,85 +284,19 @@ export default function UserNutrientPage() {
 
             <View style={styles.chartsContainer}>
               {/* User Intake Donut Chart */}
-              <View style={styles.chartBox}>
-                <View style={styles.chartRow}>
-                  <View style={styles.chartWrapper}>
-                    <PieChart
-                      widthAndHeight={150}
-                      series={[
-                        {
-                          value: nutritionData1.userIntake.breakdown.protein,
-                          color: "#000000",
-                        },
-                        {
-                          value: nutritionData1.userIntake.breakdown.sodium,
-                          color: "#c0b4b4",
-                        },
-                        {
-                          value:
-                            nutritionData1.userIntake.breakdown.carbohydrate,
-                          color: "#7ca844",
-                        },
-                      ]}
-                      cover={0.55}
-                    />
-                  </View>
-                  <View style={styles.legendWrapper}>
-                    <Text style={styles.chartTitle}>Your Intake</Text>
-                    <View style={styles.legendItem}>
-                      <View
-                        style={[
-                          styles.colorCircle,
-                          { backgroundColor: "#7ca844" },
-                        ]}
-                      />
-                      <Text style={styles.legendLabel}>
-                        Carbs (
-                        {toPercentageText(
-                          nutritionData1.userIntake.breakdown.carbohydrate
-                        )}
-                        )
-                      </Text>
-                    </View>
-                    <View style={styles.legendItem}>
-                      <View
-                        style={[
-                          styles.colorCircle,
-                          { backgroundColor: "#c0b4b4" },
-                        ]}
-                      />
-                      <Text style={styles.legendLabel}>
-                        Sodium (
-                        {toPercentageText(
-                          nutritionData1.userIntake.breakdown.sodium
-                        )}
-                        )
-                      </Text>
-                    </View>
-                    <View style={styles.legendItem}>
-                      <View
-                        style={[
-                          styles.colorCircle,
-                          { backgroundColor: "#000000" },
-                        ]}
-                      />
-                      <Text style={styles.legendLabel}>
-                        Protein (
-                        {toPercentageText(
-                          nutritionData1.userIntake.breakdown.protein
-                        )}
-                        )
-                      </Text>
-                    </View>
-                    <View style={styles.totalBox}>
-                      <Text style={styles.totalText}>
-                        Total Nutrient{"\n"}Amount ={" "}
-                        {formatValue(nutritionData1.userIntake.total)}
-                      </Text>
-                    </View>
-                  </View>
-                </View>
-              </View>
+              <NutritionDonutChart
+                nutritionData={nutritionData1.userIntake}
+                title="Your Intake"
+                chartSize={150}
+                coverRadius={0.55}
+                colors={{
+                  protein: "#000000",
+                  sodium: "#c0b4b4",
+                  carbohydrate: "#7ca844",
+                }}
+                formatValue={formatValue}
+                toPercentageText={toPercentageText}
+              />
             </View>
           </View>
         </ScrollView>
@@ -401,16 +313,8 @@ const styles = StyleSheet.create({
   keyboardAvoidingContainer: {
     flex: 1,
   },
-  roundButton: {
-    width: 60,
-    height: 60,
-    bottom: 40,
-    left: 20,
-    borderRadius: 30,
-    backgroundColor: "#333",
-    justifyContent: "center",
-    alignItems: "center",
-    position: "absolute",
+  chartsContainer: {
+    gap: 16,
   },
   safeContainer: {
     flex: 1,
@@ -424,216 +328,5 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#F5F5F5",
     paddingHorizontal: 20,
-  },
-  header: {
-    marginLeft: -15,
-    width: "100%",
-    height: 100,
-    justifyContent: "center",
-    alignItems: "flex-start",
-    marginBottom: 10,
-  },
-  logo: {
-    width: 200,
-    height: 60,
-    resizeMode: "contain",
-    alignSelf: "flex-start",
-  },
-  userIntakeCard: {
-    marginTop: -15,
-    backgroundColor: "white",
-    padding: 15,
-    borderRadius: 12,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 6,
-    elevation: 4,
-    flexDirection: "row",
-    alignSelf: "flex-start",
-    marginBottom: 20,
-  },
-  userText: {
-    color: "#9AB206",
-    fontSize: 14,
-    fontWeight: "bold",
-  },
-  intakeText: {
-    color: "#4D4444",
-    fontSize: 14,
-    fontWeight: "bold",
-  },
-  thumbnailSection: {
-    backgroundColor: "white",
-    borderRadius: 12,
-    padding: 15,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 6,
-    elevation: 4,
-    marginBottom: 20,
-  },
-  thumbnailWrapper: {
-    width: "100%",
-  },
-  thumbnailsRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingVertical: 5,
-  },
-  thumbnailContainer: {
-    width: 60,
-    height: 60,
-    marginHorizontal: 5,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: "#DDDDDD",
-    overflow: "hidden",
-  },
-  thumbnail: {
-    width: "100%",
-    height: "100%",
-  },
-  placeholderText: {
-    color: "gray",
-    fontSize: 10,
-    textAlign: "center",
-    marginTop: 20,
-  },
-  inputSection: {
-    backgroundColor: "white",
-    borderRadius: 12,
-    padding: 10,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 6,
-    elevation: 4,
-    marginBottom: 20,
-  },
-  innerRow: {
-    flexDirection: "row",
-  },
-  newLeftColumn: {
-    flex: 60,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  newRightColumn: {
-    flex: 40,
-    paddingLeft: 10,
-    justifyContent: "center",
-    gap: 6,
-  },
-  newLegendTitle: {
-    fontSize: 18,
-    fontWeight: "bold",
-    marginBottom: 8,
-    marginLeft: -20,
-  },
-  newLegendItem: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 4,
-  },
-  newCircle: {
-    width: 12,
-    height: 12,
-    borderRadius: 6,
-    marginRight: 6,
-  },
-  newLegendText: {
-    fontSize: 14,
-    color: "#333",
-  },
-  newTotalBox: {
-    backgroundColor: "#f8e4e4",
-    marginTop: 10,
-    padding: 10,
-    borderRadius: 15,
-    alignItems: "flex-start",
-    marginLeft: -20,
-  },
-  newTotalText: {
-    fontSize: 16,
-    color: "#333",
-    textAlign: "left",
-  },
-  chartsContainer: {
-    gap: 16,
-  },
-  chartBox: {
-    backgroundColor: "white",
-    borderRadius: 12,
-    padding: 16,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 6,
-    elevation: 4,
-  },
-  chartRow: {
-    flexDirection: "row",
-  },
-  chartWrapper: {
-    position: "relative",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  legendWrapper: {
-    flex: 1,
-    justifyContent: "center",
-    paddingLeft: 16,
-  },
-  legendItem: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 4,
-  },
-  legendItemSpacing: {
-    marginLeft: 24, // Additional spacing for the second legend
-  },
-  chartTitle: {
-    fontSize: 18,
-    fontWeight: "bold",
-    marginBottom: 12,
-  },
-  colorCircle: {
-    width: 12,
-    height: 12,
-    borderRadius: 6,
-    marginHorizontal: 12,
-  },
-  legendLabel: {
-    fontSize: 12,
-    color: "#333",
-  },
-  totalBox: {
-    backgroundColor: "#f8e4e4",
-    padding: 12,
-    borderRadius: 12,
-    marginTop: 12,
-  },
-  totalText: {
-    fontSize: 14,
-    color: "#333",
-    textAlign: "left",
-  },
-  checkButton: {
-    position: "absolute",
-    bottom: 40,
-    right: 20,
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    backgroundColor: "#333",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  checkMark: {
-    fontSize: 25,
-    color: "#9AB206",
-    fontWeight: "bold",
   },
 });
