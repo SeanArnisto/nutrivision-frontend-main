@@ -12,6 +12,9 @@ import Loading from "@/app/loading";
 import { create } from "react-test-renderer";
 import LandingPage from "@/app/landing_page";
 import onboarding from "@/app/OnBoarding";
+import Settings from "@/app/settings";
+import Profile from "@/app/profile";
+import Statistics from "@/app/statistics";
 
 
 const Stack = createStackNavigator<RootStackParamList>();
@@ -29,6 +32,9 @@ export default function AppNavigator() {
         <Stack.Screen name="loading" component={Loading} /> 
         <Stack.Screen name="landing_page" component={LandingPage} />
         <Stack.Screen name="onboarding" component={onboarding} />
+        <Stack.Screen name="settings" component={Settings} />
+        <Stack.Screen name="profile" component={Profile} />
+        <Stack.Screen name="statistics" component={Statistics} />
       </Stack.Navigator>
     </NavigationContainer>
   );
