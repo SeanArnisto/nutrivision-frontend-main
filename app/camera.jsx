@@ -2,6 +2,7 @@ import React, {
   useRef,
   useState,
   useEffect,
+  useCallback,
 } from "react";
 import { AntDesign, Ionicons } from "@expo/vector-icons";
 import {
@@ -39,6 +40,170 @@ const { height, width: screenWidth } = Dimensions.get("window");
 const SEGMENTED_WIDTH = screenWidth * 0.7;
 const SEGMENT_WIDTH = SEGMENTED_WIDTH / 2;
 
+// Enhanced Photo Submission Service (MOVED OUTSIDE COMPONENT)
+class PhotoSubmissionService {
+  constructor() {
+    this.maxRetries = 3;
+    this.maxFileSize = 10 * 1024 * 1024; // 10MB
+    this.timeout = 30000; // 30 seconds
+  }
+
+  validatePhotos(photos) {
+    const errors = [];
+    
+    if (!photos || photos.length === 0) {
+      errors.push("No photos selected");
+      return { isValid: false, errors };
+    }
+
+    if (photos.length > 10) {
+      errors.push("Too many photos (max 10)");
+    }
+
+    photos.forEach((photo, index) => {
+      if (!photo.uri) {
+        errors.push(`Photo ${index + 1}: Missing URI`);
+      }
+    });
+
+    return {
+      isValid: errors.length === 0,
+      errors
+    };
+  }
+
+  async optimizeImage(photo) {
+    try {
+      const shouldCompress = photo.width > 1920 || photo.height > 1920;
+      
+      if (shouldCompress) {
+        const optimized = await ImageManipulator.manipulateAsync(
+          photo.uri,
+          [
+            {
+              resize: {
+                width: Math.min(photo.width, 1920),
+                height: Math.min(photo.height, 1920),
+              },
+            },
+          ],
+          {
+            compress: 0.8,
+            format: ImageManipulator.SaveFormat.JPEG,
+          }
+        );
+        return optimized;
+      }
+      
+      return photo;
+    } catch (error) {
+      console.warn('Image optimization failed, using original:', error);
+      return photo;
+    }
+  }
+
+  async createFormData(photos) {
+    const formData = new FormData();
+    
+    for (let i = 0; i < photos.length; i++) {
+      const photo = photos[i];
+      
+      // Skip optimization for now to maintain compatibility
+      // const optimizedPhoto = await this.optimizeImage(photo);
+      
+      const uriParts = photo.uri.split(".");
+      const fileType = uriParts[uriParts.length - 1] || 'jpg';
+      
+      const fileObject = {
+        uri: photo.uri,
+        name: `photo_${i}.${fileType}`,
+        type: `image/${fileType === 'jpg' ? 'jpeg' : fileType}`,
+      };
+
+      formData.append("files", fileObject);
+    }
+
+    return formData;
+  }
+
+  async submitWithRetry(url, formData, headers, retryCount = 0, onProgress = null) {
+    try {
+      console.log(`🚀 Making request attempt ${retryCount + 1} with progress tracking:`, !!onProgress);
+      
+      const response = await axios.post(url, formData, {
+        headers,
+        timeout: this.timeout,
+        onUploadProgress: (progressEvent) => {
+          console.log("📡 Raw progress event:", progressEvent); // Debug log
+          
+          if (onProgress && progressEvent.total > 0) {
+            // Ensure progress never exceeds 100% and handle edge cases
+            const loaded = Math.min(progressEvent.loaded, progressEvent.total);
+            const percentCompleted = Math.min(
+              Math.round((loaded * 100) / progressEvent.total),
+              100
+            );
+            console.log(`🔄 Calling onProgress with ${percentCompleted}%`); // Debug log
+            onProgress(percentCompleted);
+          } else {
+            console.warn("⚠️ No progress callback or invalid total:", { hasCallback: !!onProgress, total: progressEvent?.total });
+          }
+        },
+      });
+
+      return response;
+    } catch (error) {
+      if (retryCount < this.maxRetries && this.shouldRetry(error)) {
+        console.log(`Retry attempt ${retryCount + 1}/${this.maxRetries}`);
+        await this.delay(1000 * (retryCount + 1));
+        return this.submitWithRetry(url, formData, headers, retryCount + 1, onProgress);
+      }
+      throw error;
+    }
+  }
+
+  shouldRetry(error) {
+    if (error.code === 'ECONNABORTED') return true;
+    if (error.response?.status >= 500) return true;
+    if (error.response?.status === 429) return true;
+    return false;
+  }
+
+  delay(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+  }
+
+  getErrorMessage(error) {
+    if (error.code === 'ECONNABORTED') {
+      return 'Request timed out. Please check your connection and try again.';
+    }
+    
+    if (error.response) {
+      switch (error.response.status) {
+        case 400:
+          return 'Invalid image format. Please try different photos.';
+        case 413:
+          return 'Images too large. Please use smaller photos.';
+        case 429:
+          return 'Too many requests. Please wait a moment and try again.';
+        case 500:
+          return 'Server error. Please try again later.';
+        default:
+          return `Server error (${error.response.status}). Please try again.`;
+      }
+    }
+    
+    if (error.request) {
+      return 'Network error. Please check your connection.';
+    }
+    
+    return 'An unexpected error occurred. Please try again.';
+  }
+}
+
+// Create a singleton instance
+const submissionService = new PhotoSubmissionService();
+
 const SegmentedControl = ({
   selectedIndex = 0,
   onSelectionChange,
@@ -62,7 +227,6 @@ const SegmentedControl = ({
     },
   ];
 
-  // Animated style for the sliding highlight
   const animatedStyle = useAnimatedStyle(() => {
     return {
       transform: [
@@ -74,11 +238,10 @@ const SegmentedControl = ({
         },
       ],
       backgroundColor: withSpring(activeColor),
-      width: SEGMENT_WIDTH - 8, // match highlight width to segment
+      width: SEGMENT_WIDTH - 8,
     };
   });
 
-  // Animated styles for text and icons
   const getItemAnimatedStyle = (index) => {
     return useAnimatedStyle(() => {
       const isSelected = selectedIndex === index;
@@ -109,9 +272,7 @@ const SegmentedControl = ({
 
   return (
     <View style={[segmentedStyles.container, { backgroundColor }, containerStyle]}>
-      {/* Sliding highlight background */}
       <Animated.View style={[segmentedStyles.highlight, animatedStyle]} />
-      {/* Options */}
       <View style={segmentedStyles.optionsContainer}>
         {options.map((option, index) => (
           <TouchableOpacity
@@ -137,140 +298,228 @@ const SegmentedControl = ({
   );
 };
 
-// Upload function
-export async function uploadImagesAxios(images) {
-  try {
-    const formData = new FormData();
-
-    images.forEach((image) => {
-      const uriParts = image.uri.split("/");
-      const fileName = image.name || uriParts[uriParts.length - 1];
-      const match = /\.(\w+)$/.exec(fileName);
-      const type = image.type || (match ? `image/${match[1]}` : "image/jpeg");
-
-      formData.append(
-        "files",
-        {
-          uri: image.uri,
-          name: fileName,
-          type: type,
-        },
-        "true"
-      );
-    });
-
-    const response = await axios.post(
-      "https://nutrivision-backend-textrecog-77tx.onrender.com/extract/",
-      formData,
-      {
-        headers: {
-          Accept: "application/json",
-          "Content-Type": "multipart/form-data",
-        },
-      }
-    );
-    console.log("sent images");
-    return response.data;
-  } catch (err) {
-    console.error("Axios upload error:", err);
-    throw err;
-  }
-}
-
 // Main Camera Component
 export default function Camera() {
   const route = useRoute();
+  const navigation = useNavigation();
   const [permission, requestPermission] = useCameraPermissions();
   const [photo, setPhoto] = useState(null);
-  const [selectedSegmentIndex, setSelectedSegmentIndex] = useState(0); // 0 for labels, 1 for fruits
+  const [selectedSegmentIndex, setSelectedSegmentIndex] = useState(0);
   const [capturedPhotos, setCapturedPhotos] = useState([]);
   const [mediaLibraryPermission, setMediaLibraryPermission] = useState(null);
   const [loading, setLoading] = useState(false);
   const [submit, setSubmit] = useState(false);
   const [previewLayout, setPreviewLayout] = useState({ width: 0, height: 0 });
+  const [uploadProgress, setUploadProgress] = useState(0);
 
-  // Computed property based on selected segment
   const isLabelMode = selectedSegmentIndex === 0;
   
   const setCarbs = useNutrientsStore((state) => state.setCarbs);
   const setProtein = useNutrientsStore((state) => state.setProtein);
   const setSodium = useNutrientsStore((state) => state.setSodium);
 
-  const { nutritionData } = route.params || {};
-  console.log("Nutrition data from route params:", nutritionData);
-
-  const handleSubmitPhoto = async (photos) => {
-    console.log("Button clicked, starting image submission...");
-    setSubmit(true);
-    setTimeout(() => setSubmit(false), 5000);
-    setLoading(true);
-    
-    const fruitsUrl = "https://leidanielaguila-nutrivision.hf.space/detect";
-    const labelsUrl = "https://dwyght-text-recognition.hf.space/extract/";
-
-    if (!photos || photos.length === 0) {
-      console.log("No photos provided for submission.");
-      setLoading(false);
-      return;
-    }
-
-    const formData = new FormData();
-
-    for (let i = 0; i < photos.length; i++) {
-      const photo = photos[i];
-      const uriParts = photo.uri.split(".");
-      const fileType = uriParts[uriParts.length - 1];
-
-      formData.append("files", {
-        uri: photo.uri,
-        name: `photo_${i}.${fileType}`,
-        type: `image/${fileType}`,
-      });
-    }
-
-    console.log("FormData constructed with", photos.length, "files.");
-    const urlToSend = isLabelMode ? labelsUrl : fruitsUrl;
-
-    try {
-      console.log("Sending request to backend endpoint...");
-      const response = await axios.post(urlToSend, formData, {
-        headers: {
-          Accept: "application/json",
-        },
-      });
-      console.log("✅ Response from server:", response.data);
-
-      if (isLabelMode) {
-        const { carbs_total, protein_total, sodium_total } = response.data.combined;
-        setCarbs(parseFloat(carbs_total));
-        setProtein(parseFloat(protein_total));
-        setSodium(parseFloat(sodium_total) / 1000);
-      } else {
-        const { total_carbs, total_protein, total_sodium } = response.data.fruits;
-        setCarbs(total_carbs);
-        setProtein(total_protein);
-        setSodium(total_sodium);
-      }
-
-      setLoading(false);
-      navigation.navigate("nutrient-page");
-      return response.data;
-    } catch (err) {
-      console.error("❌ Axios upload error:", err);
-      if (err.response) {
-        console.error("Error details:", err.response.data);
-        console.error("Status code:", err.response.status);
-      }
-      setLoading(false);
-      Alert.alert("Error", "Failed to process images. Please try again.");
-      throw err;
-    }
-  };
-
-  const navigation = useNavigation();
   const facing = "back";
   const cameraRef = useRef(null);
 
+  // Function to delete all captured photos after successful submission
+  const deleteAllCapturedPhotos = useCallback(async (photos) => {
+    console.log("🗑️ Starting cleanup of captured photos...");
+    
+    if (!photos || photos.length === 0) {
+      console.log("No photos to delete");
+      return;
+    }
+
+    try {
+      const { status } = await MediaLibrary.requestPermissionsAsync();
+      if (status !== "granted") {
+        console.warn("Media library permission not granted, skipping photo cleanup");
+        // Still clear the state even if we can't delete from storage
+        setCapturedPhotos([]);
+        return;
+      }
+
+      const album = await MediaLibrary.getAlbumAsync("NutriVision");
+      if (!album) {
+        console.log("NutriVision album not found, clearing state only");
+        setCapturedPhotos([]);
+        return;
+      }
+
+      // Get all assets in the album
+      const { assets } = await MediaLibrary.getAssetsAsync({
+        album: album.id,
+        mediaType: ["photo"],
+      });
+
+      const photosToDelete = [];
+      
+      // Find assets that match our captured photos
+      for (const photo of photos) {
+        if (photo.id) {
+          // Try to find by ID first
+          const asset = assets.find(a => a.id === photo.id);
+          if (asset) {
+            photosToDelete.push(asset.id);
+            continue;
+          }
+        }
+
+        // Fallback: try to match by URI
+        const cleanPhotoUri = photo.uri
+          .replace("ph://", "")
+          .replace("file://", "")
+          .split("?")[0]
+          .split("#")[0];
+
+        const asset = assets.find(a => {
+          const assetUri = a.uri
+            .replace("ph://", "")
+            .replace("file://", "")
+            .split("?")[0]
+            .split("#")[0];
+          return assetUri === cleanPhotoUri;
+        });
+
+        if (asset) {
+          photosToDelete.push(asset.id);
+        }
+      }
+
+      // Delete the assets from device storage
+      if (photosToDelete.length > 0) {
+        console.log(`Deleting ${photosToDelete.length} photos from device storage`);
+        const deleteSuccess = await MediaLibrary.deleteAssetsAsync(photosToDelete);
+        
+        if (deleteSuccess) {
+          console.log("✅ Successfully deleted photos from device storage");
+        } else {
+          console.warn("⚠️ Some photos may not have been deleted from storage");
+        }
+      }
+
+      // Clear the state regardless of deletion success
+      setCapturedPhotos([]);
+      console.log("✅ Cleared captured photos from UI");
+
+    } catch (error) {
+      console.error("❌ Error during photo cleanup:", error);
+      // Even if deletion fails, clear the UI state
+      setCapturedPhotos([]);
+      console.log("⚠️ Cleared UI state despite cleanup errors");
+    }
+  }, []);
+
+  // ENHANCED SUBMISSION FUNCTION (PROPERLY IMPLEMENTED)
+  const handleSubmitPhoto = useCallback(async (photos) => {
+    console.log("Button clicked, starting enhanced image submission...");
+    
+    // Update UI state
+    setSubmit(true);
+    setLoading(true);
+    setUploadProgress(0);
+    
+    try {
+      // Validate photos
+      const validation = submissionService.validatePhotos(photos);
+      if (!validation.isValid) {
+        Alert.alert('Invalid Photos', validation.errors.join('\n'));
+        return;
+      }
+
+      // Set up endpoints
+      const endpoints = {
+        fruits: "https://leidanielaguila-nutrivision.hf.space/detect",
+        labels: "https://dwyght-text-recognition.hf.space/extract/"
+      };
+      
+      const urlToSend = isLabelMode ? endpoints.labels : endpoints.fruits;
+
+      console.log(`Submitting ${photos.length} photos to ${isLabelMode ? 'labels' : 'fruits'} endpoint`);
+
+      // Create FormData
+      const formData = await submissionService.createFormData(photos);
+
+      // Enhanced headers
+      const headers = {
+        'Accept': 'application/json',
+        'Content-Type': 'multipart/form-data',
+      };
+
+      // Progress callback with enhanced safety checks
+      const onProgress = (percentCompleted) => {
+        console.log("📊 Progress callback called with:", percentCompleted); // Debug log
+        
+        // Validate the percentage
+        if (typeof percentCompleted === 'number' && percentCompleted >= 0 && percentCompleted <= 100) {
+          setUploadProgress(percentCompleted);
+          console.log(`📈 UI Updated - Upload progress: ${percentCompleted}%`);
+        } else {
+          console.warn("⚠️ Invalid progress percentage:", percentCompleted);
+        }
+      };
+
+      // Submit with retry logic
+      const response = await submissionService.submitWithRetry(
+        urlToSend, 
+        formData, 
+        headers,
+        0,
+        onProgress
+      );
+
+      console.log("✅ Response from server:", response.data);
+
+      // Process response based on mode with safety checks
+      if (isLabelMode) {
+        const combined = response.data.combined || {};
+        const { carbs_total, protein_total, sodium_total } = combined;
+        
+        if (carbs_total !== undefined) setCarbs(parseFloat(carbs_total));
+        if (protein_total !== undefined) setProtein(parseFloat(protein_total));
+        if (sodium_total !== undefined) setSodium(parseFloat(sodium_total) / 1000);
+      } else {
+        const fruits = response.data.fruits || {};
+        const { total_carbs, total_protein, total_sodium } = fruits;
+        
+        if (total_carbs !== undefined) setCarbs(total_carbs);
+        if (total_protein !== undefined) setProtein(total_protein);
+        if (total_sodium !== undefined) setSodium(total_sodium);
+      }
+
+      // 🗑️ SUCCESS: Delete all captured photos after successful submission
+      await deleteAllCapturedPhotos(photos);
+
+      // Navigate to results
+      navigation.navigate("nutrient-page");
+      return response.data;
+
+    } catch (error) {
+      console.error("❌ Enhanced photo submission error:", error);
+      
+      const errorMessage = submissionService.getErrorMessage(error);
+      Alert.alert("Submission Failed", errorMessage);
+      
+      // Log detailed error for debugging
+      if (error.response) {
+        console.error("Error details:", error.response.data);
+        console.error("Status code:", error.response.status);
+      }
+      
+      // 🗑️ TEMPORARY: Delete photos even on failure (for testing purposes)
+      console.log("⚠️ TEMPORARY MODE: Deleting photos even though submission failed");
+      await deleteAllCapturedPhotos(photos);
+      
+      throw error;
+    } finally {
+      // Always clean up UI state
+      setLoading(false);
+      setSubmit(false);
+      setUploadProgress(0);
+    }
+  }, [isLabelMode, navigation, setCarbs, setProtein, setSodium, deleteAllCapturedPhotos]);
+
+  // Rest of your existing functions remain the same...
   const loadExistingPhotos = async () => {
     try {
       const album = await MediaLibrary.getAlbumAsync("NutriVision");
@@ -359,45 +608,52 @@ export default function Camera() {
   };
 
   const handleTakePhoto = async () => {
+    // Check if user already has 5 photos
+    if (capturedPhotos.length >= 5) {
+      Alert.alert(
+        "Photo Limit Reached",
+        "You can only capture a maximum of 5 photos. Please delete some photos before taking new ones.",
+        [
+          {
+            text: "OK",
+            style: "default"
+          }
+        ]
+      );
+      return; // Exit early if limit reached
+    }
+
     if (cameraRef.current) {
       const options = { quality: 1, base64: true, exif: false };
       const takenPhoto = await cameraRef.current.takePictureAsync(options);
 
       if (isLabelMode) {
-        // Guide box percentages (from your styles)
         const boxWidthPercent = 0.7;
         const boxHeightPercent = 0.6;
 
-        // Only apply this fix for Android
         if (Platform.OS === "android" && previewLayout.width && previewLayout.height) {
-          // 1. Calculate the aspect ratios
           const previewAspect = previewLayout.width / previewLayout.height;
           const photoAspect = takenPhoto.width / takenPhoto.height;
 
-          // 2. Find out if the preview is "letterboxed" (has black bars on sides or top/bottom)
           let scale, offsetX = 0, offsetY = 0, visiblePreviewWidth, visiblePreviewHeight;
 
           if (photoAspect > previewAspect) {
-            // Photo is wider than preview: black bars top/bottom
             scale = takenPhoto.height / previewLayout.height;
             visiblePreviewWidth = previewLayout.width;
             visiblePreviewHeight = previewLayout.height;
             offsetX = Math.round((takenPhoto.width - previewLayout.width * scale) / 2);
           } else {
-            // Photo is taller than preview: black bars left/right
             scale = takenPhoto.width / previewLayout.width;
             visiblePreviewWidth = previewLayout.width;
             visiblePreviewHeight = previewLayout.height;
             offsetY = Math.round((takenPhoto.height - previewLayout.height * scale) / 2);
           }
 
-          // 3. Calculate guide box position and size in preview coordinates
           const guideBoxWidth = visiblePreviewWidth * boxWidthPercent;
           const guideBoxHeight = visiblePreviewHeight * boxHeightPercent;
           const guideBoxX = (visiblePreviewWidth - guideBoxWidth) / 2;
           const guideBoxY = (visiblePreviewHeight - guideBoxHeight) / 2;
 
-          // 4. Map guide box to photo coordinates
           const cropWidth = Math.round(guideBoxWidth * scale);
           const cropHeight = Math.round(guideBoxHeight * scale);
           const originX = Math.round(guideBoxX * scale + offsetX);
@@ -422,7 +678,6 @@ export default function Camera() {
           croppedPhoto.type = "label";
           setPhoto(croppedPhoto);
         } else {
-          // iOS or fallback: use the old logic
           const cropWidth = takenPhoto.width * boxWidthPercent;
           const cropHeight = takenPhoto.height * boxHeightPercent;
           const originX = (takenPhoto.width - cropWidth) / 2;
@@ -603,27 +858,32 @@ export default function Camera() {
     return (
       <View style={styles.container}>
         <Loading />
+        {uploadProgress > 0 && (
+          <View style={styles.progressContainer}>
+            <Text style={styles.progressText}>
+              Uploading: {uploadProgress}%
+            </Text>
+          </View>
+        )}
       </View>
     );
   }
 
   return (
     <View style={styles.container}>
-      {/* Top section for thumbnails */}
       <View style={styles.topSection}>
         <SafeAreaView>
           <View style={styles.thumbnailsRow}>
             <ScrollView
-    horizontal
-    showsHorizontalScrollIndicator={false}
-    // Make the content container fill the ScrollView width so justifyContent works
-    contentContainerStyle={{
-      flexGrow: 1,
-      justifyContent: 'center', // use 'center' to simply center them, or 'space-evenly' for even spacing
-      alignItems: 'center',
-      paddingHorizontal: 8,
-    }}
-  >
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={{
+                flexGrow: 1,
+                justifyContent: 'center',
+                alignItems: 'center',
+                paddingHorizontal: 8,
+              }}
+            >
               {capturedPhotos.map((item, index) => (
                 <View key={index} style={styles.thumbnailContainer}>
                   <Image
@@ -666,9 +926,7 @@ export default function Camera() {
         </SafeAreaView>
       </View>
 
-      {/* Main camera section */}
       <View style={styles.mainSection}>
-        {/* Segmented Control for Mode Selection */}
         <View style={styles.segmentedControlWrapper}>
           <SegmentedControl
             selectedIndex={selectedSegmentIndex}
@@ -682,22 +940,23 @@ export default function Camera() {
           />
         </View>
 
-        {/* Camera View */}
-        <CameraView style={styles.camera} facing={facing} ref={cameraRef} onLayout={e => {
-  const { width, height } = e.nativeEvent.layout;
-  setPreviewLayout({ width, height });
-}}>
-          {/* Overlay + guide box (only in label mode) */}
+        <CameraView 
+          style={styles.camera} 
+          facing={facing} 
+          ref={cameraRef} 
+          onLayout={e => {
+            const { width, height } = e.nativeEvent.layout;
+            setPreviewLayout({ width, height });
+          }}
+        >
           <View style={styles.overlay}>
             {isLabelMode && (
               <View style={[styles.guideBox, styles.labelGuideBox]} />
             )}
           </View>
 
-          {/* Bottom Controls */}
           <View style={styles.bottomControlsContainer}>
             <View style={styles.bottomControls}>
-              {/* LEFT: Go Back */}
               <TouchableOpacity
                 style={styles.returnButton}
                 onPress={handleGoBack}
@@ -706,7 +965,6 @@ export default function Camera() {
                 <Ionicons name="return-down-back-outline" size={28} color="white" />
               </TouchableOpacity>
 
-              {/* CENTER: Capture */}
               <TouchableOpacity
                 style={styles.captureButton}
                 onPress={handleTakePhoto}
@@ -714,7 +972,6 @@ export default function Camera() {
                 <View style={styles.captureButtonInner} />
               </TouchableOpacity>
 
-              {/* RIGHT: Submit Photo */}
               <TouchableOpacity
                 style={[styles.returnButton, { opacity: submit ? 0.5 : 1 }]}
                 onPress={() => handleSubmitPhoto(capturedPhotos)}
@@ -730,7 +987,7 @@ export default function Camera() {
   );
 }
 
-// Segmented Control Styles
+// Styles remain the same, with addition of progress styles
 const segmentedStyles = StyleSheet.create({
   container: {
     flexDirection: 'row',
@@ -748,7 +1005,6 @@ const segmentedStyles = StyleSheet.create({
     height: 40,
     borderRadius: 20,
     zIndex: 1,
-    // width is set by animatedStyle
   },
   optionsContainer: {
     flexDirection: 'row',
@@ -774,7 +1030,6 @@ const segmentedStyles = StyleSheet.create({
   },
 });
 
-// Main Component Styles
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -784,9 +1039,25 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
+  progressContainer: {
+    position: 'absolute',
+    bottom: 100,
+    left: 0,
+    right: 0,
+    alignItems: 'center',
+    zIndex: 1000,
+  },
+  progressText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: 'bold',
+    backgroundColor: 'rgba(0,0,0,0.7)',
+    padding: 10,
+    borderRadius: 8,
+  },
   thumbnailsRow: {
     height: 80,
-    backgroundColor: "#252525ff", // Set to match your desired color
+    backgroundColor: "#252525ff",
     paddingVertical: 10,
     paddingHorizontal: 5,
     zIndex: 10,
@@ -873,12 +1144,12 @@ const styles = StyleSheet.create({
     marginHorizontal: 20,
   },
   returnButton: {
-    backgroundColor: "transparent", // No background
-    borderRadius: 0,                // No rounded corners
-    width: undefined,               // No fixed width
-    height: undefined,              // No fixed height
+    backgroundColor: "transparent",
+    borderRadius: 0,
+    width: undefined,
+    height: undefined,
     margin: 10,
-    padding: 10,                    // Add padding for touch area
+    padding: 10,
     justifyContent: "center",
     alignItems: "center",
   },
@@ -916,7 +1187,7 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
   },
   topSection: {
-    backgroundColor: "#252525ff", // Set to match your desired color
+    backgroundColor: "#252525ff",
     zIndex: 10,
   },
   mainSection: {
