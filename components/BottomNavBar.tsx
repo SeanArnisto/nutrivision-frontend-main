@@ -12,11 +12,13 @@ interface NavItem {
 interface BottomNavBarProps {
   activeTab: string;
   onTabPress: (tabName: string) => void;
+  onCameraPress?: () => void;
 }
 
 export default function BottomNavBar({ 
   activeTab, 
-  onTabPress
+  onTabPress,
+  onCameraPress
 }: BottomNavBarProps) {
   const insets = useSafeAreaInsets();
 
@@ -48,7 +50,7 @@ export default function BottomNavBar({
       {/* Camera button positioned above the navbar */}
       <TouchableOpacity
         style={styles.cameraButtonContainer}
-        onPress={() => onTabPress('camera')}
+        onPress={onCameraPress || (() => onTabPress('camera'))}
       >
         <View style={styles.cameraButtonInner}>
           <Ionicons name="add" size={32} color="#fff" />

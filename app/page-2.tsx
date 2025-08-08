@@ -60,13 +60,13 @@ export default function Page2() {
           navigation.navigate('page-2');
           break;
         case 'stats':
-          // navigation.navigate('stats-screen');
+          navigation.navigate('statistics');
           break;
         case 'settings':
-          // navigation.navigate('settings-screen');
+          navigation.navigate('settings');
           break;
         case 'profile':
-          // navigation.navigate('profile-screen');
+          navigation.navigate('profile');
           break;
       }
     }
@@ -136,7 +136,7 @@ export default function Page2() {
       <BottomNavBar 
         activeTab={activeTab}
         onTabPress={handleTabPress}
-        onCameraPress={handleCameraPress}
+        onCameraPress={() => navigation.navigate('camera')}
       />
     </SafeAreaView>
   );
