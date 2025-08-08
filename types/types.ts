@@ -11,4 +11,5 @@ export type RootStackParamList = {
   'settings': undefined; // Settings page
   'profile': undefined; // Profile page
   'statistics': undefined; // Statistics page
+  'login': undefined;
 };
