@@ -98,8 +98,8 @@ export default function Toast({
 
   // Calculate top position based on safe area
   const topPosition = Platform.OS === 'ios' 
-    ? insets.top + 10  // iOS: safe area + small margin
-    : Math.max(insets.top, 20); // Android: safe area or minimum 20px
+    ? insets.top  // iOS: safe area + more margin
+    : Math.max(insets.top, 30); // Android: safe area + margin or minimum 30px
 
   return (
     <View 
