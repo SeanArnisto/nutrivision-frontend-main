@@ -2,8 +2,6 @@ import React, {
   useRef,
   useState,
   useEffect,
-  createContext,
-  useContext,
 } from "react";
 import { AntDesign, Ionicons } from "@expo/vector-icons";
 import {
@@ -13,13 +11,18 @@ import {
   TouchableOpacity,
   View,
   Alert,
-  Switch,
   Image,
   ScrollView,
   Platform,
   SafeAreaView,
   Dimensions,
+  Linking,
 } from "react-native";
+import Animated, {
+  useAnimatedStyle,
+  withSpring,
+  interpolateColor,
+} from 'react-native-reanimated';
 import { CameraView, useCameraPermissions } from "expo-camera";
 import * as MediaLibrary from "expo-media-library";
 import * as ImageManipulator from "expo-image-manipulator";
@@ -27,12 +30,114 @@ import { useNavigation } from "@react-navigation/native";
 import { useNutrientsStore } from "@/hooks/store";
 import axios from "axios";
 import PhotoPreviewSection from "@/components/PhotoPreviewSection";
-import { navigate } from "expo-router/build/global-state/routing";
 import { useRoute } from "@react-navigation/native";
 import Loading from "./loading";
 
-const { height } = Dimensions.get("window");
+const { height, width: screenWidth } = Dimensions.get("window");
 
+// SegmentedControl Component (Integrated)
+const SEGMENTED_WIDTH = screenWidth * 0.7;
+const SEGMENT_WIDTH = SEGMENTED_WIDTH / 2;
+
+const SegmentedControl = ({
+  selectedIndex = 0,
+  onSelectionChange,
+  containerStyle,
+  activeColor = '#4CAF50',
+  inactiveColor = '#999',
+  backgroundColor = 'rgba(0,0,0,0.6)',
+  textActiveColor = 'white',
+  textInactiveColor = '#999',
+}) => {
+  const options = [
+    {
+      key: 'labels',
+      label: 'Labels',
+      icon: 'document-text-outline',
+    },
+    {
+      key: 'fruits',
+      label: 'Fruits',
+      icon: 'leaf-outline',
+    },
+  ];
+
+  // Animated style for the sliding highlight
+  const animatedStyle = useAnimatedStyle(() => {
+    return {
+      transform: [
+        {
+          translateX: withSpring(selectedIndex * SEGMENT_WIDTH, {
+            damping: 15,
+            stiffness: 150,
+          }),
+        },
+      ],
+      backgroundColor: withSpring(activeColor),
+      width: SEGMENT_WIDTH - 8, // match highlight width to segment
+    };
+  });
+
+  // Animated styles for text and icons
+  const getItemAnimatedStyle = (index) => {
+    return useAnimatedStyle(() => {
+      const isSelected = selectedIndex === index;
+      return {
+        opacity: withSpring(isSelected ? 1 : 0.7),
+      };
+    });
+  };
+
+  const getTextAnimatedStyle = (index) => {
+    return useAnimatedStyle(() => {
+      const isSelected = selectedIndex === index;
+      return {
+        color: interpolateColor(
+          isSelected ? 1 : 0,
+          [0, 1],
+          [textInactiveColor, textActiveColor]
+        ),
+      };
+    });
+  };
+
+  const handlePress = (index) => {
+    if (onSelectionChange) {
+      onSelectionChange(index, options[index].key);
+    }
+  };
+
+  return (
+    <View style={[segmentedStyles.container, { backgroundColor }, containerStyle]}>
+      {/* Sliding highlight background */}
+      <Animated.View style={[segmentedStyles.highlight, animatedStyle]} />
+      {/* Options */}
+      <View style={segmentedStyles.optionsContainer}>
+        {options.map((option, index) => (
+          <TouchableOpacity
+            key={option.key}
+            style={segmentedStyles.option}
+            onPress={() => handlePress(index)}
+            activeOpacity={0.8}
+          >
+            <Animated.View style={[segmentedStyles.optionContent, getItemAnimatedStyle(index)]}>
+              <Ionicons
+                name={option.icon}
+                size={18}
+                color={selectedIndex === index ? textActiveColor : textInactiveColor}
+              />
+              <Animated.Text style={[segmentedStyles.optionText, getTextAnimatedStyle(index)]}>
+                {option.label}
+              </Animated.Text>
+            </Animated.View>
+          </TouchableOpacity>
+        ))}
+      </View>
+    </View>
+  );
+};
+
+// Upload function
 export async function uploadImagesAxios(images) {
   try {
     const formData = new FormData();
@@ -72,42 +177,43 @@ export async function uploadImagesAxios(images) {
   }
 }
 
+// Main Camera Component
 export default function Camera() {
-  //const MyContext = createContext();
   const route = useRoute();
   const [permission, requestPermission] = useCameraPermissions();
   const [photo, setPhoto] = useState(null);
-  const [isLabelMode, setIsLabelMode] = useState(true); // Default to label mode
+  const [selectedSegmentIndex, setSelectedSegmentIndex] = useState(0); // 0 for labels, 1 for fruits
   const [capturedPhotos, setCapturedPhotos] = useState([]);
   const [mediaLibraryPermission, setMediaLibraryPermission] = useState(null);
   const [loading, setLoading] = useState(false);
   const [submit, setSubmit] = useState(false);
+  const [previewLayout, setPreviewLayout] = useState({ width: 0, height: 0 });
 
-  //const { setExtractedData } = useApi();
-  // Always vertical (portrait) orientation. No toggle.
-  const boxOrientation = "vertical";
-
+  // Computed property based on selected segment
+  const isLabelMode = selectedSegmentIndex === 0;
+  
   const setCarbs = useNutrientsStore((state) => state.setCarbs);
   const setProtein = useNutrientsStore((state) => state.setProtein);
   const setSodium = useNutrientsStore((state) => state.setSodium);
 
-  const { nutritionData } = route.params || {}; // Retrieve the passed data
+  const { nutritionData } = route.params || {};
   console.log("Nutrition data from route params:", nutritionData);
 
   const handleSubmitPhoto = async (photos) => {
     console.log("Button clicked, starting image submission...");
     setSubmit(true);
     setTimeout(() => setSubmit(false), 5000);
-    setLoading(true); // Set loading state
-    const fruitsUrl = "https://leidanielaguila-nutrivision.hf.space/detect"; // object detection
-    const labelsUrl = "https://dwyght-text-recognition.hf.space/extract/"; // nutritional label
+    setLoading(true);
+    
+    const fruitsUrl = "https://leidanielaguila-nutrivision.hf.space/detect";
+    const labelsUrl = "https://dwyght-text-recognition.hf.space/extract/";
 
     if (!photos || photos.length === 0) {
       console.log("No photos provided for submission.");
+      setLoading(false);
       return;
     }
 
-    // Create a new FormData object
     const formData = new FormData();
 
     for (let i = 0; i < photos.length; i++) {
@@ -115,7 +221,6 @@ export default function Camera() {
       const uriParts = photo.uri.split(".");
       const fileType = uriParts[uriParts.length - 1];
 
-      // Properly append file to FormData
       formData.append("files", {
         uri: photo.uri,
         name: `photo_${i}.${fileType}`,
@@ -124,13 +229,7 @@ export default function Camera() {
     }
 
     console.log("FormData constructed with", photos.length, "files.");
-    let urlToSend = "";
-
-    if (isLabelMode) {
-      urlToSend = labelsUrl;
-    } else {
-      urlToSend = fruitsUrl;
-    }
+    const urlToSend = isLabelMode ? labelsUrl : fruitsUrl;
 
     try {
       console.log("Sending request to backend endpoint...");
@@ -142,23 +241,18 @@ export default function Camera() {
       console.log("✅ Response from server:", response.data);
 
       if (isLabelMode) {
-        // nutritional label url used
-        
-        const { carbs_total, protein_total, sodium_total } =
-          response.data.combined;
+        const { carbs_total, protein_total, sodium_total } = response.data.combined;
         setCarbs(parseFloat(carbs_total));
         setProtein(parseFloat(protein_total));
         setSodium(parseFloat(sodium_total) / 1000);
       } else {
-        // fruits url was used
-        const { total_carbs, total_protein, total_sodium } =
-          response.data.fruits;
+        const { total_carbs, total_protein, total_sodium } = response.data.fruits;
         setCarbs(total_carbs);
         setProtein(total_protein);
         setSodium(total_sodium);
       }
 
-      setLoading(false); // Turn off loading when response is received
+      setLoading(false);
       navigation.navigate("nutrient-page");
       return response.data;
     } catch (err) {
@@ -167,20 +261,18 @@ export default function Camera() {
         console.error("Error details:", err.response.data);
         console.error("Status code:", err.response.status);
       }
+      setLoading(false);
+      Alert.alert("Error", "Failed to process images. Please try again.");
       throw err;
     }
   };
 
   const navigation = useNavigation();
-  // Always use the back camera. No toggle.
   const facing = "back";
-
   const cameraRef = useRef(null);
 
-  // Add this function inside the Camera component before the useEffect
   const loadExistingPhotos = async () => {
     try {
-      // Don't request permission here, just load if already granted
       const album = await MediaLibrary.getAlbumAsync("NutriVision");
       if (!album) {
         console.log("NutriVision album not found");
@@ -190,7 +282,7 @@ export default function Camera() {
       const { assets } = await MediaLibrary.getAssetsAsync({
         album: album.id,
         mediaType: ["photo"],
-        first: 5, // Limit to 5 most recent photos
+        first: 5,
         sortBy: ["creationTime"],
         reverse: true,
       });
@@ -209,7 +301,7 @@ export default function Camera() {
 
             return {
               uri,
-              type: "label", // or determine type from metadata if available
+              type: "label",
               id: asset.id,
             };
           } catch (error) {
@@ -226,13 +318,11 @@ export default function Camera() {
     }
   };
 
-  // Request media library permissions on mount
   useEffect(() => {
     (async () => {
       const { status } = await MediaLibrary.requestPermissionsAsync();
       setMediaLibraryPermission(status === "granted");
 
-      // Only load photos if permission is granted
       if (status === "granted") {
         await loadExistingPhotos();
       }
@@ -245,7 +335,6 @@ export default function Camera() {
     }
   }, [mediaLibraryPermission]);
 
-  // --- Permission checks for camera ---
   if (!permission) {
     return <View />;
   }
@@ -260,14 +349,14 @@ export default function Camera() {
     );
   }
 
-  // --- Handlers ---
   function handleGoBack() {
     navigation.goBack();
   }
 
-  function toggleMode() {
-    setIsLabelMode((prev) => !prev);
-  }
+  const handleSegmentChange = (index, key) => {
+    setSelectedSegmentIndex(index);
+    console.log(`Selected: ${key} (index: ${index})`);
+  };
 
   const handleTakePhoto = async () => {
     if (cameraRef.current) {
@@ -275,32 +364,90 @@ export default function Camera() {
       const takenPhoto = await cameraRef.current.takePictureAsync(options);
 
       if (isLabelMode) {
-        // Label mode - crop the image according to guide box
-        const cropWidth = takenPhoto.width * 0.7; // 70% width
-        const cropHeight = takenPhoto.height * 0.6; // 60% height
-        const originX = (takenPhoto.width - cropWidth) / 2;
-        const originY = (takenPhoto.height - cropHeight) / 2; // Adjust for marginBottom
+        // Guide box percentages (from your styles)
+        const boxWidthPercent = 0.7;
+        const boxHeightPercent = 0.6;
 
-        const croppedPhoto = await ImageManipulator.manipulateAsync(
-          takenPhoto.uri,
-          [
-            {
-              crop: {
-                originX,
-                originY,
-                width: cropWidth,
-                height: cropHeight,
+        // Only apply this fix for Android
+        if (Platform.OS === "android" && previewLayout.width && previewLayout.height) {
+          // 1. Calculate the aspect ratios
+          const previewAspect = previewLayout.width / previewLayout.height;
+          const photoAspect = takenPhoto.width / takenPhoto.height;
+
+          // 2. Find out if the preview is "letterboxed" (has black bars on sides or top/bottom)
+          let scale, offsetX = 0, offsetY = 0, visiblePreviewWidth, visiblePreviewHeight;
+
+          if (photoAspect > previewAspect) {
+            // Photo is wider than preview: black bars top/bottom
+            scale = takenPhoto.height / previewLayout.height;
+            visiblePreviewWidth = previewLayout.width;
+            visiblePreviewHeight = previewLayout.height;
+            offsetX = Math.round((takenPhoto.width - previewLayout.width * scale) / 2);
+          } else {
+            // Photo is taller than preview: black bars left/right
+            scale = takenPhoto.width / previewLayout.width;
+            visiblePreviewWidth = previewLayout.width;
+            visiblePreviewHeight = previewLayout.height;
+            offsetY = Math.round((takenPhoto.height - previewLayout.height * scale) / 2);
+          }
+
+          // 3. Calculate guide box position and size in preview coordinates
+          const guideBoxWidth = visiblePreviewWidth * boxWidthPercent;
+          const guideBoxHeight = visiblePreviewHeight * boxHeightPercent;
+          const guideBoxX = (visiblePreviewWidth - guideBoxWidth) / 2;
+          const guideBoxY = (visiblePreviewHeight - guideBoxHeight) / 2;
+
+          // 4. Map guide box to photo coordinates
+          const cropWidth = Math.round(guideBoxWidth * scale);
+          const cropHeight = Math.round(guideBoxHeight * scale);
+          const originX = Math.round(guideBoxX * scale + offsetX);
+          const originY = Math.round(guideBoxY * scale + offsetY);
+
+          const croppedPhoto = await ImageManipulator.manipulateAsync(
+            takenPhoto.uri,
+            [
+              {
+                crop: {
+                  originX,
+                  originY,
+                  width: cropWidth,
+                  height: cropHeight,
+                },
               },
-            },
-          ],
-          { compress: 1, format: ImageManipulator.SaveFormat.JPEG }
-        );
+            ],
+            { compress: 1, format: ImageManipulator.SaveFormat.JPEG }
+          );
 
-        croppedPhoto.orientation = "vertical";
-        croppedPhoto.type = "label";
-        setPhoto(croppedPhoto);
+          croppedPhoto.orientation = "vertical";
+          croppedPhoto.type = "label";
+          setPhoto(croppedPhoto);
+        } else {
+          // iOS or fallback: use the old logic
+          const cropWidth = takenPhoto.width * boxWidthPercent;
+          const cropHeight = takenPhoto.height * boxHeightPercent;
+          const originX = (takenPhoto.width - cropWidth) / 2;
+          const originY = (takenPhoto.height - cropHeight) / 2;
+
+          const croppedPhoto = await ImageManipulator.manipulateAsync(
+            takenPhoto.uri,
+            [
+              {
+                crop: {
+                  originX,
+                  originY,
+                  width: cropWidth,
+                  height: cropHeight,
+                },
+              },
+            ],
+            { compress: 1, format: ImageManipulator.SaveFormat.JPEG }
+          );
+
+          croppedPhoto.orientation = "vertical";
+          croppedPhoto.type = "label";
+          setPhoto(croppedPhoto);
+        }
       } else {
-        // Fruit mode - use the full image
         takenPhoto.type = "fruit";
         setPhoto(takenPhoto);
       }
@@ -320,30 +467,22 @@ export default function Camera() {
         return;
       }
 
-      // Use the processed URI if available, otherwise the original
       const uriToSave = processedUri || photo.uri;
       const asset = await MediaLibrary.createAssetAsync(uriToSave);
 
-      // For iOS, get the proper local URI
       let localUri = asset.uri;
       if (Platform.OS === "ios") {
         const assetInfo = await MediaLibrary.getAssetInfoAsync(asset);
         localUri = assetInfo.localUri || assetInfo.uri;
       }
 
-      // Save to "NutriVision" album
       let album = await MediaLibrary.getAlbumAsync("NutriVision");
       if (!album) {
-        album = await MediaLibrary.createAlbumAsync(
-          "NutriVision",
-          asset,
-          false
-        );
+        album = await MediaLibrary.createAlbumAsync("NutriVision", asset, false);
       } else {
         await MediaLibrary.addAssetsToAlbumAsync([asset], album, false);
       }
 
-      // Create the photoWithId object with the proper URI format
       const photoWithId = {
         ...photo,
         uri:
@@ -354,14 +493,12 @@ export default function Camera() {
         type: photo.type || "label",
       };
 
-      // Update local state
       setCapturedPhotos((prev) => {
         const newPhotos = [photoWithId, ...prev].slice(0, 5);
-        console.log("Updated photos:", newPhotos); // Debug log
+        console.log("Updated photos:", newPhotos);
         return newPhotos;
       });
 
-      // Reload photos from gallery to ensure consistency
       await loadExistingPhotos();
 
       Alert.alert("Success", "Photo saved to your gallery in NutriVision!");
@@ -389,14 +526,12 @@ export default function Camera() {
         return;
       }
 
-      // Get the album first
       const album = await MediaLibrary.getAlbumAsync("NutriVision");
       if (!album) {
         console.log("NutriVision album not found");
         return;
       }
 
-      // Get all assets from the album
       const { assets } = await MediaLibrary.getAssetsAsync({
         album: album.id,
         mediaType: ["photo"],
@@ -404,7 +539,6 @@ export default function Camera() {
 
       console.log("Found assets in album:", assets.length);
 
-      // Clean up URIs for comparison
       const cleanUri = (uri) => {
         if (!uri) return "";
         return uri
@@ -414,16 +548,13 @@ export default function Camera() {
           .split("#")[0];
       };
 
-      // Try to find the asset to delete
       let assetToDelete;
 
       if (photoToDelete.id) {
-        // First try by ID
         assetToDelete = assets.find((asset) => asset.id === photoToDelete.id);
       }
 
       if (!assetToDelete) {
-        // If not found by ID, try by URI
         const targetUri = cleanUri(photoToDelete.uri);
         console.log("Looking for URI match:", targetUri);
 
@@ -438,22 +569,16 @@ export default function Camera() {
       }
 
       if (assetToDelete) {
-        const success = await MediaLibrary.deleteAssetsAsync([
-          assetToDelete.id,
-        ]);
+        const success = await MediaLibrary.deleteAssetsAsync([assetToDelete.id]);
         if (success) {
-          // Remove from local state only after successful deletion
           setCapturedPhotos((prev) => prev.filter((_, i) => i !== index));
           console.log("Photo deleted successfully");
-
-          // Reload the gallery to ensure consistency
           await loadExistingPhotos();
         } else {
           throw new Error("Failed to delete asset");
         }
       } else {
         console.log("Asset not found in album");
-        // Remove from local state even if asset not found
         setCapturedPhotos((prev) => prev.filter((_, i) => i !== index));
       }
     } catch (error) {
@@ -462,7 +587,6 @@ export default function Camera() {
     }
   };
 
-  // --- If we have a photo, show preview with "Back" + "Submit" buttons. ---
   if (photo) {
     return (
       <View style={styles.container}>
@@ -483,14 +607,23 @@ export default function Camera() {
     );
   }
 
-  // Update the return statement layout
   return (
     <View style={styles.container}>
       {/* Top section for thumbnails */}
       <View style={styles.topSection}>
         <SafeAreaView>
           <View style={styles.thumbnailsRow}>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+            <ScrollView
+    horizontal
+    showsHorizontalScrollIndicator={false}
+    // Make the content container fill the ScrollView width so justifyContent works
+    contentContainerStyle={{
+      flexGrow: 1,
+      justifyContent: 'center', // use 'center' to simply center them, or 'space-evenly' for even spacing
+      alignItems: 'center',
+      paddingHorizontal: 8,
+    }}
+  >
               {capturedPhotos.map((item, index) => (
                 <View key={index} style={styles.thumbnailContainer}>
                   <Image
@@ -514,7 +647,7 @@ export default function Camera() {
                       console.log("Delete button pressed for index:", index);
                       handleDeletePhoto(item, index);
                     }}
-                    hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }} // Increase touch area
+                    hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
                   >
                     <AntDesign name="close" size={16} color="white" />
                   </TouchableOpacity>
@@ -533,39 +666,27 @@ export default function Camera() {
         </SafeAreaView>
       </View>
 
-      {/* Main camera section with flex */}
+      {/* Main camera section */}
       <View style={styles.mainSection}>
-        {/* Mode Selector */}
-        <View style={styles.modeSelectorWrapper}>
-          <View style={styles.switchContainer}>
-            <Text
-              style={[
-                styles.switchLabel,
-                isLabelMode ? styles.activeSwitchLabel : {},
-              ]}
-            >
-              Labels
-            </Text>
-            <Switch
-              trackColor={{ false: "#767577", true: "#81b0ff" }}
-              thumbColor={isLabelMode ? "lightgreen" : "#f4f3f4"}
-              ios_backgroundColor="#3e3e3e"
-              onValueChange={toggleMode}
-              value={!isLabelMode}
-            />
-            <Text
-              style={[
-                styles.switchLabel,
-                !isLabelMode ? styles.activeSwitchLabel : {},
-              ]}
-            >
-              Fruits
-            </Text>
-          </View>
+        {/* Segmented Control for Mode Selection */}
+        <View style={styles.segmentedControlWrapper}>
+          <SegmentedControl
+            selectedIndex={selectedSegmentIndex}
+            onSelectionChange={handleSegmentChange}
+            activeColor="#4CAF50"
+            inactiveColor="#999"
+            backgroundColor="rgba(0,0,0,0.7)"
+            textActiveColor="white"
+            textInactiveColor="#ccc"
+            containerStyle={styles.segmentedControlContainer}
+          />
         </View>
 
         {/* Camera View */}
-        <CameraView style={styles.camera} facing={facing} ref={cameraRef}>
+        <CameraView style={styles.camera} facing={facing} ref={cameraRef} onLayout={e => {
+  const { width, height } = e.nativeEvent.layout;
+  setPreviewLayout({ width, height });
+}}>
           {/* Overlay + guide box (only in label mode) */}
           <View style={styles.overlay}>
             {isLabelMode && (
@@ -573,16 +694,16 @@ export default function Camera() {
             )}
           </View>
 
-          {/* Bottom Controls: Left = Back, Center = Capture, Right = Submit (disabled if no photo) */}
+          {/* Bottom Controls */}
           <View style={styles.bottomControlsContainer}>
             <View style={styles.bottomControls}>
               {/* LEFT: Go Back */}
               <TouchableOpacity
-                style={styles.roundButton}
+                style={styles.returnButton}
                 onPress={handleGoBack}
                 disabled={false}
               >
-                <Ionicons name="arrow-undo-outline" size={28} color="white" />
+                <Ionicons name="return-down-back-outline" size={28} color="white" />
               </TouchableOpacity>
 
               {/* CENTER: Capture */}
@@ -593,13 +714,13 @@ export default function Camera() {
                 <View style={styles.captureButtonInner} />
               </TouchableOpacity>
 
-              {/* RIGHT: Submit Photo (disabled because no photo yet) */}
+              {/* RIGHT: Submit Photo */}
               <TouchableOpacity
-                style={[styles.roundButton, { opacity: submit ? 0.5 : 1 }]}
+                style={[styles.returnButton, { opacity: submit ? 0.5 : 1 }]}
                 onPress={() => handleSubmitPhoto(capturedPhotos)}
-                disabled={submit}
+                disabled={submit || capturedPhotos.length === 0}
               >
-                <Ionicons name="checkmark" size={28} color="white" />
+                <Ionicons name="return-down-forward-outline" size={28} color="white" />
               </TouchableOpacity>
             </View>
           </View>
@@ -608,7 +729,52 @@ export default function Camera() {
     </View>
   );
 }
-//tite
+
+// Segmented Control Styles
+const segmentedStyles = StyleSheet.create({
+  container: {
+    flexDirection: 'row',
+    borderRadius: 25,
+    padding: 4,
+    position: 'relative',
+    alignSelf: 'center',
+    minWidth: SEGMENTED_WIDTH,
+    width: SEGMENTED_WIDTH,
+  },
+  highlight: {
+    position: 'absolute',
+    top: 4,
+    left: 4,
+    height: 40,
+    borderRadius: 20,
+    zIndex: 1,
+    // width is set by animatedStyle
+  },
+  optionsContainer: {
+    flexDirection: 'row',
+    zIndex: 2,
+  },
+  option: {
+    flex: 1,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    minWidth: SEGMENT_WIDTH - 8,
+  },
+  optionContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  optionText: {
+    fontSize: 16,
+    fontWeight: '600',
+    marginLeft: 6,
+  },
+});
+
+// Main Component Styles
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -620,12 +786,12 @@ const styles = StyleSheet.create({
   },
   thumbnailsRow: {
     height: 80,
-    backgroundColor: "#FFFFFF",
+    backgroundColor: "#252525ff", // Set to match your desired color
     paddingVertical: 10,
     paddingHorizontal: 5,
     zIndex: 10,
     borderBottomWidth: 1,
-    borderBottomColor: "#EEEEEE",
+    borderBottomColor: "#252525ff",
     elevation: 3,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
@@ -638,7 +804,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     marginHorizontal: 5,
     position: "relative",
-    overflow: "visible", // Changed from 'hidden' to show delete button
+    overflow: "visible",
     elevation: 3,
   },
   thumbnail: {
@@ -646,20 +812,20 @@ const styles = StyleSheet.create({
     height: "100%",
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: "#DDDDDD",
+    borderColor: 'transparent',
   },
   deleteButton: {
     position: "absolute",
     top: 2,
     right: 2,
     backgroundColor: "rgba(0,0,0,0.6)",
-    width: 24, // Increased from 20
-    height: 24, // Increased from 20
+    width: 24,
+    height: 24,
     borderRadius: 12,
     justifyContent: "center",
     alignItems: "center",
-    zIndex: 2, // Ensure it's above the image
-    elevation: 4, // For Android
+    zIndex: 2,
+    elevation: 4,
   },
   thumbnailIndicator: {
     position: "absolute",
@@ -675,7 +841,6 @@ const styles = StyleSheet.create({
   fruitIndicator: {
     backgroundColor: "#81b0ff",
   },
-
   camera: {
     flex: 1,
   },
@@ -692,16 +857,11 @@ const styles = StyleSheet.create({
     backgroundColor: "transparent",
   },
   labelGuideBox: {
-    borderColor: "lightgreen", // Yellow
+    borderColor: "lightgreen",
     width: "70%",
     height: "60%",
   },
-  fruitGuideBox: {
-    borderColor: "#81b0ff", // Blue
-  },
-
-  // Bottom "Labels/Fruits" switch
-  modeSelectorWrapper: {
+  segmentedControlWrapper: {
     position: "absolute",
     top: 20,
     left: 0,
@@ -709,59 +869,24 @@ const styles = StyleSheet.create({
     zIndex: 10,
     alignItems: "center",
   },
-  modeSelectorBottom: {
-    alignItems: "center",
+  segmentedControlContainer: {
+    marginHorizontal: 20,
   },
-  switchContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "rgba(0,0,0,0.6)",
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-    borderRadius: 25,
-    maxWidth: 250,
-    marginHorizontal: "auto",
-  },
-  switchLabel: {
-    color: "#999",
-    marginHorizontal: 8,
-    fontSize: 14,
-    fontWeight: "500",
-  },
-  activeSwitchLabel: {
-    color: "white",
-    fontWeight: "bold",
-  },
-
-  // Bottom controls - updated to match UI in mockup
-  bottomControls: {
-    position: "absolute",
-    bottom: 20,
-    left: 0,
-    right: 0,
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    paddingHorizontal: 20,
-  },
-
-  // New rounded button style to match the image
-  roundButton: {
-    width: 55,
-    height: 55,
-    borderRadius: 30,
-    backgroundColor: "rgba(144, 238, 144, 0.8)",
-    justifyContent: "center",
-    alignItems: "center",
+  returnButton: {
+    backgroundColor: "transparent", // No background
+    borderRadius: 0,                // No rounded corners
+    width: undefined,               // No fixed width
+    height: undefined,              // No fixed height
     margin: 10,
+    padding: 10,                    // Add padding for touch area
+    justifyContent: "center",
+    alignItems: "center",
   },
-
   captureButton: {
     width: 70,
     height: 70,
     borderRadius: 35,
-    backgroundColor: "rgba(144, 238, 144, 0.8)",
+    backgroundColor: "white",
     justifyContent: "center",
     alignItems: "center",
     elevation: 5,
@@ -772,14 +897,14 @@ const styles = StyleSheet.create({
     borderRadius: 30,
     backgroundColor: "white",
     borderWidth: 2,
-    borderColor: "rgba(144, 238, 144, 1)",
+    borderColor: "black",
   },
   bottomControlsContainer: {
-    position: "absolute", // Changed from 'bottom' to 'absolute'
-    bottom: 0, // Changed from 10 to 0 to extend to the very bottom
+    position: "absolute",
+    bottom: 0,
     left: 0,
     right: 0,
-    backgroundColor: "rgba(0, 0, 0, 0.4)",
+    backgroundColor: "#252525ff",
     paddingVertical: 15,
     paddingHorizontal: 20,
   },
@@ -790,16 +915,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 10,
   },
-  cameraWrapper: {
-    flex: 1,
-    position: "relative",
-  },
-  thumbnailsContainer: {
-    backgroundColor: "#FFFFFF",
-    zIndex: 10,
-  },
   topSection: {
-    backgroundColor: "#FFFFFF",
+    backgroundColor: "#252525ff", // Set to match your desired color
     zIndex: 10,
   },
   mainSection: {
