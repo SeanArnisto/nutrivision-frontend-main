@@ -1,0 +1,416 @@
+import React, { useState } from 'react';
+import { View, StyleSheet, Animated } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
+import { StackNavigationProp } from '@react-navigation/stack';
+import { RootStackParamList } from '@/types/types';
+
+import ScreenContainer from '@/components/ScreenContainer';
+import Header from '@/components/Header';
+import TitleSection from '@/components/TitleSection';
+import SelectionButton from '@/components/SelectionButton';
+import PrimaryButton from '@/components/PrimaryButton';
+import InfoCard from '@/components/InfoCard';
+import NumericInput from '@/components/NumericInput';
+import Toast, { ToastType } from '@/components/Toast';
+import ThankYouStep from '@/components/ThankYouStep';
+
+type OnboardingScreenNavigationProp = StackNavigationProp<
+  RootStackParamList,
+  'onboarding'
+>;
+
+interface OnboardingData {
+  gender: 'male' | 'female' | null;
+  age: string;
+  height: string;
+  weight: string;
+}
+
+export default function OnboardingScreen() {
+  const navigation = useNavigation<OnboardingScreenNavigationProp>();
+  const [currentStep, setCurrentStep] = useState(1);
+  const [progressAnimation] = useState(new Animated.Value(1));
+  
+  const [formData, setFormData] = useState<OnboardingData>({
+    gender: null,
+    age: '',
+    height: '',
+    weight: '',
+  });
+  
+  const [toast, setToast] = useState<{
+    visible: boolean;
+    type: ToastType;
+    title: string;
+    message: string;
+  }>({
+    visible: false,
+    type: 'info',
+    title: '',
+    message: '',
+  });
+
+  const totalSteps = 5; // Gender, Age, Height, Weight, Thank You
+
+  const showToast = (type: ToastType, title: string, message: string) => {
+    setToast({ visible: true, type, title, message });
+  };
+
+  const hideToast = () => {
+    setToast(prev => ({ ...prev, visible: false }));
+  };
+
+  const animateProgress = (step: number) => {
+    Animated.timing(progressAnimation, {
+      toValue: step,
+      duration: 300,
+      useNativeDriver: false,
+    }).start();
+  };
+
+  const validateCurrentStep = () => {
+    switch (currentStep) {
+      case 1:
+        if (!formData.gender) {
+          showToast('error', 'Error!', 'Please select your gender');
+          return false;
+        }
+        break;
+      
+      case 2:
+        const ageValue = parseFloat(formData.age);
+        if (!formData.age || isNaN(ageValue)) {
+          showToast('error', 'Error!', 'Please enter a valid age');
+          return false;
+        }
+        if (ageValue < 18 || ageValue > 120) {
+          showToast('error', 'Error!', 'Users must only be 18 to 120 years old');
+          return false;
+        }
+        break;
+      
+      case 3:
+        const heightValue = parseFloat(formData.height);
+        if (!formData.height || isNaN(heightValue)) {
+          showToast('error', 'Error!', 'Please enter a valid height');
+          return false;
+        }
+        if (heightValue < 140 || heightValue > 188) {
+          showToast('error', 'Error!', 'Height must be between 140-188 cm');
+          return false;
+        }
+        break;
+      
+      case 4:
+        const weightValue = parseFloat(formData.weight);
+        if (!formData.weight || isNaN(weightValue)) {
+          showToast('error', 'Error!', 'Please enter a valid weight');
+          return false;
+        }
+        if (weightValue < 40 || weightValue > 120) {
+          showToast('error', 'Error!', 'Weight must be between 40-120 kg');
+          return false;
+        }
+        break;
+    }
+    return true;
+  };
+
+  const handleContinue = () => {
+    // Validate current step only when Continue is clicked
+    if (!validateCurrentStep()) {
+      return;
+    }
+
+    if (currentStep < totalSteps) {
+      const nextStep = currentStep + 1;
+      setCurrentStep(nextStep);
+      animateProgress(nextStep);
+      
+      if (currentStep < 4) { // Don't show success toast on thank you step
+        showToast('success', 'Success!', 'Step completed successfully');
+      }
+    } else {
+      // Navigate to main app
+      navigation.navigate('page-2'); // Replace with your next screen
+    }
+  };
+
+  const handleBackPress = () => {
+    if (currentStep > 1) {
+      const prevStep = currentStep - 1;
+      setCurrentStep(prevStep);
+      animateProgress(prevStep);
+    } else {
+      navigation.goBack();
+    }
+  };
+
+  const getStepContent = () => {
+    switch (currentStep) {
+      case 1:
+        return (
+          <GenderStep
+            selectedGender={formData.gender}
+            onGenderSelect={(gender) => 
+              setFormData(prev => ({ ...prev, gender }))
+            }
+          />
+        );
+      case 2:
+        return (
+          <AgeStep
+            age={formData.age}
+            onAgeChange={(age) => 
+              setFormData(prev => ({ ...prev, age }))
+            }
+          />
+        );
+      case 3:
+        return (
+          <HeightStep
+            height={formData.height}
+            onHeightChange={(height) => 
+              setFormData(prev => ({ ...prev, height }))
+            }
+          />
+        );
+      case 4:
+        return (
+          <WeightStep
+            weight={formData.weight}
+            onWeightChange={(weight) => 
+              setFormData(prev => ({ ...prev, weight }))
+            }
+          />
+        );
+      case 5:
+        return <ThankYouStep />;
+      default:
+        return null;
+    }
+  };
+
+  const getContinueButtonState = () => {
+    switch (currentStep) {
+      case 1:
+        return !formData.gender;
+      case 2:
+        return !formData.age;
+      case 3:
+        return !formData.height;
+      case 4:
+        return !formData.weight;
+      case 5:
+        return false; // Always enabled on thank you step
+      default:
+        return true;
+    }
+  };
+
+  const getContinueButtonText = () => {
+    if (currentStep === 5) return "Continue";
+    return "Continue";
+  };
+
+  return (
+    <ScreenContainer>
+      <Header
+        currentStep={currentStep}
+        totalSteps={currentStep === 5 ? 0 : 4} // Hide progress bar on thank you step
+        showBackButton={true} // Always show back button
+        showLogo={true} // Always show logo
+        onBackPress={handleBackPress}
+        progressAnimation={progressAnimation}
+      />
+
+      <Toast
+        type={toast.type}
+        title={toast.title}
+        message={toast.message}
+        visible={toast.visible}
+        onClose={hideToast}
+      />
+
+      <View style={styles.content}>
+        {getStepContent()}
+      </View>
+
+      <View style={styles.bottomContainer}>
+        <PrimaryButton
+          title={getContinueButtonText()}
+          onPress={handleContinue}
+          disabled={getContinueButtonState()}
+        />
+      </View>
+    </ScreenContainer>
+  );
+}
+
+// Step Components
+interface GenderStepProps {
+  selectedGender: 'male' | 'female' | null;
+  onGenderSelect: (gender: 'male' | 'female') => void;
+}
+
+function GenderStep({ selectedGender, onGenderSelect }: GenderStepProps) {
+  return (
+    <>
+      <TitleSection
+        title="Choose your Gender"
+        description="Age affects nutrient intake by changing metabolism, absorption, and dietary needs."
+      />
+
+      <View style={styles.selectionContainer}>
+        <SelectionButton
+          title="Male"
+          selected={selectedGender === 'male'}
+          onPress={() => onGenderSelect('male')}
+        />
+        
+        <SelectionButton
+          title="Female"
+          selected={selectedGender === 'female'}
+          onPress={() => onGenderSelect('female')}
+        />
+      </View>
+    </>
+  );
+}
+
+interface AgeStepProps {
+  age: string;
+  onAgeChange: (age: string) => void;
+}
+
+function AgeStep({ age, onAgeChange }: AgeStepProps) {
+  const minAge = 18;
+  const maxAge = 120;
+
+  return (
+    <>
+      <TitleSection
+        title="Choose your Age"
+        description="Age affects nutrient intake by changing metabolism, absorption, and dietary needs."
+      />
+
+      <InfoCard
+        title="Users must only be"
+        subtitle={`${minAge} to ${maxAge} years old`}
+        editable={false}
+      />
+
+      <NumericInput
+        value={age}
+        onChangeText={onAgeChange}
+        placeholder="Enter your age"
+        minValue={minAge}
+        maxValue={maxAge}
+        unit="years"
+        onValidationChange={() => {}} // No real-time validation
+      />
+    </>
+  );
+}
+
+interface HeightStepProps {
+  height: string;
+  onHeightChange: (height: string) => void;
+}
+
+function HeightStep({ height, onHeightChange }: HeightStepProps) {
+  const minHeight = 140;
+  const maxHeight = 188;
+
+  const getHeightRangeText = () => {
+    const minFeet = Math.floor((minHeight / 30.48));
+    const minInches = Math.round(((minHeight / 30.48) % 1) * 12);
+    const maxFeet = Math.floor((maxHeight / 30.48));
+    const maxInches = Math.round(((maxHeight / 30.48) % 1) * 12);
+    
+    return `${minHeight}-${maxHeight} cm (${minFeet}'${minInches}" - ${maxFeet}'${maxInches}")`;
+  };
+
+  return (
+    <>
+      <TitleSection
+        title="Choose your Height"
+        description="Height affects nutrient needs, growth, and overall energy requirements."
+      />
+
+      <InfoCard
+        title="Height Range must only be"
+        subtitle={getHeightRangeText()}
+        editable={false}
+      />
+
+      <NumericInput
+        value={height}
+        onChangeText={onHeightChange}
+        placeholder="Enter height in cm"
+        minValue={minHeight}
+        maxValue={maxHeight}
+        unit="cm"
+        onValidationChange={() => {}} // No real-time validation
+      />
+    </>
+  );
+}
+
+interface WeightStepProps {
+  weight: string;
+  onWeightChange: (weight: string) => void;
+}
+
+function WeightStep({ weight, onWeightChange }: WeightStepProps) {
+  const minWeight = 40;
+  const maxWeight = 120;
+
+  // Convert weight to lbs for display
+  const getWeightRangeText = () => {
+    const minLbs = Math.round(minWeight * 2.20462);
+    const maxLbs = Math.round(maxWeight * 2.20462);
+    return `${minWeight} - ${maxWeight} kg or ${minLbs} - ${maxLbs} lbs`;
+  };
+
+  return (
+    <>
+      <TitleSection
+        title="Choose your Weight"
+        description="Weight influences nutrient intake by affecting metabolism, energy needs, and nutrient absorption."
+      />
+
+      <InfoCard
+        title="Weight Range must only be"
+        subtitle={getWeightRangeText()}
+        editable={false}
+      />
+
+      <NumericInput
+        value={weight}
+        onChangeText={onWeightChange}
+        placeholder="Enter weight in kg"
+        minValue={minWeight}
+        maxValue={maxWeight}
+        unit="kg"
+        onValidationChange={() => {}} // No real-time validation
+      />
+    </>
+  );
+}
+
+const styles = StyleSheet.create({
+  content: {
+    flex: 1,
+    paddingTop: 20,
+  },
+  selectionContainer: {
+    flex: 1,
+    alignItems: 'center',
+    paddingTop: 40,
+  },
+  bottomContainer: {
+    alignItems: 'center',
+    paddingBottom: 40,
+  },
+});

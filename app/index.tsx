@@ -22,7 +22,7 @@ export default function Page2() {
   const navigation = useNavigation<Page2ScreenNavigationProp>();
 
   const handleGetStarted = () => {
-    navigation.navigate("landing_page"); // TODO: confirm route
+    navigation.navigate("onboarding"); // TODO: confirm route
   };
 
   const handleLogin = () => {

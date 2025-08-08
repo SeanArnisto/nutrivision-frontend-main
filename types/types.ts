@@ -7,4 +7,5 @@ export type RootStackParamList = {
   'feedback':undefined; // This corresponds to your 5.1 User Nutrient Page screen
   'loading': undefined; // This corresponds to your loading.tsx screen
   'landing_page': undefined; // This is the landing page when the user opens the app
+  'onboarding': undefined;
 };
