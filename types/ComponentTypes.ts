@@ -132,3 +132,34 @@ export interface ToastConfig {
     iconName: string;
   };
 }
+
+// everything after this line should be transfered later to a new folder for login. 
+export interface User {
+  id: string;
+  email?: string;
+  user_metadata?: {
+    full_name?: string;
+    avatar_url?: string;
+  };
+}
+
+export interface AuthError {
+  message: string;
+  status?: number;
+}
+
+export interface AuthResponse {
+  user: User | null;
+  error: AuthError | null;
+}
+
+export interface AuthContextType {
+  user: User | null;
+  session: any;
+  loading: boolean;
+  signUp: (email: string, password: string, userData?: any) => Promise<AuthResponse>;
+  signIn: (email: string, password: string) => Promise<AuthResponse>;
+  signOut: () => Promise<{ error: AuthError | null }>;
+  resetPassword: (email: string) => Promise<AuthResponse>;
+  updateProfile: (updates: any) => Promise<AuthResponse>;
+}
