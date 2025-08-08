@@ -22,7 +22,7 @@ export default function Page2() {
   const navigation = useNavigation<Page2ScreenNavigationProp>();
 
   const handleGetStarted = () => {
-    navigation.navigate("page-2"); // TODO: confirm route
+    navigation.navigate("login"); // TODO: confirm route
   };
 
   const handleLogin = () => {

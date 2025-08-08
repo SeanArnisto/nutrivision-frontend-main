@@ -8,4 +8,5 @@ export type RootStackParamList = {
   'loading': undefined; // This corresponds to your loading.tsx screen
   'landing_page': undefined; // This is the landing page when the user opens the app
   'onboarding': undefined;
+  'login': undefined;
 };
