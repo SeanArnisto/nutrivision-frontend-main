@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import {
   StyleSheet,
   View,
@@ -23,6 +23,7 @@ import AppLogo from "@/components/appLogo";
 import GoBack from "@/components/ReturnButton";
 import GoNext from "@/components/NextButton";
 import ProfileBox from "@/components/ProfileBox";
+import BottomNavBar from "@/components/BottomNavBar";
 
 type Page2ScreenNavigationProp = StackNavigationProp<
   RootStackParamList,
@@ -30,8 +31,8 @@ type Page2ScreenNavigationProp = StackNavigationProp<
 >;
 
 export default function Page2() {
-  
   const navigation = useNavigation<Page2ScreenNavigationProp>();
+  const [activeTab, setActiveTab] = useState('home'); // Assuming this page is "home"
   
   const minCarb = useRecommStore((state) => state.minCarb);
   const maxCarb = useRecommStore((state) => state.maxCarb);
@@ -43,6 +44,35 @@ export default function Page2() {
   const maxSodium = useRecommStore((state) => state.maxSodium);
 
   const handleCheck = () => {
+    navigation.navigate("camera");
+  };
+
+  const handleTabPress = (tabName: string) => {
+    if (tabName === activeTab) {
+      // Refresh current screen
+      navigation.replace('page-2');
+    } else {
+      // Navigate to different tab
+      setActiveTab(tabName);
+      // Add your navigation logic here based on tab name
+      switch (tabName) {
+        case 'home':
+          navigation.navigate('page-2');
+          break;
+        case 'stats':
+          // navigation.navigate('stats-screen');
+          break;
+        case 'settings':
+          // navigation.navigate('settings-screen');
+          break;
+        case 'profile':
+          // navigation.navigate('profile-screen');
+          break;
+      }
+    }
+  };
+
+  const handleCameraPress = () => {
     navigation.navigate("camera");
   };
 
@@ -101,6 +131,13 @@ export default function Page2() {
       {/* navigations */}
       <GoBack />
       <GoNext next="camera"/>
+      
+      {/* Bottom Navigation Bar */}
+      <BottomNavBar 
+        activeTab={activeTab}
+        onTabPress={handleTabPress}
+        onCameraPress={handleCameraPress}
+      />
     </SafeAreaView>
   );
 }
@@ -115,6 +152,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#eff1f6",
     gap: 15,
     padding: 15,
+    paddingBottom: 100, // Add bottom padding to prevent content overlap with navbar
   },
   rowContainer: {
     flexDirection: "row",
