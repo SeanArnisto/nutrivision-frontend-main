@@ -1,7 +1,6 @@
 import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { supabase } from '../config/supabase';
 import { AuthContextType, User, AuthResponse, AuthError } from '../types/ComponentTypes';
-// change CompoentTypes to dependent folder
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
@@ -55,7 +54,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     return () => subscription.unsubscribe();
   }, []);
 
-  const signUp = async (email: string, password: string, userData: any = {}): Promise<AuthResponse> => {
+  const signUp = async (email: string, password: string, userData: Partial<UserMetadata> = {}): Promise<AuthResponse> => {
     try {
       setLoading(true);
       const { data, error } = await supabase.auth.signUp({

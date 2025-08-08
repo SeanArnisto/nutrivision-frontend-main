@@ -134,13 +134,20 @@ export interface ToastConfig {
 }
 
 // everything after this line should be transfered later to a new folder for login. 
+export interface UserMetadata {
+  full_name?: string;
+  avatar_url?: string;
+  name?: string;
+  age?: number;
+  weight?: number; // in kg
+  height?: number; // in cm
+  gender?: 'male' | 'female' | 'other' | 'prefer_not_to_say';
+}
+
 export interface User {
   id: string;
   email?: string;
-  user_metadata?: {
-    full_name?: string;
-    avatar_url?: string;
-  };
+  user_metadata?: UserMetadata;
 }
 
 export interface AuthError {
@@ -157,7 +164,7 @@ export interface AuthContextType {
   user: User | null;
   session: any;
   loading: boolean;
-  signUp: (email: string, password: string, userData?: any) => Promise<AuthResponse>;
+  signUp: (email: string, password: string, userData?: Partial<UserMetadata>) => Promise<AuthResponse>;
   signIn: (email: string, password: string) => Promise<AuthResponse>;
   signOut: () => Promise<{ error: AuthError | null }>;
   resetPassword: (email: string) => Promise<AuthResponse>;
