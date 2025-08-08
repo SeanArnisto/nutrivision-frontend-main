@@ -1,13 +1,13 @@
 import React, { useState } from 'react';
-import { 
-  View, 
-  Text, 
-  StyleSheet, 
-  Image, 
-  KeyboardAvoidingView, 
-  Platform, 
+import {
+  View,
+  Text,
+  StyleSheet,
+  Image,
+  KeyboardAvoidingView,
+  Platform,
   ScrollView,
-  Dimensions 
+  Dimensions
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
@@ -19,38 +19,39 @@ import AuthButton from '@/components/AuthButton';
 import SocialButton from '@/components/SocialButton';
 import LinkButton from '@/components/LinkButton';
 
-type LoginScreenNavigationProp = StackNavigationProp<RootStackParamList, 'login'>;
+type SignUpScreenNavigationProp = StackNavigationProp<RootStackParamList, 'signup'>;
 
-interface LoginFormData {
+interface SignUpFormData {
   email: string;
   password: string;
+  confirmPassword: string;
 }
 
-interface LoginErrors {
+interface SignUpErrors {
   email?: string;
   password?: string;
+  confirmPassword?: string;
   general?: string;
 }
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 
 // Responsive scaling functions
-const scale = (size: number) => (screenWidth / 375) * size; // Base on iPhone X width
-const verticalScale = (size: number) => (screenHeight / 812) * size; // Base on iPhone X height
-
-// Moderate scaling for elements that shouldn't scale as much
-const moderateScale = (size: number, factor = 0.5) => 
+const scale = (size: number) => (screenWidth / 375) * size;
+const verticalScale = (size: number) => (screenHeight / 812) * size;
+const moderateScale = (size: number, factor = 0.5) =>
   size + (scale(size) - size) * factor;
 
-export default function LoginScreen() {
-  const navigation = useNavigation<LoginScreenNavigationProp>();
-  
-  const [formData, setFormData] = useState<LoginFormData>({
+export default function SignUpScreen() {
+  const navigation = useNavigation<SignUpScreenNavigationProp>();
+
+  const [formData, setFormData] = useState<SignUpFormData>({
     email: '',
     password: '',
+    confirmPassword: '',
   });
-  
-  const [errors, setErrors] = useState<LoginErrors>({});
+
+  const [errors, setErrors] = useState<SignUpErrors>({});
   const [isLoading, setIsLoading] = useState(false);
 
   const validateEmail = (email: string): boolean => {
@@ -59,7 +60,7 @@ export default function LoginScreen() {
   };
 
   const validateForm = (): boolean => {
-    const newErrors: LoginErrors = {};
+    const newErrors: SignUpErrors = {};
 
     if (!formData.email) {
       newErrors.email = 'Email is required';
@@ -73,11 +74,17 @@ export default function LoginScreen() {
       newErrors.password = 'Password must be at least 6 characters';
     }
 
+    if (!formData.confirmPassword) {
+      newErrors.confirmPassword = 'Please confirm your password';
+    } else if (formData.password !== formData.confirmPassword) {
+      newErrors.confirmPassword = 'Passwords do not match';
+    }
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleLogin = async () => {
+  const handleSignUp = async () => {
     if (!validateForm()) return;
 
     setIsLoading(true);
@@ -86,30 +93,26 @@ export default function LoginScreen() {
     try {
       // Simulate API call
       await new Promise(resolve => setTimeout(resolve, 1500));
-      
-      // Navigate to main app
+
+      // Navigate to main app or email verification
       navigation.navigate('page-2'); // Replace with your main screen
     } catch (error) {
-      setErrors({ general: 'Login failed. Please check your credentials.' });
+      setErrors({ general: 'Sign up failed. Please try again.' });
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleGoogleLogin = () => {
-    console.log('Google login pressed');
+  const handleGoogleSignUp = () => {
+    console.log('Google sign up pressed');
   };
 
-  const handleFacebookLogin = () => {
-    console.log('Facebook login pressed');
+  const handleFacebookSignUp = () => {
+    console.log('Facebook sign up pressed');
   };
 
-  const handleForgotPassword = () => {
-    navigation.navigate('page-2');
-  };
-
-  const handleCreateAccount = () => {
-    navigation.navigate('signup');
+  const handleLoginNavigation = () => {
+    navigation.navigate('login');
   };
 
   return (
@@ -123,7 +126,7 @@ export default function LoginScreen() {
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
         >
-          {/* Logo Container - Responsive with maintained proportions */}
+          {/* Logo Container */}
           <View style={styles.logoContainer}>
             <Image
               source={require('@/assets/images/nutrivision_headstarted.png')}
@@ -132,9 +135,9 @@ export default function LoginScreen() {
             />
           </View>
 
-          {/* Title Container - Responsive min-height */}
+          {/* Title Container */}
           <View style={styles.titleContainer}>
-            <Text style={styles.title}>Log In</Text>
+            <Text style={styles.title}>Sign up</Text>
           </View>
 
           {/* Form Container */}
@@ -157,61 +160,69 @@ export default function LoginScreen() {
               secureTextEntry
               autoComplete="password"
               error={errors.password}
-              showForgotPassword={true}
-              onForgotPasswordPress={handleForgotPassword}
             />
 
-            {/* General Error Container - Reserved responsive space */}
+            <CustomTextInput
+              label="Confirm Password"
+              value={formData.confirmPassword}
+              onChangeText={(confirmPassword) => setFormData(prev => ({ ...prev, confirmPassword }))}
+              placeholder="Confirm your password"
+              secureTextEntry
+              autoComplete="password"
+              error={errors.confirmPassword}
+            />
+
+            {/* General Error Container */}
             <View style={styles.generalErrorContainer}>
               <Text style={[styles.generalError, !errors.general && styles.generalErrorHidden]}>
                 {errors.general || ' '}
               </Text>
             </View>
 
-            {/* Login Button Container - Responsive */}
-            <View style={styles.loginButtonContainer}>
+            {/* Sign Up Button Container */}
+            <View style={styles.signUpButtonContainer}>
               <AuthButton
-                title="LOG IN"
-                onPress={handleLogin}
-                disabled={!formData.email || !formData.password}
+                title="SIGN UP"
+                onPress={handleSignUp}
+                disabled={!formData.email || !formData.password || !formData.confirmPassword}
                 loading={isLoading}
               />
             </View>
           </View>
 
-          {/* Divider Container - Responsive */}
+          {/* Divider Container */}
           <View style={styles.dividerContainer}>
             <View style={styles.dividerLine} />
             <Text style={styles.dividerText}>Or</Text>
             <View style={styles.dividerLine} />
           </View>
 
-          {/* Social Login Container - Flexible height that maintains proportions */}
+          {/* Social Sign Up Container */}
           <View style={styles.socialContainer}>
             <SocialButton
               provider="google"
-              onPress={handleGoogleLogin}
+              onPress={handleGoogleSignUp}
               disabled={isLoading}
             />
-            
+
             <SocialButton
               provider="facebook"
-              onPress={handleFacebookLogin}
+              onPress={handleFacebookSignUp}
               disabled={isLoading}
             />
           </View>
 
-          {/* Bottom Divider Container - Responsive */}
+          {/* Bottom Divider Container */}
           <View style={styles.bottomDividerContainer}>
             <View style={styles.dividerLine} />
             <View style={styles.dividerLine} />
           </View>
 
-          {/* Create Account Container - Responsive */}
-          <View style={styles.createAccountContainer}>
+          {/* Login Link Container */}
+          <View style={styles.loginLinkContainer}>
             <LinkButton
-              title="Create an Account"
-              onPress={handleCreateAccount}
+              title="Already have an account? Log in"
+              onPress={handleLoginNavigation}
               color="#333"
               size="large"
               underline
@@ -229,51 +240,44 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     flexGrow: 1,
-    paddingHorizontal: scale(20), // Reduced from 24
-    paddingTop: verticalScale(5), // Reduced from 10
-    paddingBottom: verticalScale(5), // Reduced from 10
+    paddingHorizontal: scale(20),
+    paddingTop: verticalScale(5),
+    paddingBottom: verticalScale(5),
   },
   logoContainer: {
     alignItems: 'center',
-    minHeight: verticalScale(50), // Reduced from 80
+    minHeight: verticalScale(50),
     justifyContent: 'center',
-    marginBottom: verticalScale(5), // Reduced from 10
-    paddingVertical: verticalScale(2), // Reduced padding
+    marginBottom: verticalScale(5),
+    paddingVertical: verticalScale(2),
   },
   logo: {
-    width: scale(220), // Reduced from 260
-    height: verticalScale(50), // Reduced from 70
-    maxWidth: screenWidth * 0.6, // Reduced from 0.7
-    maxHeight: verticalScale(60), // Reduced from 80
+    width: scale(220),
+    height: verticalScale(50),
+    maxWidth: screenWidth * 0.6,
+    maxHeight: verticalScale(60),
   },
   titleContainer: {
-    minHeight: verticalScale(30), // Reduced from 40
+    minHeight: verticalScale(30),
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: verticalScale(10), // Reduced from 20
-    paddingVertical: verticalScale(2), // Reduced padding
+    marginBottom: verticalScale(10),
+    paddingVertical: verticalScale(2),
   },
   title: {
-    fontSize: moderateScale(24), // Moderate scaling for better readability
+    fontSize: moderateScale(24),
     fontWeight: 'bold',
     color: '#333',
     lineHeight: moderateScale(30),
   },
   formContainer: {
-    marginBottom: verticalScale(5), // Reduced from 10
-  },
-  forgotPasswordContainer: {
-    minHeight: verticalScale(24), // Reduced from 32
-    alignItems: 'flex-end',
-    justifyContent: 'center',
-    marginBottom: verticalScale(5), // Reduced from 10
-    paddingVertical: verticalScale(2), // Reduced padding
+    marginBottom: verticalScale(5),
   },
   generalErrorContainer: {
     minHeight: verticalScale(18),
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: verticalScale(12), // Increased slightly since we removed forgot password container
+    marginBottom: verticalScale(12),
     paddingHorizontal: scale(10),
   },
   generalError: {
@@ -281,22 +285,22 @@ const styles = StyleSheet.create({
     color: '#F44336',
     textAlign: 'center',
     lineHeight: scale(18),
-    flexWrap: 'wrap', // Allow wrapping on smaller screens
+    flexWrap: 'wrap',
   },
   generalErrorHidden: {
-    opacity: 0, // Hide but maintain space
+    opacity: 0,
   },
-  loginButtonContainer: {
-    minHeight: verticalScale(44), // Reduced from 48
-    marginBottom: verticalScale(5), // Reduced from 10
-    paddingVertical: verticalScale(1), // Reduced padding
+  signUpButtonContainer: {
+    minHeight: verticalScale(44),
+    marginBottom: verticalScale(5),
+    paddingVertical: verticalScale(1),
   },
   dividerContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    minHeight: verticalScale(30), // Reduced from 40
-    marginVertical: verticalScale(5), // Reduced from 10
-    paddingVertical: verticalScale(2), // Reduced padding
+    minHeight: verticalScale(30),
+    marginVertical: verticalScale(5),
+    paddingVertical: verticalScale(2),
   },
   dividerLine: {
     flex: 1,
@@ -312,22 +316,22 @@ const styles = StyleSheet.create({
     lineHeight: scale(20),
   },
   socialContainer: {
-    minHeight: verticalScale(90), // Reduced from 120
+    minHeight: verticalScale(90),
     justifyContent: 'space-between',
-    marginBottom: verticalScale(5), // Reduced from 10
-    paddingVertical: verticalScale(2), // Reduced padding
+    marginBottom: verticalScale(5),
+    paddingVertical: verticalScale(2),
   },
   bottomDividerContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    minHeight: verticalScale(15), // Reduced from 20
-    marginVertical: verticalScale(5), // Reduced from 10
+    minHeight: verticalScale(15),
+    marginVertical: verticalScale(5),
   },
-  createAccountContainer: {
-    minHeight: verticalScale(24), // Reduced from 32
+  loginLinkContainer: {
+    minHeight: verticalScale(24),
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: verticalScale(5), // Reduced from 10
-    paddingVertical: verticalScale(2), // Reduced padding
+    marginTop: verticalScale(5),
+    paddingVertical: verticalScale(2),
   },
 });
