@@ -107,9 +107,21 @@ export default function LoginScreen() {
       
       setErrors({ general: errorMessage });
     } else if (data?.user) {
-      // Login successful - navigate to main app
+      // Login successful - check if profile is complete
       console.log('Login successful:', data.user.email);
-      navigation.navigate('page-2'); // or your main authenticated screen
+      
+      // Get the profile completion status from the store
+      const isProfileComplete = useAuthStore.getState().profileComplete;
+      
+      if (isProfileComplete === false) {
+        // Profile incomplete - go to onboarding
+        console.log("User has no existing metadata")
+        navigation.navigate('onboarding'); // PAPALITAN TO PAG GUUMANA YUNG CHECK
+      } else {
+        // Profile complete - go to main app
+        navigation.navigate('page-2');
+        console.log("User has existing metadata.")
+      }
     }
   } catch (error: any) {
     console.error('Login error:', error);
