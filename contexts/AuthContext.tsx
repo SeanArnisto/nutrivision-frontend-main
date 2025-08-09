@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { supabase } from '../config/supabase';
-import { AuthContextType, User, AuthResponse, AuthError } from '../types/ComponentTypes';
+import { AuthContextType, User, AuthResponse, AuthError, UserMetadata } from '../types/ComponentTypes';
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 

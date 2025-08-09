@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState } from "react";
 import {
   View,
   Text,
@@ -7,19 +7,25 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
-  Dimensions
-} from 'react-native';
-import { useNavigation } from '@react-navigation/native';
-import { StackNavigationProp } from '@react-navigation/stack';
-import { RootStackParamList } from '@/types/types';
+  Dimensions,
+} from "react-native";
+import { useNavigation } from "@react-navigation/native";
+import { StackNavigationProp } from "@react-navigation/stack";
+import { RootStackParamList } from "@/types/types";
 
-import ScreenContainer from '@/components/ScreenContainer';
-import CustomTextInput from '@/components/CustomTextInput';
-import AuthButton from '@/components/AuthButton';
-import SocialButton from '@/components/SocialButton';
-import LinkButton from '@/components/LinkButton';
+import ScreenContainer from "@/components/ScreenContainer";
+import CustomTextInput from "@/components/CustomTextInput";
+import AuthButton from "@/components/AuthButton";
+import SocialButton from "@/components/SocialButton";
+import LinkButton from "@/components/LinkButton";
 
-type SignUpScreenNavigationProp = StackNavigationProp<RootStackParamList, 'signup'>;
+import { useAuthStore } from "@/stores/authStore";
+import { Alert } from "react-native";
+
+type SignUpScreenNavigationProp = StackNavigationProp<
+  RootStackParamList,
+  "signup"
+>;
 
 interface SignUpFormData {
   email: string;
@@ -34,7 +40,7 @@ interface SignUpErrors {
   general?: string;
 }
 
-const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
+const { width: screenWidth, height: screenHeight } = Dimensions.get("window");
 
 // Responsive scaling functions
 const scale = (size: number) => (screenWidth / 375) * size;
@@ -45,10 +51,12 @@ const moderateScale = (size: number, factor = 0.5) =>
 export default function SignUpScreen() {
   const navigation = useNavigation<SignUpScreenNavigationProp>();
 
+  const { signUp, isLoading: authLoading } = useAuthStore();
+
   const [formData, setFormData] = useState<SignUpFormData>({
-    email: '',
-    password: '',
-    confirmPassword: '',
+    email: "",
+    password: "",
+    confirmPassword: "",
   });
 
   const [errors, setErrors] = useState<SignUpErrors>({});
@@ -63,21 +71,21 @@ export default function SignUpScreen() {
     const newErrors: SignUpErrors = {};
 
     if (!formData.email) {
-      newErrors.email = 'Email is required';
+      newErrors.email = "Email is required";
     } else if (!validateEmail(formData.email)) {
-      newErrors.email = 'Please enter a valid email address';
+      newErrors.email = "Please enter a valid email address";
     }
 
     if (!formData.password) {
-      newErrors.password = 'Password is required';
+      newErrors.password = "Password is required";
     } else if (formData.password.length < 6) {
-      newErrors.password = 'Password must be at least 6 characters';
+      newErrors.password = "Password must be at least 6 characters";
     }
 
     if (!formData.confirmPassword) {
-      newErrors.confirmPassword = 'Please confirm your password';
+      newErrors.confirmPassword = "Please confirm your password";
     } else if (formData.password !== formData.confirmPassword) {
-      newErrors.confirmPassword = 'Passwords do not match';
+      newErrors.confirmPassword = "Passwords do not match";
     }
 
     setErrors(newErrors);
@@ -91,35 +99,66 @@ export default function SignUpScreen() {
     setErrors({});
 
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      // Call Zustand store signup
+      const { data, error } = await signUp(formData.email, formData.password);
 
-      // Navigate to main app or email verification
-      navigation.navigate('page-2'); // Replace with your main screen
-    } catch (error) {
-      setErrors({ general: 'Sign up failed. Please try again.' });
+      if (error) {
+        // Handle Supabase errors
+        let errorMessage = "Sign up failed. Please try again.";
+
+        // Fix error checking - error might be string or object
+        const errorMsg = error.message || error;
+
+        if (errorMsg.includes && errorMsg.includes("already registered")) {
+          errorMessage =
+            "This email is already registered. Please try logging in instead.";
+        } else if (
+          errorMsg.includes &&
+          errorMsg.includes("Password should be")
+        ) {
+          errorMessage =
+            "Password is too weak. Please choose a stronger password.";
+        }
+
+        setErrors({ general: errorMessage });
+      } else if (data?.user) {
+        // Success - show email verification message
+        Alert.alert(
+          "Check Your Email",
+          "Please check your email and click the verification link to complete your registration.",
+          [
+            {
+              text: "OK",
+              onPress: () => navigation.navigate("login"),
+            },
+          ]
+        );
+      }
+    } catch (error: any) {
+      console.error("Signup error:", error);
+      setErrors({ general: "An unexpected error occurred. Please try again." });
     } finally {
       setIsLoading(false);
     }
   };
 
   const handleGoogleSignUp = () => {
-    console.log('Google sign up pressed');
+    console.log("Google sign up pressed");
   };
 
   const handleFacebookSignUp = () => {
-    console.log('Facebook sign up pressed');
+    console.log("Facebook sign up pressed");
   };
 
   const handleLoginNavigation = () => {
-    navigation.navigate('login');
+    navigation.navigate("login");
   };
 
   return (
     <ScreenContainer>
       <KeyboardAvoidingView
         style={styles.container}
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
       >
         <ScrollView
           contentContainerStyle={styles.scrollContent}
@@ -129,7 +168,7 @@ export default function SignUpScreen() {
           {/* Logo Container */}
           <View style={styles.logoContainer}>
             <Image
-              source={require('@/assets/images/nutrivision_headstarted.png')}
+              source={require("@/assets/images/nutrivision_headstarted.png")}
               style={styles.logo}
               resizeMode="contain"
             />
@@ -145,7 +184,9 @@ export default function SignUpScreen() {
             <CustomTextInput
               label="Email"
               value={formData.email}
-              onChangeText={(email) => setFormData(prev => ({ ...prev, email }))}
+              onChangeText={(email) =>
+                setFormData((prev) => ({ ...prev, email }))
+              }
               placeholder="Enter your email"
               keyboardType="email-address"
               autoComplete="email"
@@ -155,7 +196,9 @@ export default function SignUpScreen() {
             <CustomTextInput
               label="Password"
               value={formData.password}
-              onChangeText={(password) => setFormData(prev => ({ ...prev, password }))}
+              onChangeText={(password) =>
+                setFormData((prev) => ({ ...prev, password }))
+              }
               placeholder="Enter your password"
               secureTextEntry
               autoComplete="password"
@@ -165,7 +208,9 @@ export default function SignUpScreen() {
             <CustomTextInput
               label="Confirm Password"
               value={formData.confirmPassword}
-              onChangeText={(confirmPassword) => setFormData(prev => ({ ...prev, confirmPassword }))}
+              onChangeText={(confirmPassword) =>
+                setFormData((prev) => ({ ...prev, confirmPassword }))
+              }
               placeholder="Confirm your password"
               secureTextEntry
               autoComplete="password"
@@ -174,8 +219,13 @@ export default function SignUpScreen() {
 
             {/* General Error Container */}
             <View style={styles.generalErrorContainer}>
-              <Text style={[styles.generalError, !errors.general && styles.generalErrorHidden]}>
-                {errors.general || ' '}
+              <Text
+                style={[
+                  styles.generalError,
+                  !errors.general && styles.generalErrorHidden,
+                ]}
+              >
+                {errors.general || " "}
               </Text>
             </View>
 
@@ -184,7 +234,11 @@ export default function SignUpScreen() {
               <AuthButton
                 title="SIGN UP"
                 onPress={handleSignUp}
-                disabled={!formData.email || !formData.password || !formData.confirmPassword}
+                disabled={
+                  !formData.email ||
+                  !formData.password ||
+                  !formData.confirmPassword
+                }
                 loading={isLoading}
               />
             </View>
@@ -245,9 +299,9 @@ const styles = StyleSheet.create({
     paddingBottom: verticalScale(5),
   },
   logoContainer: {
-    alignItems: 'center',
+    alignItems: "center",
     minHeight: verticalScale(50),
-    justifyContent: 'center',
+    justifyContent: "center",
     marginBottom: verticalScale(5),
     paddingVertical: verticalScale(2),
   },
@@ -259,15 +313,15 @@ const styles = StyleSheet.create({
   },
   titleContainer: {
     minHeight: verticalScale(30),
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     marginBottom: verticalScale(10),
     paddingVertical: verticalScale(2),
   },
   title: {
     fontSize: moderateScale(24),
-    fontWeight: 'bold',
-    color: '#333',
+    fontWeight: "bold",
+    color: "#333",
     lineHeight: moderateScale(30),
   },
   formContainer: {
@@ -275,17 +329,17 @@ const styles = StyleSheet.create({
   },
   generalErrorContainer: {
     minHeight: verticalScale(18),
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     marginBottom: verticalScale(12),
     paddingHorizontal: scale(10),
   },
   generalError: {
     fontSize: scale(14),
-    color: '#F44336',
-    textAlign: 'center',
+    color: "#F44336",
+    textAlign: "center",
     lineHeight: scale(18),
-    flexWrap: 'wrap',
+    flexWrap: "wrap",
   },
   generalErrorHidden: {
     opacity: 0,
@@ -296,8 +350,8 @@ const styles = StyleSheet.create({
     paddingVertical: verticalScale(1),
   },
   dividerContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     minHeight: verticalScale(30),
     marginVertical: verticalScale(5),
     paddingVertical: verticalScale(2),
@@ -305,32 +359,32 @@ const styles = StyleSheet.create({
   dividerLine: {
     flex: 1,
     height: 1,
-    backgroundColor: '#E0E0E0',
+    backgroundColor: "#E0E0E0",
     marginHorizontal: scale(5),
   },
   dividerText: {
     fontSize: scale(16),
-    fontWeight: 'normal',
-    color: '#666',
+    fontWeight: "normal",
+    color: "#666",
     marginHorizontal: scale(16),
     lineHeight: scale(20),
   },
   socialContainer: {
     minHeight: verticalScale(90),
-    justifyContent: 'space-between',
+    justifyContent: "space-between",
     marginBottom: verticalScale(5),
     paddingVertical: verticalScale(2),
   },
   bottomDividerContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     minHeight: verticalScale(15),
     marginVertical: verticalScale(5),
   },
   loginLinkContainer: {
     minHeight: verticalScale(24),
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     marginTop: verticalScale(5),
     paddingVertical: verticalScale(2),
   },

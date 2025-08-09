@@ -109,7 +109,7 @@ export default function LoginScreen() {
   };
 
   const handleCreateAccount = () => {
-    navigation.navigate('signup');
+    navigation.navigate("signup");
   };
 
   return (
