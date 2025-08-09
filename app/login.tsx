@@ -19,6 +19,9 @@ import AuthButton from '@/components/AuthButton';
 import SocialButton from '@/components/SocialButton';
 import LinkButton from '@/components/LinkButton';
 
+import { useAuthStore } from '@/stores/authStore';
+import { Alert } from 'react-native';
+
 type LoginScreenNavigationProp = StackNavigationProp<RootStackParamList, 'login'>;
 
 interface LoginFormData {
@@ -44,6 +47,8 @@ const moderateScale = (size: number, factor = 0.5) =>
 
 export default function LoginScreen() {
   const navigation = useNavigation<LoginScreenNavigationProp>();
+
+  const { signIn, isLoading: authLoading } = useAuthStore();
   
   const [formData, setFormData] = useState<LoginFormData>({
     email: '',
@@ -78,23 +83,43 @@ export default function LoginScreen() {
   };
 
   const handleLogin = async () => {
-    if (!validateForm()) return;
+  if (!validateForm()) return;
 
-    setIsLoading(true);
-    setErrors({});
+  setIsLoading(true);
+  setErrors({});
 
-    try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1500));
+  try {
+    const { data, error } = await signIn(formData.email, formData.password);
+
+    if (error) {
+      // Handle Supabase login errors
+      let errorMessage = 'Login failed. Please check your credentials.';
       
-      // Navigate to main app
-      navigation.navigate('page-2'); // Replace with your main screen
-    } catch (error) {
-      setErrors({ general: 'Login failed. Please check your credentials.' });
-    } finally {
-      setIsLoading(false);
+      const errorMsg = error.message || error;
+      
+      if (errorMsg.includes && errorMsg.includes('Invalid login credentials')) {
+        errorMessage = 'Invalid email or password. Please check your credentials.';
+      } else if (errorMsg.includes && errorMsg.includes('Email not confirmed')) {
+        errorMessage = 'Please check your email and confirm your account before logging in.';
+      } else if (errorMsg.includes && errorMsg.includes('Too many requests')) {
+        errorMessage = 'Too many login attempts. Please try again later.';
+      }
+      
+      setErrors({ general: errorMessage });
+    } else if (data?.user) {
+      // Login successful - navigate to main app
+      console.log('Login successful:', data.user.email);
+      navigation.navigate('page-2'); // or your main authenticated screen
     }
-  };
+  } catch (error: any) {
+    console.error('Login error:', error);
+    setErrors({ 
+      general: error.message || 'An unexpected error occurred. Please try again.' 
+    });
+  } finally {
+    setIsLoading(false);
+  }
+};
 
   const handleGoogleLogin = () => {
     console.log('Google login pressed');
