@@ -1,26 +1,29 @@
-import React, { useState } from 'react';
-import { View, StyleSheet, Animated } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
-import { StackNavigationProp } from '@react-navigation/stack';
-import { RootStackParamList } from '@/types/types';
+import React, { useState } from "react";
+import { View, StyleSheet, Animated } from "react-native";
+import { useNavigation } from "@react-navigation/native";
+import { StackNavigationProp } from "@react-navigation/stack";
+import { RootStackParamList } from "@/types/types";
 
-import ScreenContainer from '@/components/ScreenContainer';
-import Header from '@/components/Header';
-import TitleSection from '@/components/TitleSection';
-import SelectionButton from '@/components/SelectionButton';
-import PrimaryButton from '@/components/PrimaryButton';
-import InfoCard from '@/components/InfoCard';
-import NumericInput from '@/components/NumericInput';
-import Toast, { ToastType } from '@/components/Toast';
-import ThankYouStep from '@/components/ThankYouStep';
+import ScreenContainer from "@/components/ScreenContainer";
+import Header from "@/components/Header";
+import TitleSection from "@/components/TitleSection";
+import SelectionButton from "@/components/SelectionButton";
+import PrimaryButton from "@/components/PrimaryButton";
+import InfoCard from "@/components/InfoCard";
+import NumericInput from "@/components/NumericInput";
+import Toast, { ToastType } from "@/components/Toast";
+import ThankYouStep from "@/components/ThankYouStep";
+
+import { useAuthStore } from "@/stores/authStore";
+import { supabase } from "@/config/supabase";
 
 type OnboardingScreenNavigationProp = StackNavigationProp<
   RootStackParamList,
-  'onboarding'
+  "onboarding"
 >;
 
 interface OnboardingData {
-  gender: 'male' | 'female' | null;
+  gender: "male" | "female" | null;
   age: string;
   height: string;
   weight: string;
@@ -30,14 +33,15 @@ export default function OnboardingScreen() {
   const navigation = useNavigation<OnboardingScreenNavigationProp>();
   const [currentStep, setCurrentStep] = useState(1);
   const [progressAnimation] = useState(new Animated.Value(1));
-  
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
   const [formData, setFormData] = useState<OnboardingData>({
     gender: null,
-    age: '',
-    height: '',
-    weight: '',
+    age: "",
+    height: "",
+    weight: "",
   });
-  
+
   const [toast, setToast] = useState<{
     visible: boolean;
     type: ToastType;
@@ -45,9 +49,9 @@ export default function OnboardingScreen() {
     message: string;
   }>({
     visible: false,
-    type: 'info',
-    title: '',
-    message: '',
+    type: "info",
+    title: "",
+    message: "",
   });
 
   const totalSteps = 5; // Gender, Age, Height, Weight, Thank You
@@ -56,8 +60,74 @@ export default function OnboardingScreen() {
     setToast({ visible: true, type, title, message });
   };
 
+  const saveProfileToSupabase = async () => {
+    try {
+      setIsSubmitting(true);
+      const { user } = useAuthStore.getState();
+
+      if (!user) {
+        showToast(
+          "error",
+          "Error!",
+          "User not found. Please try logging in again."
+        );
+        return false;
+      }
+
+      // Prepare the profile data
+      const profileData = {
+        id: user.id,
+        email: user.email,
+        gender: formData.gender,
+        age: parseInt(formData.age),
+        height: parseFloat(formData.height),
+        weight: parseFloat(formData.weight),
+        updated_at: new Date().toISOString(),
+      };
+
+      // Insert or update profile in Supabase
+      const { data, error } = await supabase
+        .from("profiles")
+        .upsert(profileData, {
+          onConflict: "id",
+          ignoreDuplicates: false,
+        })
+        .select()
+        .single();
+
+      if (error) {
+        console.error("Error saving profile:", error);
+        showToast(
+          "error",
+          "Error!",
+          "Failed to save profile. Please try again."
+        );
+        return false;
+      }
+
+      console.log("Profile saved successfully:", data);
+
+      // Update the auth store to mark profile as complete
+      const { checkProfileComplete } = useAuthStore.getState();
+      await checkProfileComplete();
+
+      showToast("success", "Success!", "Profile saved successfully!");
+      return true;
+    } catch (error) {
+      console.error("Profile save error:", error);
+      showToast(
+        "error",
+        "Error!",
+        "An unexpected error occurred. Please try again."
+      );
+      return false;
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   const hideToast = () => {
-    setToast(prev => ({ ...prev, visible: false }));
+    setToast((prev) => ({ ...prev, visible: false }));
   };
 
   const animateProgress = (step: number) => {
@@ -72,43 +142,47 @@ export default function OnboardingScreen() {
     switch (currentStep) {
       case 1:
         if (!formData.gender) {
-          showToast('error', 'Error!', 'Please select your gender');
+          showToast("error", "Error!", "Please select your gender");
           return false;
         }
         break;
-      
+
       case 2:
         const ageValue = parseFloat(formData.age);
         if (!formData.age || isNaN(ageValue)) {
-          showToast('error', 'Error!', 'Please enter a valid age');
+          showToast("error", "Error!", "Please enter a valid age");
           return false;
         }
         if (ageValue < 18 || ageValue > 120) {
-          showToast('error', 'Error!', 'Users must only be 18 to 120 years old');
+          showToast(
+            "error",
+            "Error!",
+            "Users must only be 18 to 120 years old"
+          );
           return false;
         }
         break;
-      
+
       case 3:
         const heightValue = parseFloat(formData.height);
         if (!formData.height || isNaN(heightValue)) {
-          showToast('error', 'Error!', 'Please enter a valid height');
+          showToast("error", "Error!", "Please enter a valid height");
           return false;
         }
         if (heightValue < 140 || heightValue > 188) {
-          showToast('error', 'Error!', 'Height must be between 140-188 cm');
+          showToast("error", "Error!", "Height must be between 140-188 cm");
           return false;
         }
         break;
-      
+
       case 4:
         const weightValue = parseFloat(formData.weight);
         if (!formData.weight || isNaN(weightValue)) {
-          showToast('error', 'Error!', 'Please enter a valid weight');
+          showToast("error", "Error!", "Please enter a valid weight");
           return false;
         }
         if (weightValue < 40 || weightValue > 120) {
-          showToast('error', 'Error!', 'Weight must be between 40-120 kg');
+          showToast("error", "Error!", "Weight must be between 40-120 kg");
           return false;
         }
         break;
@@ -116,7 +190,7 @@ export default function OnboardingScreen() {
     return true;
   };
 
-  const handleContinue = () => {
+  const handleContinue = async () => {
     // Validate current step only when Continue is clicked
     if (!validateCurrentStep()) {
       return;
@@ -126,13 +200,20 @@ export default function OnboardingScreen() {
       const nextStep = currentStep + 1;
       setCurrentStep(nextStep);
       animateProgress(nextStep);
-      
-      if (currentStep < 4) { // Don't show success toast on thank you step
-        showToast('success', 'Success!', 'Step completed successfully');
+
+      if (currentStep < 4) {
+        // Don't show success toast on thank you step
+        showToast("success", "Success!", "Step completed successfully");
       }
     } else {
-      // Navigate to main app
-      navigation.navigate('page-2'); // Replace with your next screen
+      // This is the final step - save to Supabase before navigating
+      const saveSuccess = await saveProfileToSupabase();
+
+      if (saveSuccess) {
+        // Navigate to main app after successful save
+        navigation.navigate("page-2");
+      }
+      // If save fails, stay on current screen and show error (handled in saveProfileToSupabase)
     }
   };
 
@@ -152,8 +233,8 @@ export default function OnboardingScreen() {
         return (
           <GenderStep
             selectedGender={formData.gender}
-            onGenderSelect={(gender) => 
-              setFormData(prev => ({ ...prev, gender }))
+            onGenderSelect={(gender) =>
+              setFormData((prev) => ({ ...prev, gender }))
             }
           />
         );
@@ -161,17 +242,15 @@ export default function OnboardingScreen() {
         return (
           <AgeStep
             age={formData.age}
-            onAgeChange={(age) => 
-              setFormData(prev => ({ ...prev, age }))
-            }
+            onAgeChange={(age) => setFormData((prev) => ({ ...prev, age }))}
           />
         );
       case 3:
         return (
           <HeightStep
             height={formData.height}
-            onHeightChange={(height) => 
-              setFormData(prev => ({ ...prev, height }))
+            onHeightChange={(height) =>
+              setFormData((prev) => ({ ...prev, height }))
             }
           />
         );
@@ -179,8 +258,8 @@ export default function OnboardingScreen() {
         return (
           <WeightStep
             weight={formData.weight}
-            onWeightChange={(weight) => 
-              setFormData(prev => ({ ...prev, weight }))
+            onWeightChange={(weight) =>
+              setFormData((prev) => ({ ...prev, weight }))
             }
           />
         );
@@ -192,6 +271,9 @@ export default function OnboardingScreen() {
   };
 
   const getContinueButtonState = () => {
+    // Disable button if submitting
+    if (isSubmitting) return true;
+
     switch (currentStep) {
       case 1:
         return !formData.gender;
@@ -202,14 +284,15 @@ export default function OnboardingScreen() {
       case 4:
         return !formData.weight;
       case 5:
-        return false; // Always enabled on thank you step
+        return false; // Always enabled on thank you step (unless submitting)
       default:
         return true;
     }
   };
 
   const getContinueButtonText = () => {
-    if (currentStep === 5) return "Continue";
+    if (isSubmitting) return "Saving...";
+    if (currentStep === 5) return "Complete Setup";
     return "Continue";
   };
 
@@ -232,9 +315,7 @@ export default function OnboardingScreen() {
         onClose={hideToast}
       />
 
-      <View style={styles.content}>
-        {getStepContent()}
-      </View>
+      <View style={styles.content}>{getStepContent()}</View>
 
       <View style={styles.bottomContainer}>
         <PrimaryButton
@@ -249,8 +330,8 @@ export default function OnboardingScreen() {
 
 // Step Components
 interface GenderStepProps {
-  selectedGender: 'male' | 'female' | null;
-  onGenderSelect: (gender: 'male' | 'female') => void;
+  selectedGender: "male" | "female" | null;
+  onGenderSelect: (gender: "male" | "female") => void;
 }
 
 function GenderStep({ selectedGender, onGenderSelect }: GenderStepProps) {
@@ -264,14 +345,14 @@ function GenderStep({ selectedGender, onGenderSelect }: GenderStepProps) {
       <View style={styles.selectionContainer}>
         <SelectionButton
           title="Male"
-          selected={selectedGender === 'male'}
-          onPress={() => onGenderSelect('male')}
+          selected={selectedGender === "male"}
+          onPress={() => onGenderSelect("male")}
         />
-        
+
         <SelectionButton
           title="Female"
-          selected={selectedGender === 'female'}
-          onPress={() => onGenderSelect('female')}
+          selected={selectedGender === "female"}
+          onPress={() => onGenderSelect("female")}
         />
       </View>
     </>
@@ -323,11 +404,11 @@ function HeightStep({ height, onHeightChange }: HeightStepProps) {
   const maxHeight = 188;
 
   const getHeightRangeText = () => {
-    const minFeet = Math.floor((minHeight / 30.48));
+    const minFeet = Math.floor(minHeight / 30.48);
     const minInches = Math.round(((minHeight / 30.48) % 1) * 12);
-    const maxFeet = Math.floor((maxHeight / 30.48));
+    const maxFeet = Math.floor(maxHeight / 30.48);
     const maxInches = Math.round(((maxHeight / 30.48) % 1) * 12);
-    
+
     return `${minHeight}-${maxHeight} cm (${minFeet}'${minInches}" - ${maxFeet}'${maxInches}")`;
   };
 
@@ -406,11 +487,11 @@ const styles = StyleSheet.create({
   },
   selectionContainer: {
     flex: 1,
-    alignItems: 'center',
+    alignItems: "center",
     paddingTop: 40,
   },
   bottomContainer: {
-    alignItems: 'center',
+    alignItems: "center",
     paddingBottom: 40,
   },
 });
