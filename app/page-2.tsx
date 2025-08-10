@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   StyleSheet,
   View,
@@ -14,8 +14,6 @@ import "react-circular-progressbar/dist/styles.css";
 import { useNavigation, useRoute } from "@react-navigation/native";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { RootStackParamList } from "@/types/types";
-import { useRecommStore } from "@/hooks/store";
-import { Ionicons } from "@expo/vector-icons";
 import AvgIntakeCard from "@/components/avgIntakeCard";
 import { nutrients } from "@/constants/nutrientIcons";
 import { strings } from "@/constants/strings";
@@ -24,6 +22,7 @@ import GoBack from "@/components/ReturnButton";
 import GoNext from "@/components/NextButton";
 import ProfileBox from "@/components/ProfileBox";
 import BottomNavBar from "@/components/BottomNavBar";
+import { useNutritionIntake } from "@/stores/nutritionIntakeStore";
 
 type Page2ScreenNavigationProp = StackNavigationProp<
   RootStackParamList,
@@ -32,29 +31,21 @@ type Page2ScreenNavigationProp = StackNavigationProp<
 
 export default function Page2() {
   const navigation = useNavigation<Page2ScreenNavigationProp>();
-  const [activeTab, setActiveTab] = useState('home'); // Assuming this page is "home"
+  const [activeTab, setActiveTab] = useState('home');
   
-  const minCarb = useRecommStore((state) => state.minCarb);
-  const maxCarb = useRecommStore((state) => state.maxCarb);
+  // Use new nutrition intake store
+  const { nutritionData, isLoading, error, fetchNutritionIntake } = useNutritionIntake();
 
-  const minProtein = useRecommStore((state) => state.minProtein);
-  const maxProtein = useRecommStore((state) => state.maxProtein);
-
-  const minSodium = useRecommStore((state) => state.minSodium);
-  const maxSodium = useRecommStore((state) => state.maxSodium);
-
-  const handleCheck = () => {
-    navigation.navigate("camera");
-  };
+  // Fetch nutrition data on component mount
+  useEffect(() => {
+    fetchNutritionIntake();
+  }, []);
 
   const handleTabPress = (tabName: string) => {
     if (tabName === activeTab) {
-      // Refresh current screen
       navigation.replace('page-2');
     } else {
-      // Navigate to different tab
       setActiveTab(tabName);
-      // Add your navigation logic here based on tab name
       switch (tabName) {
         case 'home':
           navigation.navigate('page-2');
@@ -72,38 +63,24 @@ export default function Page2() {
     }
   };
 
-  const handleCameraPress = () => {
-    navigation.navigate("camera");
-  };
-
-  const carbsMin = minCarb;
-  const carbsMax = maxCarb;
-
-  const carbAvg = Math.round((carbsMin + carbsMax) / 2);
-
-  const proteinMin = minProtein;
-  const proteinMax = maxProtein;
-
-  const proteinAvg = Math.round((proteinMin + proteinMax) / 2);
-
-  const sodiumMin = minSodium;
-  const sodiumMax = maxSodium;
-
-  const sodiumAvg = Math.round((sodiumMin + sodiumMax) / 2) / 1000;
+  // Calculate averages from nutrition data
+  const carbAvg = nutritionData?.avg_carbs ? Math.round(nutritionData.avg_carbs) : 0;
+  const proteinAvg = nutritionData?.avg_protein ? Math.round(nutritionData.avg_protein) : 0;
+  const sodiumAvg = nutritionData?.avg_sodium ? Math.round(nutritionData.avg_sodium / 1000) : 0;
 
   return (
     <SafeAreaView style={styles.safeArea}>
       <AppLogo />
       <ThemedView style={styles.container}>
-        {/* Add your new page-2 content here */}     
         <ProfileBox primaryText="Average" highlightedText="Daily" secondaryText="Intake"/>
+        
         <View style={styles.rowContainer}>
           {/* Container 1 */}
           <AvgIntakeCard
             iconSource={nutrients.carbohydrate.icon}
             tintColor={nutrients.carbohydrate.tintColor}
             subtitle="Carbohydrate"
-            value={carbAvg}
+            value={isLoading ? "..." : carbAvg}
           />
 
           {/* Container 2 */}
@@ -111,7 +88,7 @@ export default function Page2() {
             iconSource={nutrients.sodium.icon}
             tintColor={nutrients.sodium.tintColor}
             subtitle="Sodium"
-            value={sodiumAvg}
+            value={isLoading ? "..." : sodiumAvg}
           />
 
           {/* Container 3 */}
@@ -119,20 +96,30 @@ export default function Page2() {
             iconSource={nutrients.protein.icon}
             tintColor={nutrients.protein.tintColor}
             subtitle="Protein"
-            value={proteinAvg}
+            value={isLoading ? "..." : proteinAvg}
           />
         </View>
+
+        {/* Error handling */}
+        {error && (
+          <View style={styles.errorContainer}>
+            <Text style={styles.errorText}>Error loading nutrition data: {error}</Text>
+            <TouchableOpacity onPress={fetchNutritionIntake} style={styles.retryButton}>
+              <Text style={styles.retryText}>Retry</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+
         <View style={styles.paragraphContainer}>
           <Text style={styles.paragraphText}>
             {strings.disclaimer}
           </Text>
         </View>
       </ThemedView>
-      {/* navigations */}
-      <GoBack />
-      <GoNext next="camera"/>
+
+      {/* <GoBack />
+      <GoNext next="camera"/> */}
       
-      {/* Bottom Navigation Bar */}
       <BottomNavBar 
         activeTab={activeTab}
         onTabPress={handleTabPress}
@@ -152,7 +139,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#eff1f6",
     gap: 15,
     padding: 15,
-    paddingBottom: 100, // Add bottom padding to prevent content overlap with navbar
+    paddingBottom: 100,
   },
   rowContainer: {
     flexDirection: "row",
@@ -175,5 +162,32 @@ const styles = StyleSheet.create({
     color: "#333",
     lineHeight: 26,
     textAlign: "justify",
+  },
+  // Add these new styles for error handling
+  errorContainer: {
+    backgroundColor: "#ffebee",
+    borderRadius: 8,
+    padding: 15,
+    marginTop: 10,
+    alignItems: 'center',
+    borderLeftWidth: 4,
+    borderLeftColor: "#f44336",
+  },
+  errorText: {
+    fontSize: 14,
+    color: "#c62828",
+    textAlign: 'center',
+    marginBottom: 10,
+  },
+  retryButton: {
+    backgroundColor: "#4CAF50",
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 6,
+  },
+  retryText: {
+    color: "white",
+    fontWeight: "600",
+    fontSize: 14,
   },
 });
