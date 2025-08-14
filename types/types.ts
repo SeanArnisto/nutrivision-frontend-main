@@ -14,4 +14,7 @@ export type RootStackParamList = {
   'login': undefined;
   'signup': undefined;
   'otp': undefined;
+  'forgot-email': undefined;
+  'forgot-otp': { email: string };
+  'forgot-reset': { email: string };
 };

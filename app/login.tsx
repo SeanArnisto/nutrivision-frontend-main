@@ -142,7 +142,7 @@ export default function LoginScreen() {
   };
 
   const handleForgotPassword = () => {
-    navigation.navigate('page-2');
+    navigation.navigate('forgot-email');
   };
 
   const handleCreateAccount = () => {

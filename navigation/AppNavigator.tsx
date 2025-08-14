@@ -18,6 +18,9 @@ import Statistics from "@/app/statistics";
 import LoginScreen from "@/app/login";
 import SignUpScreen from "@/app/signup";
 import OtpScreen from "@/app/otp";
+import ForgotEmailScreen from "@/app/forgot-email";
+import ForgotOtpScreen from "@/app/forgot-otp";
+import ForgotResetScreen from "@/app/forgot-reset";
 
 const Stack = createStackNavigator<RootStackParamList>();
 
@@ -40,6 +43,9 @@ export default function AppNavigator() {
           <Stack.Screen name="login" component={LoginScreen} />
           <Stack.Screen name="signup" component={SignUpScreen} />
           <Stack.Screen name="otp" component={OtpScreen} />
+          <Stack.Screen name="forgot-email" component={ForgotEmailScreen} />
+          <Stack.Screen name="forgot-otp" component={ForgotOtpScreen} />
+          <Stack.Screen name="forgot-reset" component={ForgotResetScreen} />
         </Stack.Navigator>
       </NavigationContainer>
   );
