@@ -13,4 +13,5 @@ export type RootStackParamList = {
   'statistics': undefined; // Statistics page
   'login': undefined;
   'signup': undefined;
+  'otp': undefined;
 };

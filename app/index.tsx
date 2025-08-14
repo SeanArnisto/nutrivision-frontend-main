@@ -22,11 +22,11 @@ export default function Page2() {
   const navigation = useNavigation<Page2ScreenNavigationProp>();
 
   const handleGetStarted = () => {
-    navigation.navigate("login"); // TODO: confirm route
+    navigation.navigate("signup"); // TODO: confirm route
   };
 
   const handleLogin = () => {
-    navigation.navigate("nutrient-page"); // TODO: confirm route
+    navigation.navigate("login"); // TODO: confirm route
   };
 
   return (

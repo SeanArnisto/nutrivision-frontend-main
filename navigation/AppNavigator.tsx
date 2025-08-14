@@ -17,6 +17,7 @@ import Profile from "@/app/profile";
 import Statistics from "@/app/statistics";
 import LoginScreen from "@/app/login";
 import SignUpScreen from "@/app/signup";
+import OtpScreen from "@/app/otp";
 
 const Stack = createStackNavigator<RootStackParamList>();
 
@@ -38,6 +39,7 @@ export default function AppNavigator() {
           <Stack.Screen name="statistics" component={Statistics} />
           <Stack.Screen name="login" component={LoginScreen} />
           <Stack.Screen name="signup" component={SignUpScreen} />
+          <Stack.Screen name="otp" component={OtpScreen} />
         </Stack.Navigator>
       </NavigationContainer>
   );
