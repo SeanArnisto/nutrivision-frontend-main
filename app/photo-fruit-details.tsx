@@ -231,7 +231,7 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'flex-end',
-        marginBottom: 60
+        marginBottom: 50
     },
   container: {
     flex: 1,
@@ -304,10 +304,10 @@ const styles = StyleSheet.create({
     paddingBottom: 40,
   },
   title: {
-    fontSize: 32,
+    fontSize: 45,
     fontWeight: 'bold',
     color: '#1f2937',
-    marginBottom: 24,
+    marginBottom: 5,
     textAlign: 'left',
   },
   cardsRow: {

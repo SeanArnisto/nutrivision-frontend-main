@@ -105,18 +105,18 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   label: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '500',
     color: '#666',
-    marginBottom: 12,
+    marginBottom: 1,
   },
   selectorContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#f8f9fa',
-    borderRadius: 25,
+    borderRadius: 20,
     paddingHorizontal: 8,
-    paddingVertical: 8,
+    paddingVertical: 5,
     borderWidth: 1,
     borderColor: '#e9ecef',
     shadowColor: '#000',
@@ -133,8 +133,8 @@ const styles = StyleSheet.create({
     borderColor: '#ddd',
   },
   button: {
-    width: 36,
-    height: 36,
+    width: 25,
+    height: 30,
     borderRadius: 18,
     justifyContent: 'center',
     alignItems: 'center',
@@ -144,7 +144,7 @@ const styles = StyleSheet.create({
     marginRight: 4,
   },
   increaseButton: {
-    marginLeft: 4,
+    marginLeft: 5,
   },
   disabledButton: {
     opacity: 0.4,
@@ -165,7 +165,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
   },
   amountText: {
-    fontSize: 24,
+    fontSize: 20,
     fontWeight: 'bold',
     color: '#2c3e50',
     textAlign: 'center',
