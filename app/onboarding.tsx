@@ -11,6 +11,7 @@ import SelectionButton from "@/components/SelectionButton";
 import PrimaryButton from "@/components/PrimaryButton";
 import InfoCard from "@/components/InfoCard";
 import NumericInput from "@/components/NumericInput";
+import CustomTextInput from "@/components/CustomTextInput";
 import Toast, { ToastType } from "@/components/Toast";
 import ThankYouStep from "@/components/ThankYouStep";
 
@@ -23,6 +24,7 @@ type OnboardingScreenNavigationProp = StackNavigationProp<
 >;
 
 interface OnboardingData {
+  fullName: string;
   gender: "male" | "female" | null;
   age: string;
   height: string;
@@ -36,6 +38,7 @@ export default function OnboardingScreen() {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const [formData, setFormData] = useState<OnboardingData>({
+    fullName: "",
     gender: null,
     age: "",
     height: "",
@@ -54,10 +57,15 @@ export default function OnboardingScreen() {
     message: "",
   });
 
-  const totalSteps = 5; // Gender, Age, Height, Weight, Thank You
+  const totalSteps = 6; // Full Name, Gender, Age, Height, Weight, Thank You
 
   const showToast = (type: ToastType, title: string, message: string) => {
     setToast({ visible: true, type, title, message });
+  };
+
+  const validateFullName = (name: string): boolean => {
+    const trimmedName = name.trim();
+    return trimmedName.length >= 2 && /^[a-zA-Z\s]+$/.test(trimmedName);
   };
 
   const saveProfileToSupabase = async () => {
@@ -78,6 +86,7 @@ export default function OnboardingScreen() {
       const profileData = {
         id: user.id,
         email: user.email,
+        name: formData.fullName.trim(),
         gender: formData.gender,
         age: parseInt(formData.age),
         height: parseFloat(formData.height),
@@ -141,13 +150,28 @@ export default function OnboardingScreen() {
   const validateCurrentStep = () => {
     switch (currentStep) {
       case 1:
+        if (!formData.fullName.trim()) {
+          showToast("error", "Error!", "Please enter your full name");
+          return false;
+        }
+        if (!validateFullName(formData.fullName)) {
+          showToast(
+            "error",
+            "Error!",
+            "Please enter a valid full name (at least 2 characters, letters only)"
+          );
+          return false;
+        }
+        break;
+
+      case 2:
         if (!formData.gender) {
           showToast("error", "Error!", "Please select your gender");
           return false;
         }
         break;
 
-      case 2:
+      case 3:
         const ageValue = parseFloat(formData.age);
         if (!formData.age || isNaN(ageValue)) {
           showToast("error", "Error!", "Please enter a valid age");
@@ -163,7 +187,7 @@ export default function OnboardingScreen() {
         }
         break;
 
-      case 3:
+      case 4:
         const heightValue = parseFloat(formData.height);
         if (!formData.height || isNaN(heightValue)) {
           showToast("error", "Error!", "Please enter a valid height");
@@ -175,7 +199,7 @@ export default function OnboardingScreen() {
         }
         break;
 
-      case 4:
+      case 5:
         const weightValue = parseFloat(formData.weight);
         if (!formData.weight || isNaN(weightValue)) {
           showToast("error", "Error!", "Please enter a valid weight");
@@ -201,7 +225,7 @@ export default function OnboardingScreen() {
       setCurrentStep(nextStep);
       animateProgress(nextStep);
 
-      if (currentStep < 4) {
+      if (currentStep < 5) {
         // Don't show success toast on thank you step
         showToast("success", "Success!", "Step completed successfully");
       }
@@ -231,6 +255,15 @@ export default function OnboardingScreen() {
     switch (currentStep) {
       case 1:
         return (
+          <FullNameStep
+            fullName={formData.fullName}
+            onFullNameChange={(fullName) =>
+              setFormData((prev) => ({ ...prev, fullName }))
+            }
+          />
+        );
+      case 2:
+        return (
           <GenderStep
             selectedGender={formData.gender}
             onGenderSelect={(gender) =>
@@ -238,14 +271,14 @@ export default function OnboardingScreen() {
             }
           />
         );
-      case 2:
+      case 3:
         return (
           <AgeStep
             age={formData.age}
             onAgeChange={(age) => setFormData((prev) => ({ ...prev, age }))}
           />
         );
-      case 3:
+      case 4:
         return (
           <HeightStep
             height={formData.height}
@@ -254,7 +287,7 @@ export default function OnboardingScreen() {
             }
           />
         );
-      case 4:
+      case 5:
         return (
           <WeightStep
             weight={formData.weight}
@@ -263,7 +296,7 @@ export default function OnboardingScreen() {
             }
           />
         );
-      case 5:
+      case 6:
         return <ThankYouStep />;
       default:
         return null;
@@ -276,14 +309,16 @@ export default function OnboardingScreen() {
 
     switch (currentStep) {
       case 1:
-        return !formData.gender;
+        return !formData.fullName.trim();
       case 2:
-        return !formData.age;
+        return !formData.gender;
       case 3:
-        return !formData.height;
+        return !formData.age;
       case 4:
-        return !formData.weight;
+        return !formData.height;
       case 5:
+        return !formData.weight;
+      case 6:
         return false; // Always enabled on thank you step (unless submitting)
       default:
         return true;
@@ -292,7 +327,7 @@ export default function OnboardingScreen() {
 
   const getContinueButtonText = () => {
     if (isSubmitting) return "Saving...";
-    if (currentStep === 5) return "Complete Setup";
+    if (currentStep === 6) return "Complete Setup";
     return "Continue";
   };
 
@@ -300,7 +335,7 @@ export default function OnboardingScreen() {
     <ScreenContainer>
       <Header
         currentStep={currentStep}
-        totalSteps={currentStep === 5 ? 0 : 4} // Hide progress bar on thank you step
+        totalSteps={currentStep === 6 ? 0 : 5} // Hide progress bar on thank you step
         showBackButton={true} // Always show back button
         showLogo={true} // Always show logo
         onBackPress={handleBackPress}
@@ -329,6 +364,39 @@ export default function OnboardingScreen() {
 }
 
 // Step Components
+
+interface FullNameStepProps {
+  fullName: string;
+  onFullNameChange: (fullName: string) => void;
+}
+
+function FullNameStep({ fullName, onFullNameChange }: FullNameStepProps) {
+  return (
+    <>
+      <TitleSection
+        title="Enter your Full Name"
+        description="We need your name to personalize your experience and provide better recommendations."
+      />
+
+      <InfoCard
+        title="Name Requirements"
+        subtitle="At least 2 characters, letters and spaces only"
+        editable={false}
+      />
+
+      <View style={styles.inputContainer}>
+        <CustomTextInput
+          label="Full Name"
+          value={fullName}
+          onChangeText={onFullNameChange}
+          placeholder="Enter your full name"
+          autoComplete="name"
+        />
+      </View>
+    </>
+  );
+}
+
 interface GenderStepProps {
   selectedGender: "male" | "female" | null;
   onGenderSelect: (gender: "male" | "female") => void;
@@ -339,7 +407,7 @@ function GenderStep({ selectedGender, onGenderSelect }: GenderStepProps) {
     <>
       <TitleSection
         title="Choose your Gender"
-        description="Age affects nutrient intake by changing metabolism, absorption, and dietary needs."
+        description="Gender affects nutrient intake by influencing metabolism, muscle mass, and dietary needs."
       />
 
       <View style={styles.selectionContainer}>
@@ -489,6 +557,14 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: "center",
     paddingTop: 40,
+  },
+  inputContainer: {
+    flex: 1,
+    paddingTop: 20,
+    paddingHorizontal: 20,
+  },
+  textInput: {
+    marginBottom: 20,
   },
   bottomContainer: {
     alignItems: "center",
