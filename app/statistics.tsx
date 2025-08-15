@@ -5,18 +5,70 @@ import {
   StyleSheet,
   SafeAreaView,
   ScrollView,
+  Dimensions,
+  Image,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '@/types/types';
 import AppLogo from '@/components/appLogo';
 import BottomNavBar from '@/components/BottomNavBar';
-import NutrientSummary from '@/components/NutrientSummary';
-import DailyIntakeChart from '@/components/DailyIntakeChart';
+import { CircularProgress } from 'react-native-circular-progress';
+import { BarChart } from 'react-native-gifted-charts';
+
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
+
 type StatisticsScreenNavigationProp = StackNavigationProp<
   RootStackParamList,
   'statistics'
 >;
+
+interface NutrientCardProps {
+  value: number;
+  target: number;
+  label: string;
+  unit: string;
+  iconSource: any;
+  status: 'low' | 'recommended' | 'high';
+}
+
+function NutrientCard({ value, target, label, unit, iconSource, status }: NutrientCardProps) {
+  const getStatusColor = () => {
+    switch (status) {
+      case 'low': return '#C0C0C0';
+      case 'recommended': return '#9AB106';
+      case 'high': return '#E74C3C';
+      default: return '#C0C0C0';
+    }
+  };
+
+  const percentage = Math.min((value / target) * 100, 100);
+
+  return (
+    <View style={styles.nutrientCard}>
+      <Text style={styles.nutrientValue}>
+        {value}{unit}
+        <Text style={styles.nutrientTarget}>/{target}{unit}</Text>
+      </Text>
+      <Text style={styles.nutrientLabel}>{label}</Text>
+      
+      <View style={styles.circularProgressContainer}>
+        <CircularProgress
+          size={80}
+          width={6}
+          fill={percentage}
+          tintColor={getStatusColor()}
+          backgroundColor="#DDDDDD"
+          lineCap="round"
+        >
+          {() => (
+            <Image source={iconSource} style={styles.nutrientIcon} />
+          )}
+        </CircularProgress>
+      </View>
+    </View>
+  );
+}
 
 export default function Statistics() {
   const navigation = useNavigation<StatisticsScreenNavigationProp>();
@@ -38,45 +90,251 @@ export default function Statistics() {
     }
   };
 
-  // Sample data - replace with actual data from your store/API
-  const nutrientData = {
-    carbs: { current: 34, target: 310 },
-    sodium: { current: 2, target: 28 },
-    protein: { current: 30, target: 64 },
-  };
+  // Sample data matching the design
+  const nutrientData = [
+    { 
+      value: 34, 
+      target: 310, 
+      label: 'Carbs', 
+      unit: 'g', 
+      iconSource: require("@/assets/images/Carbohydrate Icon.png"), 
+      status: 'low' as const 
+    },
+    { 
+      value: 2, 
+      target: 28, 
+      label: 'Sodium', 
+      unit: 'g', 
+      iconSource: require("@/assets/images/Sodium Icon.png"), 
+      status: 'recommended' as const 
+    },
+    { 
+      value: 30, 
+      target: 64, 
+      label: 'Protein', 
+      unit: 'g', 
+      iconSource: require("@/assets/images/Protein Icon.png"), 
+      status: 'high' as const 
+    },
+  ];
 
+  // Weekly data matching the reference image exactly
   const weeklyData = [
-    { day: 'Jan 1', userInput: 94, averageIntake: 100, date: 'January 1, 2025' },
-    { day: 'Jan 2', userInput: 89, averageIntake: 100, date: 'January 2, 2025' },
-    { day: 'Jan 3', userInput: 97, averageIntake: 100, date: 'January 3, 2025' },
-    { day: 'Jan 4', userInput: 97, averageIntake: 100, date: 'January 4, 2025' },
-    { day: 'Jan 5', userInput: 90, averageIntake: 100, date: 'January 5, 2025' },
-    { day: 'Jan 6', userInput: 100, averageIntake: 100, date: 'January 6, 2025' },
-    { day: 'Jan 7', userInput: 102, averageIntake: 100, date: 'January 7, 2025' },
+    // Sunday
+    {
+      value: 75,
+      frontColor: '#F4D03F', // Carbs - Yellow
+      spacing: 2,
+      label: 'S',
+    },
+    {
+      value: 150,
+      frontColor: '#8B4513', // Sodium - Brown
+    },
+    {
+      value: 30,
+      frontColor: '#9AB106', // Protein - Green
+      spacing: 8,
+    },
+    // Monday
+    {
+      value: 75,
+      frontColor: '#F4D03F', // Carbs - Yellow
+      spacing: 2,
+      label: 'M',
+    },
+    {
+      value: 30,
+      frontColor: '#8B4513', // Sodium - Brown
+    },
+    {
+      value: 75,
+      frontColor: '#9AB106', // Protein - Green
+      spacing: 8,
+    },
+    // Tuesday
+    {
+      value: 30,
+      frontColor: '#F4D03F', // Carbs - Yellow
+      spacing: 2,
+      label: 'T',
+    },
+    {
+      value: 120,
+      frontColor: '#8B4513', // Sodium - Brown
+    },
+    {
+      value: 30,
+      frontColor: '#9AB106', // Protein - Green
+      spacing: 8,
+    },
+    // Wednesday
+    {
+      value: 75,
+      frontColor: '#F4D03F', // Carbs - Yellow
+      spacing: 2,
+      label: 'W',
+    },
+    {
+      value: 150,
+      frontColor: '#8B4513', // Sodium - Brown
+    },
+    {
+      value: 30,
+      frontColor: '#9AB106', // Protein - Green
+      spacing: 8,
+    },
+    // Thursday
+    {
+      value: 75,
+      frontColor: '#F4D03F', // Carbs - Yellow
+      spacing: 2,
+      label: 'TH',
+    },
+    {
+      value: 150,
+      frontColor: '#8B4513', // Sodium - Brown
+    },
+    {
+      value: 30,
+      frontColor: '#9AB106', // Protein - Green
+      spacing: 8,
+    },
+    // Friday
+    {
+      value: 75,
+      frontColor: '#F4D03F', // Carbs - Yellow
+      spacing: 2,
+      label: 'F',
+    },
+    {
+      value: 150,
+      frontColor: '#8B4513', // Sodium - Brown
+    },
+    {
+      value: 30,
+      frontColor: '#9AB106', // Protein - Green
+      spacing: 8,
+    },
+    // Saturday
+    {
+      value: 120,
+      frontColor: '#F4D03F', // Carbs - Yellow
+      spacing: 2,
+      label: 'S',
+    },
+    {
+      value: 75,
+      frontColor: '#8B4513', // Sodium - Brown
+    },
+    {
+      value: 30,
+      frontColor: '#9AB106', // Protein - Green
+    },
   ];
 
   return (
     <SafeAreaView style={styles.safeArea}>
       <AppLogo />
-      
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>Statistics</Text>
-      </View>
 
       <ScrollView 
         style={styles.container} 
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.contentContainer}
       >
-        {/* Nutrient Summary Component */}
-        <NutrientSummary
-          carbs={nutrientData.carbs}
-          sodium={nutrientData.sodium}
-          protein={nutrientData.protein}
-        />
+        {/* Daily Nutrition Summary - No container */}
+        <View style={styles.summarySection}>
+          <Text style={styles.summaryTitle}>Daily Nutrition Summary</Text>
+          <Text style={styles.summaryDate}>August 15, 2025</Text>
+          
+          {/* Legend */}
+          <View style={styles.legendContainer}>
+            <View style={styles.legendItem}>
+              <View style={[styles.legendDot, { backgroundColor: '#C0C0C0' }]} />
+              <Text style={styles.legendText}>Low Intake</Text>
+            </View>
+            <View style={styles.legendItem}>
+              <View style={[styles.legendDot, { backgroundColor: '#9AB106' }]} />
+              <Text style={styles.legendText}>Recommended Intake</Text>
+            </View>
+            <View style={styles.legendItem}>
+              <View style={[styles.legendDot, { backgroundColor: '#E74C3C' }]} />
+              <Text style={styles.legendText}>High Intake</Text>
+            </View>
+          </View>
 
-        {/* Daily Intake Chart Component */}
-        <DailyIntakeChart data={weeklyData} />
+          {/* Nutrient Cards */}
+          <View style={styles.nutrientCardsContainer}>
+            {nutrientData.map((nutrient, index) => (
+              <NutrientCard
+                key={index}
+                value={nutrient.value}
+                target={nutrient.target}
+                label={nutrient.label}
+                unit={nutrient.unit}
+                iconSource={nutrient.iconSource}
+                status={nutrient.status}
+              />
+            ))}
+          </View>
+        </View>
+
+        {/* Weekly Chart using react-native-gifted-charts */}
+        <View style={styles.chartCard}>
+          <Text style={styles.chartTitle}>Weekly Intake Ratio</Text>
+          <Text style={styles.chartSubtitle}>Aug 10-15</Text>
+          
+          {/* Legend */}
+          <View style={styles.chartLegend}>
+            <View style={styles.legendItem}>
+              <View style={[styles.legendDot, { backgroundColor: '#F4D03F' }]} />
+              <Text style={styles.legendText}>Carbohydrates</Text>
+            </View>
+            <View style={styles.legendItem}>
+              <View style={[styles.legendDot, { backgroundColor: '#8B4513' }]} />
+              <Text style={styles.legendText}>Sodium</Text>
+            </View>
+            <View style={styles.legendItem}>
+              <View style={[styles.legendDot, { backgroundColor: '#9AB106' }]} />
+              <Text style={styles.legendText}>Protein</Text>
+            </View>
+          </View>
+
+          {/* Bar Chart */}
+          <View style={styles.chartContainer}>
+            <BarChart
+              data={weeklyData}
+              width={SCREEN_WIDTH - 110}
+              height={160}
+              barWidth={10}
+              spacing={2}
+              initialSpacing={5}
+              yAxisThickness={0}
+              xAxisThickness={0}
+              yAxisTextStyle={{ color: '#666', fontSize: 12 }}
+              xAxisLabelTextStyle={{ color: '#666', fontSize: 12, textAlign: 'center' }}
+              noOfSections={3}
+              maxValue={150}
+              stepValue={50}
+              yAxisLabelTexts={['0', '50', '100', '150']}
+              rulesType={'solid'}
+              rulesColor={'#E5E5E5'}
+              rulesLength={SCREEN_WIDTH - 150}
+              showReferenceLine1
+              referenceLine1Position={100}
+              referenceLine1Config={{
+                color: '#000000',
+                dashWidth: 4,
+                dashGap: 4,
+                thickness: 1.5,
+                type: 'dashed',
+              }}
+              isAnimated
+              animationDuration={1000}
+              barBorderRadius={4}
+            />
+          </View>
+        </View>
       </ScrollView>
 
       <BottomNavBar 
@@ -91,28 +349,124 @@ export default function Statistics() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: '#f8f9fa',
-  },
-  header: {
-    paddingHorizontal: 24,
-    paddingVertical: 16,
-  },
-  headerTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#333',
-    fontFamily: 'AlbertSans-Bold',
-    backgroundColor: '#fff',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 20,
-    alignSelf: 'flex-start',
+    backgroundColor: '#F5F5F5',
   },
   container: {
     flex: 1,
   },
   contentContainer: {
-    paddingTop: 20,
-    paddingBottom: 120, // Extra space for bottom navigation
+    paddingBottom: 120,
+  },
+  summarySection: {
+    paddingHorizontal: 20,
+    paddingVertical: 20,
+  },
+  summaryTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#333',
+    marginBottom: 4,
+  },
+  summaryDate: {
+    fontSize: 14,
+    color: '#666',
+    marginBottom: 20,
+  },
+  legendContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 24,
+    flexWrap: 'wrap',
+  },
+  legendItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+    minWidth: 100,
+  },
+  legendDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    marginRight: 6,
+  },
+  legendText: {
+    fontSize: 11,
+    color: '#666',
+  },
+  nutrientCardsContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: 12,
+  },
+  nutrientCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 8,
+    padding: 16,
+    alignItems: 'center',
+    flex: 1,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 6,
+    elevation: 4,
+  },
+  nutrientValue: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#385802',
+    marginBottom: 4,
+  },
+  nutrientTarget: {
+    fontSize: 14,
+    fontWeight: 'normal',
+    color: '#666',
+  },
+  nutrientLabel: {
+    fontSize: 12,
+    color: '#666',
+    marginBottom: 12,
+    fontWeight: 'bold',
+  },
+  circularProgressContainer: {
+    alignItems: 'center',
+  },
+  nutrientIcon: {
+    width: 30,
+    height: 30,
+  },
+  chartCard: {
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    margin: 20,
+    marginTop: 0,
+    padding: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  chartTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#333',
+    marginBottom: 4,
+  },
+  chartSubtitle: {
+    fontSize: 14,
+    color: '#666',
+    marginBottom: 20,
+  },
+  chartLegend: {
+    flexDirection: 'row',
+    justifyContent: 'flex-start',
+    marginBottom: 20,
+    gap: 20,
+  },
+  chartContainer: {
+    alignItems: 'center',
+    paddingVertical: 10,
+    overflow: 'hidden',
   },
 });
