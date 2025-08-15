@@ -1,16 +1,16 @@
 import React from "react";
-import {
-  View,
-  ScrollView,
-  Image,
-  Text,
-  StyleSheet,
+import { 
+  View, 
+  ScrollView, 
+  Image, 
+  Text, 
+  StyleSheet, 
   TouchableOpacity,
-  Alert,
+  Alert 
 } from "react-native";
-import { useNavigation } from "@react-navigation/native";
-import { StackNavigationProp } from "@react-navigation/stack";
-import { RootStackParamList } from "@/types/types"; // Import your types
+import { useNavigation } from '@react-navigation/native';
+import { StackNavigationProp } from '@react-navigation/stack';
+import { RootStackParamList } from '@/types/types'; // Import your types
 
 interface PhotoItem {
   uri: string;
@@ -29,7 +29,7 @@ interface PhotoThumbnailGalleryProps {
   photos: PhotoItem[];
   showHorizontalIndicator?: boolean;
   onImageError?: (index: number) => void;
-  nutritionalData: NutritionalData; // Optional nutrition data to pass
+  nutritionalData?: NutritionalData; // Optional nutrition data to pass
   onPhotoPress?: (photo: PhotoItem, index: number) => void; // Optional custom handler
 }
 
@@ -52,29 +52,55 @@ export const PhotoThumbnailGallery: React.FC<PhotoThumbnailGalleryProps> = ({
 
   const handlePhotoPress = (photo: PhotoItem, index: number) => {
     console.log(`Photo pressed at index: ${index}`, photo);
-
+    
     // If custom handler is provided, use it
     if (onPhotoPress) {
       onPhotoPress(photo, index);
       return;
     }
 
-    // Default behavior: navigate to photo-label-details screen
+    // Route to different pages based on image type
     try {
-      navigation.navigate("photo-label-details", {
-        imageUri: photo.uri,
-        nutritionalData: nutritionalData ?? {
-          carbs: 18,
-          sodium: 1.8,
-          protein: 2,
-          servings: 1,
-        },
-      });
+      if (photo.type === 'fruit') {
+        // Navigate to fruit details page
+        navigation.navigate('photo-fruit-details', {
+          imageUri: photo.uri,
+          nutritionalData: nutritionalData || {
+            carbs: 18,
+            sodium: 1.8,
+            protein: 2,
+            servings: 1
+          }
+        });
+      } else if (photo.type === 'label') {
+        // Navigate to label details page
+        navigation.navigate('photo-label-details', {
+          imageUri: photo.uri,
+          nutritionalData: nutritionalData || {
+            carbs: 18,
+            sodium: 1.8,
+            protein: 2,
+            servings: 1
+          }
+        });
+      } else {
+        // Default behavior for unknown types - go to label page
+        console.warn(`Unknown photo type: ${photo.type}, defaulting to label page`);
+        navigation.navigate('photo-label-details', {
+          imageUri: photo.uri,
+          nutritionalData: nutritionalData || {
+            carbs: 18,
+            sodium: 1.8,
+            protein: 2,
+            servings: 1
+          }
+        });
+      }
     } catch (error) {
-      console.error("Navigation error:", error);
+      console.error('Navigation error:', error);
       Alert.alert(
-        "Navigation Error",
-        "Unable to open photo details. Please try again."
+        'Navigation Error', 
+        'Unable to open photo details. Please try again.'
       );
     }
   };
@@ -111,22 +137,20 @@ export const PhotoThumbnailGallery: React.FC<PhotoThumbnailGalleryProps> = ({
                 onError={() => handleImageError(index)}
                 resizeMode="cover"
               />
-
+              
               {/* Optional: Add a subtle overlay to indicate it's clickable */}
               <View style={styles.clickableOverlay} />
-
+              
               {/* Optional: Add type indicator */}
               {item.type && (
-                <View
-                  style={[
-                    styles.typeIndicator,
-                    item.type === "label"
-                      ? styles.labelIndicator
-                      : styles.fruitIndicator,
-                  ]}
-                >
+                <View style={[
+                  styles.typeIndicator,
+                  item.type === 'label' 
+                    ? styles.labelIndicator 
+                    : styles.fruitIndicator
+                ]}>
                   <Text style={styles.typeText}>
-                    {item.type === "label" ? "L" : "F"}
+                    {item.type === 'label' ? 'L' : 'F'}
                   </Text>
                 </View>
               )}

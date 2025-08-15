@@ -9,15 +9,22 @@ type Page2ScreenNavigationProp = StackNavigationProp<
   "page-2"
 >;
 
-export default function GoBack() {
+interface GoBackProps {
+  position?: "top" | "bottom"
+}
+
+export default function GoBack({
+  position="bottom" 
+}: GoBackProps) {
   const navigation = useNavigation<Page2ScreenNavigationProp>();
   const handleGoBack = () => {
     navigation.goBack();
   }
+
   return (
     <>
       <TouchableOpacity
-        style={styles.roundButton}
+        style={position === "top" ? styles.roundButtonTop : styles.roundButtonBottom}
         onPress={handleGoBack}
         disabled={false}
       >
@@ -28,10 +35,21 @@ export default function GoBack() {
 }
 
 const styles = StyleSheet.create({
-  roundButton: {
+  roundButtonBottom: {
     width: 60,
     height: 60,
     bottom: 40,
+    left: 20,
+    borderRadius: 30,
+    backgroundColor: "#333",
+    justifyContent: "center",
+    alignItems: "center",
+    position: "absolute",
+  },
+  roundButtonTop: {
+    width: 60,
+    height: 60,
+    top: 40,
     left: 20,
     borderRadius: 30,
     backgroundColor: "#333",
