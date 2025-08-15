@@ -120,26 +120,72 @@ export default function Profile() {
     fetchUserProfile();
   }, []);
 
-  const handleEditName = () => {
-    Alert.alert("Edit Name", "Name editing functionality not implemented yet.");
+  const handleEditName = async () => {
+    Alert.prompt("Edit Name", "Enter new name.", async (text: string) => {
+      await supabase
+        .from("profiles")
+        .update({
+          name: text,
+        })
+        .eq("email", userProfile.email)
+        .select("*");
+
+      fetchUserProfile();
+    });
+    // Alert.alert("Edit Name", "Name editing functionality not implemented yet.");
   };
 
   const handleEditAge = () => {
-    Alert.alert("Edit Age", "Age editing functionality not implemented yet.");
+    Alert.prompt("Edit Age", "Enter new age.", async (text: string) => {
+      await supabase
+        .from("profiles")
+        .update({
+          age: Number(text),
+        })
+        .eq("email", userProfile.email)
+        .select("*");
+
+      fetchUserProfile();
+    });
+    // Alert.alert("Edit Age", "Age editing functionality not implemented yet.");
   };
 
   const handleEditWeight = () => {
-    Alert.alert(
-      "Edit Weight",
-      "Weight editing functionality not implemented yet."
-    );
+    Alert.prompt("Edit Weight", "Enter new weight.", async (text: string) => {
+      await supabase
+        .from("profiles")
+        .update({
+          weight: Number(text),
+        })
+        .eq("email", userProfile.email)
+        .select("*");
+
+      fetchUserProfile();
+    });
+
+    // Alert.alert(
+    //   "Edit Weight",
+    //   "Weight editing functionality not implemented yet."
+    // );
   };
 
   const handleEditHeight = () => {
-    Alert.alert(
-      "Edit Height",
-      "Height editing functionality not implemented yet."
-    );
+    Alert.prompt("Edit Height", "Enter new height.", async (text: string) => {
+      await supabase
+        .from("profiles")
+        .update({
+          height: Number(text),
+        })
+        .eq("email", userProfile.email)
+        .select("*");
+
+      fetchUserProfile();
+    });
+
+    // Alert.alert(
+    //   "Edit Height",
+    //   "Height editing functionality not implemented yet."
+    // );
   };
 
   const handleEditGender = () => {
@@ -155,15 +201,18 @@ export default function Profile() {
 
       <View style={styles.mainContainer}>
         <View style={styles.profileBoxContainer}>
-          <ProfileBox 
-            primaryText="Personal" 
-            highlightedText="Profile" 
+          <ProfileBox
+            primaryText="Personal"
+            highlightedText="Profile"
             secondaryText="Information"
             style={styles.customProfileBox}
           />
         </View>
 
-        <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
+        <ScrollView
+          style={styles.container}
+          showsVerticalScrollIndicator={false}
+        >
           {/* Profile Avatar Section */}
           <View style={styles.avatarSection}>
             <View style={styles.avatarContainer}>
@@ -187,19 +236,25 @@ export default function Profile() {
 
             <ProfileField
               label="Weight"
-              value={isLoading ? "Loading..." : formatWeight(userProfile.weight)}
+              value={
+                isLoading ? "Loading..." : formatWeight(userProfile.weight)
+              }
               onPress={handleEditWeight}
             />
 
             <ProfileField
               label="Height"
-              value={isLoading ? "Loading..." : formatHeight(userProfile.height)}
+              value={
+                isLoading ? "Loading..." : formatHeight(userProfile.height)
+              }
               onPress={handleEditHeight}
             />
 
             <ProfileField
               label="Gender"
-              value={isLoading ? 'Loading...' : formatGender(userProfile.gender)}
+              value={
+                isLoading ? "Loading..." : formatGender(userProfile.gender)
+              }
               onPress={handleEditGender}
               style={styles.lastField}
             />
