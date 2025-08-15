@@ -488,7 +488,7 @@ export default function Camera() {
       }
 
       // 🗑️ SUCCESS: Delete all captured photos after successful submission
-      await deleteAllCapturedPhotos(photos);
+      // await deleteAllCapturedPhotos(photos);
 
       // Navigate to results
       navigation.navigate("nutrient-page");

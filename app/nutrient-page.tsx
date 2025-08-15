@@ -11,6 +11,9 @@ import {
   ScrollView,
   SafeAreaView,
   KeyboardAvoidingView,
+  TouchableOpacity,
+  ActivityIndicator,
+  Alert,
 } from "react-native";
 import { useFonts } from "expo-font";
 import * as MediaLibrary from "expo-media-library";
@@ -18,7 +21,6 @@ import PieChart from "react-native-pie-chart";
 import AppLogo from "@/components/appLogo";
 import NutrientInputSection from "@/components/NutrientInput";
 import GoBack from "@/components/ReturnButton";
-import GoNext from "@/components/NextButton";
 import ProfileBox from "@/components/ProfileBox";
 import NutritionDonutChart from "@/components/DonuteChart";
 import PhotoThumbnailGallery from "@/components/PhotoThumbnailGallery";
@@ -32,6 +34,10 @@ export default function UserNutrientPage() {
   const carbohydrate = useNutrientsStore((state) => state.carbs);
   const protein = useNutrientsStore((state) => state.protein);
   const sodium = useNutrientsStore((state) => state.sodium);
+  const saveWithPhotos = useNutrientsStore((state) => state.saveWithPhotos);
+  const loading = useNutrientsStore((state) => state.loading);
+  const error = useNutrientsStore((state) => state.error);
+  const reset = useNutrientsStore((state) => state.reset);
 
   const [fontsLoaded] = useFonts({
     "SpaceMono-Regular": require("@/assets/fonts/SpaceMono-Regular.ttf"),
@@ -109,7 +115,6 @@ export default function UserNutrientPage() {
   const setSodium = useNutrientsStore((state) => state.setSodium);
 
   // Handle nutrient change
-  // Handle nutrient change
   const handleNutrientChange = (
     key: "sodium" | "protein" | "carbohydrate",
     value: string
@@ -172,15 +177,56 @@ export default function UserNutrientPage() {
 
   console.log("carbs:", carbohydrate, "protein:", protein, "sodium:", sodium);
 
-  // Request media library permissions on mount
-  useEffect(() => {
-    (async () => {
-      const { status } = await MediaLibrary.requestPermissionsAsync();
-      setMediaLibraryPermission(status === "granted");
-    })();
-  }, []);
+  // Handle saving to database
+  const handleSaveToDatabase = async () => {
+    // Validate that we have nutrition data
+    if (carbohydrate === 0 && protein === 0 && sodium === 0) {
+      Alert.alert(
+        "No Data", 
+        "Please enter nutritional values before saving.",
+        [{ text: "OK" }]
+      );
+      return;
+    }
 
-  // Load previously captured photos on mount
+    try {
+      const result = await saveWithPhotos(capturedPhotos);
+      
+      if (result.success) {
+        Alert.alert(
+          "Success", 
+          "Nutritional data and photos saved successfully!",
+          [
+            {
+              text: "OK",
+              onPress: () => {
+                // Reset the form after successful save
+                reset();
+                setNutrients({
+                  carbohydrate: "0",
+                  sodium: "0",
+                  protein: "0",
+                });
+                setCapturedPhotos([]);
+                setNutritionData({
+                  userIntake: {
+                    breakdown: { carbohydrate: 0, sodium: 0, protein: 0 },
+                    total: 0,
+                  },
+                });
+              }
+            }
+          ]
+        );
+      } else {
+        Alert.alert("Error", result.error || "Failed to save data");
+      }
+    } catch (error) {
+      Alert.alert("Error", "An unexpected error occurred");
+      console.error("Save error:", error);
+    }
+  };
+
   // Request media library permissions on mount
   useEffect(() => {
     (async () => {
@@ -262,7 +308,7 @@ export default function UserNutrientPage() {
       <KeyboardAvoidingView
         style={{ flex: 1 }}
         behavior={Platform.OS === "ios" ? "padding" : "height"}
-        keyboardVerticalOffset={Platform.OS === "ios" ? 20 : 0} // Adjust as needed
+        keyboardVerticalOffset={Platform.OS === "ios" ? 20 : 0}
       >
         <ScrollView contentContainerStyle={styles.scrollContainer}>
           <View style={styles.container}>
@@ -271,7 +317,15 @@ export default function UserNutrientPage() {
 
             {/* Thumbnail section with added top margin */}
             <View style={{ marginTop: 20 }}>
-              <PhotoThumbnailGallery photos={capturedPhotos} />
+              <PhotoThumbnailGallery
+                photos={capturedPhotos}
+                nutritionalData={{
+                  carbs: parseFloat(nutrients.carbohydrate) || 0,
+                  sodium: parseFloat(nutrients.sodium) || 0,
+                  protein: parseFloat(nutrients.protein) || 0,
+                  servings: 1 // or set dynamically if needed
+                }}
+              />
             </View>
 
             {/* Input section */}
@@ -298,12 +352,33 @@ export default function UserNutrientPage() {
                 toPercentageText={toPercentageText}
               />
             </View>
+
+            {/* Error Display */}
+            {error && (
+              <View style={styles.errorContainer}>
+                <Text style={styles.errorText}>{error}</Text>
+              </View>
+            )}
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
-      {/* navigations */}
+
+      {/* Navigation */}
       <GoBack />
-      <GoNext next="page-6" />
+      
+      {/* Save Button instead of GoNext */}
+      <TouchableOpacity 
+        style={[styles.saveButton, loading && styles.saveButtonDisabled]} 
+        onPress={handleSaveToDatabase}
+        disabled={loading}
+        activeOpacity={0.8}
+      >
+        {loading ? (
+          <ActivityIndicator color="#fff" size="small" />
+        ) : (
+          <Text style={styles.saveButtonText}>Save to Database</Text>
+        )}
+      </TouchableOpacity>
     </SafeAreaView>
   );
 }
@@ -328,5 +403,48 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#F5F5F5",
     paddingHorizontal: 20,
+  },
+  saveButton: {
+    position: 'absolute',
+    bottom: 40,
+    right: 20,
+    backgroundColor: '#7ca844',
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    borderRadius: 25,
+    minWidth: 150,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
+  },
+  saveButtonDisabled: {
+    backgroundColor: '#c0b4b4',
+    opacity: 0.7,
+  },
+  saveButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
+    fontFamily: 'SpaceMono-Regular',
+  },
+  errorContainer: {
+    backgroundColor: '#ffebee',
+    padding: 12,
+    borderRadius: 8,
+    marginTop: 16,
+    marginHorizontal: 20,
+  },
+  errorText: {
+    color: '#c62828',
+    textAlign: 'center',
+    fontSize: 14,
+    fontFamily: 'SpaceMono-Regular',
   },
 });
