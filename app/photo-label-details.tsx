@@ -205,8 +205,8 @@ function PhotoLabelDetailsPage({
 
 // Screen Component with Navigation
 export default function NutritionalLabelScreen() {
-  const route = useRoute<NutritionalLabelRouteProp>();
-  const navigation = useNavigation<NutritionalLabelNavigationProp>();
+  const route = useRoute<PhotoLabelDetailsRouteProp>();
+  const navigation = useNavigation<PhotoLabelDetailsNavigationProp>();
   
   // Get params from navigation
   const { imageUri, nutritionalData } = route.params || {};
@@ -217,7 +217,7 @@ export default function NutritionalLabelScreen() {
   }
   
   return (
-    <NutritionalLabelPage 
+    <PhotoLabelDetailsPage 
       imageUri={imageUri || 'placeholder'}
       nutritionalData={nutritionalData}
     />

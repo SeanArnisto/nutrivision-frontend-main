@@ -54,7 +54,6 @@ interface NutritionData {
 }
 
 export default function Page6() {
-  const route = useRoute();
   const carbs = useNutrientsStore((state) => state.carbs);
   const prot = useNutrientsStore((state) => state.protein);
   const sod = useNutrientsStore((state) => state.sodium);
