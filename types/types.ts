@@ -23,6 +23,10 @@ export type RootStackParamList = {
       servings: number;
     };
   };
+  'photo-fruit-details': {
+    imageUri: string;
+    nutritionalData?: { carbs: number; sodium: number; protein: number; servings: number; };
+  };
   "forgot-email": undefined;
   "forgot-otp": { email: string };
   "forgot-reset": { email: string };
