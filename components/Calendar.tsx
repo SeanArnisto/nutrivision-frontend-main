@@ -66,6 +66,7 @@ const Calendar: React.FC<CalendarProps> = ({ onDateSelect, sessionsData = {}, ac
 
   const isDateDisabled = (day: number): boolean => {
     if (!accountCreationDate) return false;
+    
     const date = new Date(currentDate.getFullYear(), currentDate.getMonth(), day);
     return date < accountCreationDate;
   };
@@ -83,6 +84,42 @@ const Calendar: React.FC<CalendarProps> = ({ onDateSelect, sessionsData = {}, ac
   const isToday = (day: number): boolean => {
     const date = new Date(currentDate.getFullYear(), currentDate.getMonth(), day);
     return date.getTime() === today.getTime();
+  };
+
+  const getSessionCount = (day: number): number => {
+    const date = new Date(currentDate.getFullYear(), currentDate.getMonth(), day);
+    const dateKey = formatDateKey(date);
+    return sessionsData[dateKey] || 0;
+  };
+
+  const renderSessionIndicator = (day: number) => {
+    const sessionCount = getSessionCount(day);
+    if (sessionCount === 0) return null;
+
+    // If more than 3 sessions, show a solid line
+    if (sessionCount > 3) {
+      return (
+        <View style={styles.sessionIndicatorContainer}>
+          <View style={styles.sessionLine} />
+        </View>
+      );
+    }
+
+    // Otherwise show dots (1-3)
+    const dots = [];
+    for (let i = 0; i < sessionCount; i++) {
+      dots.push(
+        <View
+          key={i}
+          style={[
+            styles.sessionDot,
+            i > 0 && { marginLeft: 2 } // Add spacing between dots
+          ]}
+        />
+      );
+    }
+
+    return <View style={styles.sessionIndicatorContainer}>{dots}</View>;
   };
 
   const isSelected = (day: number): boolean => {
@@ -109,21 +146,20 @@ const Calendar: React.FC<CalendarProps> = ({ onDateSelect, sessionsData = {}, ac
     for (let day = 1; day <= daysInMonth; day++) {
       const isCurrentDay = isToday(day);
       const isSelectedDay = isSelected(day);
-      const hasLine = hasMultipleSessions(day);
       const isDisabled = isDateDisabled(day);
 
       days.push(
         <TouchableOpacity
           key={day}
-          style={[
-            styles.dayContainer,
-            isCurrentDay && styles.currentDay,
-            isSelectedDay && styles.selectedDay,
-            isDisabled && styles.disabledDay,
-          ]}
+          style={styles.dayContainer}
           onPress={() => handleDatePress(day)}
           disabled={isDisabled}
         >
+          {/* Background circle for current/selected day */}
+          {isCurrentDay && <View style={styles.currentDay} />}
+          {isSelectedDay && <View style={styles.selectedDay} />}
+          
+          {/* Day text */}
           <Text style={[
             styles.dayText,
             isCurrentDay && styles.currentDayText,
@@ -132,7 +168,9 @@ const Calendar: React.FC<CalendarProps> = ({ onDateSelect, sessionsData = {}, ac
           ]}>
             {day}
           </Text>
-          {hasLine && !isDisabled && <View style={styles.sessionLine} />}
+          
+          {/* Session indicator (dots or line) */}
+          {!isDisabled && renderSessionIndicator(day)}
         </TouchableOpacity>
       );
     }
@@ -187,7 +225,7 @@ const Calendar: React.FC<CalendarProps> = ({ onDateSelect, sessionsData = {}, ac
 const styles = StyleSheet.create({
   calendarContainer: {
     backgroundColor: 'white',
-    borderRadius: 20,
+    borderRadius: 8,
     padding: 15,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
@@ -250,28 +288,40 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     position: 'relative',
-    borderRadius: 100,
   },
   dayText: {
     fontSize: 16,
     color: '#333',
+    textAlign: 'center',
   },
   currentDay: {
+    position: 'absolute',
     backgroundColor: '#FFD700', // Yellow/gold color as shown in the image
-    borderRadius: 30,
+    borderRadius: 18, // Make it perfectly circular (half of width/height)
+    width: 36,
+    height: 36,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   currentDayText: {
     color: '#333',
     fontWeight: '600',
+    textAlign: 'center',
   },
   selectedDay: {
+    position: 'absolute',
     borderWidth: 2,
     borderColor: '#333',
-    borderRadius: 20,
+    borderRadius: 18, // Make it perfectly circular (half of width/height)
+    width: 36,
+    height: 36,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   selectedDayText: {
     color: '#333',
     fontWeight: '600',
+    textAlign: 'center',
   },
   disabledDay: {
     opacity: 0.3,
@@ -279,13 +329,24 @@ const styles = StyleSheet.create({
   disabledDayText: {
     color: '#ccc',
   },
-  sessionLine: {
+  sessionIndicatorContainer: {
     position: 'absolute',
     bottom: 4,
-    width: 12,
-    height: 2,
-    backgroundColor: '#666',
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  sessionDot: {
+    width: 4,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: '#AA7B09', // Changed to the requested color
+  },
+  sessionLine: {
+    width: 20, // Width of the solid line
+    height: 2,  // Height of the solid line
     borderRadius: 1,
+    backgroundColor: '#AA7B09', // Same color as dots
   },
 });
 
