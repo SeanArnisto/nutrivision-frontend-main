@@ -175,7 +175,7 @@ export default function SignUpScreen() {
           </View>
 
           {/* Title Container */}
-          <View style={styles.titleContainer}>
+          <View style={styles.titleContainer}> 
             <Text style={styles.title}>Sign up</Text>
           </View>
 

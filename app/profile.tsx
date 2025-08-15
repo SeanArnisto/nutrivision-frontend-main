@@ -15,6 +15,7 @@ import { Ionicons } from "@expo/vector-icons";
 import AppLogo from "@/components/appLogo";
 import BottomNavBar from "@/components/BottomNavBar";
 import ProfileField from "@/components/ProfileField";
+import ProfileBox from "@/components/ProfileBox";
 
 import { useAuthStore } from "@/stores/authStore";
 import { supabase } from "@/config/supabase";
@@ -152,52 +153,59 @@ export default function Profile() {
     <SafeAreaView style={styles.safeArea}>
       <AppLogo />
 
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>Personal Profile</Text>
-      </View>
+      <View style={styles.mainContainer}>
+        <View style={styles.profileBoxContainer}>
+          <ProfileBox 
+            primaryText="Personal" 
+            highlightedText="Profile" 
+            secondaryText="Information"
+            style={styles.customProfileBox}
+          />
+        </View>
 
-      <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
-        {/* Profile Avatar Section */}
-        <View style={styles.avatarSection}>
-          <View style={styles.avatarContainer}>
-            <Ionicons name="person" size={60} color="#333" />
+        <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
+          {/* Profile Avatar Section */}
+          <View style={styles.avatarSection}>
+            <View style={styles.avatarContainer}>
+              <Ionicons name="person" size={60} color="#333" />
+            </View>
           </View>
-        </View>
 
-        {/* Profile Fields Section */}
-        <View style={styles.fieldsContainer}>
-          <ProfileField
-            label="Name"
-            value={isLoading ? "Loading..." : formatName(userProfile.name)}
-            onPress={handleEditName}
-          />
+          {/* Profile Fields Section */}
+          <View style={styles.fieldsContainer}>
+            <ProfileField
+              label="Name"
+              value={isLoading ? "Loading..." : formatName(userProfile.name)}
+              onPress={handleEditName}
+            />
 
-          <ProfileField
-            label="Age"
-            value={isLoading ? "Loading..." : formatAge(userProfile.age)}
-            onPress={handleEditAge}
-          />
+            <ProfileField
+              label="Age"
+              value={isLoading ? "Loading..." : formatAge(userProfile.age)}
+              onPress={handleEditAge}
+            />
 
-          <ProfileField
-            label="Weight"
-            value={isLoading ? "Loading..." : formatWeight(userProfile.weight)}
-            onPress={handleEditWeight}
-          />
+            <ProfileField
+              label="Weight"
+              value={isLoading ? "Loading..." : formatWeight(userProfile.weight)}
+              onPress={handleEditWeight}
+            />
 
-          <ProfileField
-            label="Height"
-            value={isLoading ? "Loading..." : formatHeight(userProfile.height)}
-            onPress={handleEditHeight}
-          />
+            <ProfileField
+              label="Height"
+              value={isLoading ? "Loading..." : formatHeight(userProfile.height)}
+              onPress={handleEditHeight}
+            />
 
-          <ProfileField
-            label="Gender"
-            value={isLoading ? 'Loading...' : formatGender(userProfile.gender)}
-            onPress={handleEditGender}
-            style={styles.lastField}
-          />
-        </View>
-      </ScrollView>
+            <ProfileField
+              label="Gender"
+              value={isLoading ? 'Loading...' : formatGender(userProfile.gender)}
+              onPress={handleEditGender}
+              style={styles.lastField}
+            />
+          </View>
+        </ScrollView>
+      </View>
 
       <BottomNavBar
         activeTab="profile"
@@ -213,24 +221,19 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#f8f9fa",
   },
-  header: {
+  mainContainer: {
+    flex: 1,
     paddingHorizontal: 24,
-    paddingVertical: 16,
+    paddingTop: 20,
   },
-  headerTitle: {
-    fontSize: 20,
-    fontWeight: "bold",
-    color: "#333",
-    fontFamily: "AlbertSans-Bold",
-    backgroundColor: "#fff",
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 20,
-    alignSelf: "flex-start",
+  profileBoxContainer: {
+    marginBottom: 20,
+  },
+  customProfileBox: {
+    width: 240, // Wider for "Personal Profile Information"
   },
   container: {
     flex: 1,
-    paddingTop: 20,
   },
   avatarSection: {
     alignItems: "center",
@@ -257,7 +260,7 @@ const styles = StyleSheet.create({
   fieldsContainer: {
     backgroundColor: "#fff",
     borderRadius: 12,
-    marginHorizontal: 24,
+    marginHorizontal: 0, // Removed marginHorizontal as it's now in mainContainer
     shadowColor: "#000",
     shadowOffset: {
       width: 0,
