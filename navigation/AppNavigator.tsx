@@ -21,6 +21,7 @@ import OtpScreen from "@/app/otp";
 import ForgotEmailScreen from "@/app/forgot-email";
 import ForgotOtpScreen from "@/app/forgot-otp";
 import ForgotResetScreen from "@/app/forgot-reset";
+import NutritionalLabelScreen from "@/app/photo-label-details";
 
 const Stack = createStackNavigator<RootStackParamList>();
 
@@ -46,6 +47,7 @@ export default function AppNavigator() {
           <Stack.Screen name="forgot-email" component={ForgotEmailScreen} />
           <Stack.Screen name="forgot-otp" component={ForgotOtpScreen} />
           <Stack.Screen name="forgot-reset" component={ForgotResetScreen} />
+          <Stack.Screen name="photo-label-details" component={NutritionalLabelScreen} />
         </Stack.Navigator>
       </NavigationContainer>
   );
