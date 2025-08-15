@@ -15,6 +15,7 @@ import AppLogo from '@/components/appLogo';
 import BottomNavBar from '@/components/BottomNavBar';
 import { CircularProgress } from 'react-native-circular-progress';
 import { BarChart } from 'react-native-gifted-charts';
+import ProfileBox from '@/components/ProfileBox';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -236,106 +237,117 @@ export default function Statistics() {
   return (
     <SafeAreaView style={styles.safeArea}>
       <AppLogo />
+      
+      <View style={styles.mainContainer}>
+        <View style={styles.profileBoxContainer}>
+          <ProfileBox 
+            primaryText="Your" 
+            highlightedText="Statistics" 
+            secondaryText="Overview"
+            style={styles.customProfileBox}
+          />
+        </View>
 
-      <ScrollView 
-        style={styles.container} 
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.contentContainer}
-      >
-        {/* Daily Nutrition Summary - No container */}
-        <View style={styles.summarySection}>
-          <Text style={styles.summaryTitle}>Daily Nutrition Summary</Text>
-          <Text style={styles.summaryDate}>August 15, 2025</Text>
-          
-          {/* Legend */}
-          <View style={styles.legendContainer}>
-            <View style={styles.legendItem}>
-              <View style={[styles.legendDot, { backgroundColor: '#C0C0C0' }]} />
-              <Text style={styles.legendText}>Low Intake</Text>
+        <ScrollView 
+          style={styles.container} 
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={styles.contentContainer}
+        >
+          {/* Daily Nutrition Summary - No container */}
+          <View style={styles.summarySection}>
+            <Text style={styles.summaryTitle}>Daily Nutrition Summary</Text>
+            <Text style={styles.summaryDate}>August 15, 2025</Text>
+            
+            {/* Legend */}
+            <View style={styles.legendContainer}>
+              <View style={styles.legendItem}>
+                <View style={[styles.legendDot, { backgroundColor: '#C0C0C0' }]} />
+                <Text style={styles.legendText}>Low Intake</Text>
+              </View>
+              <View style={styles.legendItem}>
+                <View style={[styles.legendDot, { backgroundColor: '#9AB106' }]} />
+                <Text style={styles.legendText}>Guidline Intake</Text>
+              </View>
+              <View style={styles.legendItem}>
+                <View style={[styles.legendDot, { backgroundColor: '#E74C3C' }]} />
+                <Text style={styles.legendText}>High Intake</Text>
+              </View>
             </View>
-            <View style={styles.legendItem}>
-              <View style={[styles.legendDot, { backgroundColor: '#9AB106' }]} />
-              <Text style={styles.legendText}>Recommended Intake</Text>
-            </View>
-            <View style={styles.legendItem}>
-              <View style={[styles.legendDot, { backgroundColor: '#E74C3C' }]} />
-              <Text style={styles.legendText}>High Intake</Text>
+
+            {/* Nutrient Cards */}
+            <View style={styles.nutrientCardsContainer}>
+              {nutrientData.map((nutrient, index) => (
+                <NutrientCard
+                  key={index}
+                  value={nutrient.value}
+                  target={nutrient.target}
+                  label={nutrient.label}
+                  unit={nutrient.unit}
+                  iconSource={nutrient.iconSource}
+                  status={nutrient.status}
+                />
+              ))}
             </View>
           </View>
 
-          {/* Nutrient Cards */}
-          <View style={styles.nutrientCardsContainer}>
-            {nutrientData.map((nutrient, index) => (
-              <NutrientCard
-                key={index}
-                value={nutrient.value}
-                target={nutrient.target}
-                label={nutrient.label}
-                unit={nutrient.unit}
-                iconSource={nutrient.iconSource}
-                status={nutrient.status}
+          {/* Weekly Chart using react-native-gifted-charts */}
+          <View style={styles.chartCard}>
+            <Text style={styles.chartTitle}>Weekly Intake Ratio</Text>
+            <Text style={styles.chartSubtitle}>Aug 10-15</Text>
+            
+            {/* Legend */}
+            <View style={styles.chartLegend}>
+              <View style={styles.legendItem}>
+                <View style={[styles.legendDot, { backgroundColor: '#F4D03F' }]} />
+                <Text style={styles.legendText}>Carbohydrates</Text>
+              </View>
+              <View style={styles.legendItem}>
+                <View style={[styles.legendDot, { backgroundColor: '#8B4513' }]} />
+                <Text style={styles.legendText}>Sodium</Text>
+              </View>
+              <View style={styles.legendItem}>
+                <View style={[styles.legendDot, { backgroundColor: '#9AB106' }]} />
+                <Text style={styles.legendText}>Protein</Text>
+              </View>
+            </View>
+
+            {/* Bar Chart */}
+            <View style={styles.chartContainer}>
+              <BarChart
+                data={weeklyData}
+                width={SCREEN_WIDTH - 110}
+                height={160}
+                barWidth={10}
+                spacing={2}
+                initialSpacing={5}
+                yAxisThickness={0}
+                xAxisThickness={0}
+                yAxisTextStyle={{ color: '#666', fontSize: 12 }}
+                xAxisLabelTextStyle={{ color: '#666', fontSize: 12, textAlign: 'center' }}
+                noOfSections={3}
+                maxValue={150}
+                stepValue={50}
+                yAxisLabelTexts={['0', '50', '100', '150']}
+                rulesType={'solid'}
+                rulesColor={'#E5E5E5'}
+                rulesLength={SCREEN_WIDTH - 150}
+                showReferenceLine1
+                referenceLine1Position={100}
+                referenceLine1Config={{
+                  color: '#000000',
+                  dashWidth: 4,
+                  dashGap: 4,
+                  thickness: 1.5,
+                  type: 'dashed',
+                }}
+                isAnimated
+                animationDuration={1000}
+                barBorderRadius={4}
               />
-            ))}
-          </View>
-        </View>
-
-        {/* Weekly Chart using react-native-gifted-charts */}
-        <View style={styles.chartCard}>
-          <Text style={styles.chartTitle}>Weekly Intake Ratio</Text>
-          <Text style={styles.chartSubtitle}>Aug 10-15</Text>
-          
-          {/* Legend */}
-          <View style={styles.chartLegend}>
-            <View style={styles.legendItem}>
-              <View style={[styles.legendDot, { backgroundColor: '#F4D03F' }]} />
-              <Text style={styles.legendText}>Carbohydrates</Text>
-            </View>
-            <View style={styles.legendItem}>
-              <View style={[styles.legendDot, { backgroundColor: '#8B4513' }]} />
-              <Text style={styles.legendText}>Sodium</Text>
-            </View>
-            <View style={styles.legendItem}>
-              <View style={[styles.legendDot, { backgroundColor: '#9AB106' }]} />
-              <Text style={styles.legendText}>Protein</Text>
             </View>
           </View>
-
-          {/* Bar Chart */}
-          <View style={styles.chartContainer}>
-            <BarChart
-              data={weeklyData}
-              width={SCREEN_WIDTH - 110}
-              height={160}
-              barWidth={10}
-              spacing={2}
-              initialSpacing={5}
-              yAxisThickness={0}
-              xAxisThickness={0}
-              yAxisTextStyle={{ color: '#666', fontSize: 12 }}
-              xAxisLabelTextStyle={{ color: '#666', fontSize: 12, textAlign: 'center' }}
-              noOfSections={3}
-              maxValue={150}
-              stepValue={50}
-              yAxisLabelTexts={['0', '50', '100', '150']}
-              rulesType={'solid'}
-              rulesColor={'#E5E5E5'}
-              rulesLength={SCREEN_WIDTH - 150}
-              showReferenceLine1
-              referenceLine1Position={100}
-              referenceLine1Config={{
-                color: '#000000',
-                dashWidth: 4,
-                dashGap: 4,
-                thickness: 1.5,
-                type: 'dashed',
-              }}
-              isAnimated
-              animationDuration={1000}
-              barBorderRadius={4}
-            />
-          </View>
-        </View>
-      </ScrollView>
+        </ScrollView>
+      </View>
 
       <BottomNavBar 
         activeTab="stats" 
@@ -351,6 +363,17 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#F5F5F5',
   },
+  mainContainer: {
+    flex: 1,
+    paddingHorizontal: 20,
+    paddingTop: 20,
+  },
+  profileBoxContainer: {
+    marginBottom: 20,
+  },
+  customProfileBox: {
+    width: 200, // Wider than default 150px to accommodate longer text
+  },
   container: {
     flex: 1,
   },
@@ -358,7 +381,6 @@ const styles = StyleSheet.create({
     paddingBottom: 120,
   },
   summarySection: {
-    paddingHorizontal: 20,
     paddingVertical: 20,
   },
   summaryTitle: {
@@ -438,8 +460,7 @@ const styles = StyleSheet.create({
   chartCard: {
     backgroundColor: '#fff',
     borderRadius: 16,
-    margin: 20,
-    marginTop: 0,
+    marginVertical: 20,
     padding: 20,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },

@@ -6,15 +6,18 @@ import {
   SafeAreaView,
   ScrollView,
   Alert,
+  TouchableOpacity,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '@/types/types';
+import { Ionicons } from '@expo/vector-icons';
 import AppLogo from '@/components/appLogo';
 import BottomNavBar from '@/components/BottomNavBar';
 import SettingsSection from '@/components/SettingsSection';
 import SettingsItem from '@/components/SettingsItem';
 import ToggleSwitch from '@/components/ToggleSwitch';
+import ProfileBox from '@/components/ProfileBox';
 type SettingsScreenNavigationProp = StackNavigationProp<
   RootStackParamList,
   'settings'
@@ -53,6 +56,28 @@ export default function Settings() {
     Alert.alert('Contact Support', 'Support contact functionality not implemented yet.');
   };
 
+  const handleLogout = () => {
+    Alert.alert(
+      'Logout',
+      'Are you sure you want to logout?',
+      [
+        {
+          text: 'Cancel',
+          style: 'cancel',
+        },
+        {
+          text: 'Logout',
+          style: 'destructive',
+          onPress: () => {
+            // Add logout logic here
+            navigation.navigate('login');
+          },
+        },
+      ],
+      { cancelable: false }
+    );
+  };
+
   const handleTermsAndConditions = () => {
     Alert.alert('Terms and Conditions', 'Terms and conditions page not implemented yet.');
   };
@@ -65,54 +90,67 @@ export default function Settings() {
     <SafeAreaView style={styles.safeArea}>
       <AppLogo />
       
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>Settings</Text>
+      <View style={styles.mainContainer}>
+        <View style={styles.profileBoxContainer}>
+          <ProfileBox 
+            primaryText="Settings" 
+            highlightedText="&" 
+            secondaryText="Preferences"
+            style={styles.customProfileBox}
+          />
+        </View>
+
+        <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
+          <SettingsSection title="Privacy and Security">
+            <SettingsItem
+              title="Change Password"
+              onPress={handleChangePassword}
+            />
+            <TouchableOpacity style={styles.logoutItem} onPress={handleLogout}>
+              <Text style={styles.logoutText}>Logout</Text>
+              <View style={styles.rightSection}>
+                <Ionicons name="chevron-forward" size={20} color="#666" />
+              </View>
+            </TouchableOpacity>
+          </SettingsSection>
+
+          <SettingsSection title="Notifications">
+            <SettingsItem
+              title="Notifications"
+              showChevron={false}
+              rightComponent={
+                <ToggleSwitch
+                  value={notificationsEnabled}
+                  onValueChange={setNotificationsEnabled}
+                />
+              }
+            />
+          </SettingsSection>
+
+          <SettingsSection title="Support">
+            <SettingsItem
+              title="App Version"
+              onPress={handleAppVersion}
+            />
+            <SettingsItem
+              title="Contact Support"
+              onPress={handleContactSupport}
+            />
+          </SettingsSection>
+
+          <SettingsSection title="Legal">
+            <SettingsItem
+              title="Terms and Conditions"
+              onPress={handleTermsAndConditions}
+            />
+            <SettingsItem
+              title="Privacy Policy"
+              onPress={handlePrivacyPolicy}
+              style={styles.lastItem}
+            />
+          </SettingsSection>
+        </ScrollView>
       </View>
-
-      <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
-        <SettingsSection title="Privacy and Security">
-          <SettingsItem
-            title="Change Password"
-            onPress={handleChangePassword}
-          />
-        </SettingsSection>
-
-        <SettingsSection title="Notifications">
-          <SettingsItem
-            title="Notifications"
-            showChevron={false}
-            rightComponent={
-              <ToggleSwitch
-                value={notificationsEnabled}
-                onValueChange={setNotificationsEnabled}
-              />
-            }
-          />
-        </SettingsSection>
-
-        <SettingsSection title="Support">
-          <SettingsItem
-            title="App Version"
-            onPress={handleAppVersion}
-          />
-          <SettingsItem
-            title="Contact Support"
-            onPress={handleContactSupport}
-          />
-        </SettingsSection>
-
-        <SettingsSection title="Legal">
-          <SettingsItem
-            title="Terms and Conditions"
-            onPress={handleTermsAndConditions}
-          />
-          <SettingsItem
-            title="Privacy Policy"
-            onPress={handlePrivacyPolicy}
-            style={styles.lastItem}
-          />
-        </SettingsSection>
-      </ScrollView>
 
       <BottomNavBar 
         activeTab="settings" 
@@ -128,26 +166,42 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#f8f9fa',
   },
-  header: {
-    paddingHorizontal: 24,
-    paddingVertical: 16,
-  },
-  headerTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#333',
-    fontFamily: 'AlbertSans-Bold',
-    backgroundColor: '#fff',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 20,
-    alignSelf: 'flex-start',
-  },
-  container: {
+  mainContainer: {
     flex: 1,
     paddingTop: 20,
   },
+  profileBoxContainer: {
+    marginBottom: 20,
+    paddingHorizontal: 24,
+  },
+  customProfileBox: {
+    width: 220, // Wider for "Settings & Preferences"
+  },
+  container: {
+    flex: 1,
+  },
   lastItem: {
     borderBottomWidth: 0,
+  },
+  logoutText: {
+    fontSize: 16,
+    color: '#E74C3C', // Red color for logout
+    fontFamily: 'AlbertSans-Medium',
+    flex: 1,
+  },
+  logoutItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 24,
+    paddingVertical: 16,
+    backgroundColor: '#fff',
+    borderBottomWidth: 1,
+    borderBottomColor: '#f0f0f0',
+  },
+  rightSection: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
   },
 });
