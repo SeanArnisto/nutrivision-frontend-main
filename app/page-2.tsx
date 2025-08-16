@@ -1,31 +1,35 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import {
   StyleSheet,
   View,
-  Image,
-  Dimensions,
   SafeAreaView,
   Text,
   TouchableOpacity,
 } from "react-native";
 import { ThemedView } from "@/components/ThemedView";
-import { ThemedText } from "@/components/ThemedText";
 import "react-circular-progressbar/dist/styles.css";
-import { useNavigation, useRoute } from "@react-navigation/native";
+import { useNavigation } from "@react-navigation/native";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { RootStackParamList } from "@/types/types";
 import AvgIntakeCard from "@/components/avgIntakeCard";
 import { nutrients } from "@/constants/nutrientIcons";
-import { strings } from "@/constants/strings";
 import AppLogo from "@/components/appLogo";
-import GoBack from "@/components/ReturnButton";
-import GoNext from "@/components/NextButton";
 import ProfileBox from "@/components/ProfileBox";
 import BottomNavBar from "@/components/BottomNavBar";
 import Calendar from "@/components/Calendar";
 import DateDetailModal from "@/components/DateDetailModal";
 import SessionDetailModal from "@/components/SessionDetailModal";
-import { useNutritionIntake } from "@/stores/nutritionIntakeStore";
+
+// Import the hooks and auth store
+import { 
+  useNutritionCalendar,
+  Session,
+  FoodEntry,
+  NutritionSummary 
+} from "@/hooks/useNutritionCalendar";
+import { useAuthStore } from "@/stores/authStore";
+import { useNutritionStats } from "@/hooks/useNutritionStats";
+import { useAccountCreationDate } from "@/hooks/useAccountCreationDate";
 
 type Page2ScreenNavigationProp = StackNavigationProp<
   RootStackParamList,
@@ -38,85 +42,50 @@ export default function Page2() {
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [dateModalVisible, setDateModalVisible] = useState(false);
   const [sessionModalVisible, setSessionModalVisible] = useState(false);
-  const [selectedSession, setSelectedSession] = useState<any>(null);
+  const [selectedSession, setSelectedSession] = useState<Session | null>(null);
+  const [sessionFoodEntries, setSessionFoodEntries] = useState<FoodEntry[]>([]);
   
-  // Use new nutrition intake store
-  const { nutritionData, isLoading, error, fetchNutritionIntake } = useNutritionIntake();
+  // Use the auth store to get user info
+  const { user, isAuthenticated } = useAuthStore();
 
-  // Mock account creation date - replace with actual user data
-  const accountCreationDate = new Date('2024-12-01'); // User created account on Dec 1, 2024
+  // Use the nutrition calendar hook
+  const {
+    sessionsData,
+    isLoading: isCalendarLoading,
+    error: calendarError,
+    getSessionsForDate,
+    getFoodEntriesForSession,
+    getNutritionSummaryForSession,
+    refreshData
+  } = useNutritionCalendar();
 
-  // Mock sessions data for calendar - replace this with actual data from your store/API
-  const mockSessionsData: { [date: string]: number } = {
-    '2025-01-15': 2,
-    '2025-01-22': 4, // This will show 3 dots (max) for 4+ sessions
-    '2025-01-28': 3,
-    '2025-01-30': 1,
-    '2025-08-15': 2,
-  };
+  // Use the nutrition stats hook for average intake cards
+  const {
+    nutritionData,
+    isLoading: isStatsLoading,
+    error: statsError,
+    fetchNutritionStats
+  } = useNutritionStats();
 
-  // Mock sessions for the selected date
-  const getMockSessions = (date: Date | null) => {
-    if (!date) return [];
-    
-    const dateKey = date.toISOString().split('T')[0];
-    const sessionCount = mockSessionsData[dateKey] || 0;
-    
-    const sessions = [];
-    for (let i = 1; i <= sessionCount; i++) {
-      sessions.push({
-        id: `${dateKey}-session-${i}`,
-        name: `Session ${i}`,
-        time: `${8 + (i - 1) * 3}:00 AM`, // Mock times: 8AM, 11AM, 2PM, etc.
-        foodCount: Math.floor(Math.random() * 5) + 1, // Random 1-5 items
-        previewImage: 'https://images.unsplash.com/photo-1560806887-1e4cd0b6cbd6?w=200&h=200&fit=crop',
-      });
-    }
-    
-    return sessions;
-  };
+  // Use the account creation date hook
+  const {
+    accountCreationDate,
+    isLoading: isProfileLoading,
+    error: profileError
+  } = useAccountCreationDate();
 
-  // Mock food entries for a specific session
-  const getMockFoodEntries = () => [
-    {
-      id: '1',
-      image: 'https://images.unsplash.com/photo-1560806887-1e4cd0b6cbd6?w=200&h=200&fit=crop',
-      type: 'fruit' as const,
-    },
-    {
-      id: '2',
-      image: 'https://images.unsplash.com/photo-1560806887-1e4cd0b6cbd6?w=200&h=200&fit=crop',
-      type: 'fruit' as const,
-    },
-    {
-      id: '3',
-      image: 'https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=200&h=200&fit=crop',
-      type: 'label' as const,
-    },
-    {
-      id: '4',
-      image: 'https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=200&h=200&fit=crop',
-      type: 'label' as const,
-    },
-    {
-      id: '5',
-      image: 'https://images.unsplash.com/photo-1560806887-1e4cd0b6cbd6?w=200&h=200&fit=crop',
-      type: 'fruit' as const,
-    },
-  ];
-
-  // Mock nutrition summary for a specific session
-  const getMockNutritionSummary = () => ({
-    carbs: 18,
-    sodium: 1.8,
-    protein: 2,
-    total: 100,
-  });
-
-  // Fetch nutrition data on component mount
-  useEffect(() => {
-    fetchNutritionIntake();
-  }, []);
+  // If user is not authenticated, show a message or redirect
+  if (!isAuthenticated || !user) {
+    return (
+      <SafeAreaView style={styles.safeArea}>
+        <ThemedView style={styles.container}>
+          <View style={styles.errorContainer}>
+            <Text style={styles.errorText}>Please log in to view your nutrition data</Text>
+          </View>
+        </ThemedView>
+      </SafeAreaView>
+    );
+  }
 
   const handleTabPress = (tabName: string) => {
     if (tabName === activeTab) {
@@ -143,69 +112,128 @@ export default function Page2() {
   const handleDateSelect = (date: Date) => {
     setSelectedDate(date);
     setDateModalVisible(true);
-    // You can add logic here to fetch data for the selected date
     console.log('Selected date:', date.toDateString());
   };
 
   const handleModalClose = () => {
     setDateModalVisible(false);
+    setSelectedDate(null);
   };
 
-  // Calculate averages from nutrition data
-  const carbAvg = nutritionData?.avg_carbs ? Math.round(nutritionData.avg_carbs) : 310;
-  const proteinAvg = nutritionData?.avg_protein ? Math.round(nutritionData.avg_protein) : 64;
-  const sodiumAvg = nutritionData?.avg_sodium ? Math.round(nutritionData.avg_sodium / 1000) : 28;
-
-  // Handle session selection for DateDetailModal
   const handleSessionSelect = (session: any) => {
-    setSelectedSession(session);
-    setDateModalVisible(false);
-    setSessionModalVisible(true);
+    try {
+      setSelectedSession(session);
+      setDateModalVisible(false);
+      setSessionModalVisible(true);
+      
+      // Fetch food entries for the selected session asynchronously
+      getFoodEntriesForSession(session.id).then(foodEntries => {
+        setSessionFoodEntries(foodEntries);
+      }).catch(error => {
+        console.error('Error loading session details:', error);
+        setSessionFoodEntries([]);
+      });
+    } catch (error) {
+      console.error('Error loading session details:', error);
+    }
   };
 
-  // Handle closing of SessionDetailModal
   const handleSessionModalClose = () => {
     setSessionModalVisible(false);
     setSelectedSession(null);
+    setSessionFoodEntries([]);
+  };
+
+  // Get sessions for the selected date
+  const getSessionsForSelectedDate = (): Session[] => {
+    if (!selectedDate) return [];
+    return getSessionsForDate(selectedDate);
+  };
+
+  // Get nutrition summary for selected session
+  const getSelectedSessionNutritionSummary = (): NutritionSummary | null => {
+    if (!selectedSession) return null;
+    return getNutritionSummaryForSession(selectedSession.id);
+  };
+
+  // Calculate averages from nutrition data with fallback values
+  const carbAvg = nutritionData?.avg_carbs ? Math.round(nutritionData.avg_carbs) : 0;
+  const proteinAvg = nutritionData?.avg_protein ? Math.round(nutritionData.avg_protein) : 0;
+  const sodiumAvg = nutritionData?.avg_sodium ? Math.round(nutritionData.avg_sodium / 1000) : 0;
+
+  // Handle retry for different errors
+  const handleRetry = (type: 'calendar' | 'stats') => {
+    switch (type) {
+      case 'calendar':
+        refreshData();
+        break;
+      case 'stats':
+        fetchNutritionStats();
+        break;
+    }
   };
 
   return (
     <SafeAreaView style={styles.safeArea}>
       <AppLogo />
       <ThemedView style={styles.container}>
-        <ProfileBox primaryText="Average" highlightedText="Daily" secondaryText="Intake"/>
+        <ProfileBox 
+          primaryText="Average" 
+          highlightedText="Daily" 
+          secondaryText="Intake"
+        />
         
         <View style={styles.rowContainer}>
-          {/* Container 1 */}
+          {/* Carbohydrate Card */}
           <AvgIntakeCard
             iconSource={nutrients.carbohydrate.icon}
             tintColor={nutrients.carbohydrate.tintColor}
             subtitle="Carbohydrate"
-            value={isLoading ? "..." : carbAvg.toString()}
+            value={isStatsLoading ? "..." : carbAvg.toString()}
           />
 
-          {/* Container 2 */}
+          {/* Sodium Card */}
           <AvgIntakeCard
             iconSource={nutrients.sodium.icon}
             tintColor={nutrients.sodium.tintColor}
             subtitle="Sodium"
-            value={isLoading ? "..." : sodiumAvg.toString()}
+            value={isStatsLoading ? "..." : sodiumAvg.toString()}
           />
 
-          {/* Container 3 */}
+          {/* Protein Card */}
           <AvgIntakeCard
             iconSource={nutrients.protein.icon}
             tintColor={nutrients.protein.tintColor}
             subtitle="Protein"
-            value={isLoading ? "..." : proteinAvg.toString()}
+            value={isStatsLoading ? "..." : proteinAvg.toString()}
           />
         </View>
 
-        {/* Error handling */}
-        {error && (
+        {/* Error handling for stats */}
+        {statsError && (
           <View style={styles.errorContainer}>
-            <Text style={styles.errorText}>Error loading nutrition data: {error}</Text>
-            <TouchableOpacity onPress={fetchNutritionIntake} style={styles.retryButton}>
+            <Text style={styles.errorText}>
+              Error loading nutrition stats: {statsError}
+            </Text>
+            <TouchableOpacity 
+              onPress={() => handleRetry('stats')} 
+              style={styles.retryButton}
+            >
+              <Text style={styles.retryText}>Retry</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+
+        {/* Error handling for calendar */}
+        {calendarError && (
+          <View style={styles.errorContainer}>
+            <Text style={styles.errorText}>
+              Error loading calendar data: {calendarError}
+            </Text>
+            <TouchableOpacity 
+              onPress={() => handleRetry('calendar')} 
+              style={styles.retryButton}
+            >
               <Text style={styles.retryText}>Retry</Text>
             </TouchableOpacity>
           </View>
@@ -214,8 +242,8 @@ export default function Page2() {
         {/* Calendar Component */}
         <Calendar 
           onDateSelect={handleDateSelect}
-          sessionsData={mockSessionsData}
-          accountCreationDate={accountCreationDate}
+          sessionsData={sessionsData}
+          accountCreationDate={accountCreationDate || new Date()}
         />
 
         {/* Date Detail Modal */}
@@ -223,7 +251,7 @@ export default function Page2() {
           visible={dateModalVisible}
           onClose={handleModalClose}
           selectedDate={selectedDate}
-          sessions={getMockSessions(selectedDate)}
+          sessions={getSessionsForSelectedDate()}
           onSessionSelect={handleSessionSelect}
         />
 
@@ -232,13 +260,16 @@ export default function Page2() {
           visible={sessionModalVisible}
           onClose={handleSessionModalClose}
           session={selectedSession}
-          foodEntries={getMockFoodEntries()}
-          nutritionSummary={getMockNutritionSummary()}
+          foodEntries={sessionFoodEntries}
+          nutritionSummary={getSelectedSessionNutritionSummary() || {
+            carbs: 0,
+            sodium: 0,
+            protein: 0,
+            total: 0,
+          }}
         />
-      </ThemedView>
 
-      {/* <GoBack />
-      <GoNext next="camera"/> */}
+      </ThemedView>
       
       <BottomNavBar 
         activeTab={activeTab}
@@ -266,7 +297,6 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     gap: 7,
   },
-  // Add these new styles for error handling
   errorContainer: {
     backgroundColor: "#ffebee",
     borderRadius: 8,
