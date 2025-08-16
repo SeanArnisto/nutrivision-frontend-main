@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { View, ActivityIndicator, Text } from 'react-native';
 import Calendar from '@/components/Calendar'; // Your calendar component
-import useCalendar from '@/hooks/useCalendar'; // Fixed hook
 
 const CalendarScreen: React.FC = () => {
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -45,9 +44,9 @@ const CalendarScreen: React.FC = () => {
   return (
     <View style={{ flex: 1, padding: 20 }}>
       <Calendar
-        onDateSelect={handleDateSelect}
-        sessionsData={sessionsData || {}}
-        accountCreationDate={new Date('2024-01-01')} // Replace with actual account creation date
+        
+        
+         // Replace with actual account creation date
       />
     </View>
   );

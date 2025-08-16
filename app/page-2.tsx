@@ -207,9 +207,7 @@ export default function Page2() {
 
         {/* Calendar Component */}
         <Calendar 
-          onDateSelect={handleDateSelect}
-          sessionsData={mockSessionsData}
-          accountCreationDate={accountCreationDate}
+          
         />
 
         {/* Date Detail Modal */}
