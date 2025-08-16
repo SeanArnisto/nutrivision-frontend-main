@@ -2,24 +2,18 @@ import React, { useState, useEffect } from "react";
 import {
   StyleSheet,
   View,
-  Image,
-  Dimensions,
   SafeAreaView,
   Text,
   TouchableOpacity,
 } from "react-native";
 import { ThemedView } from "@/components/ThemedView";
-import { ThemedText } from "@/components/ThemedText";
 import "react-circular-progressbar/dist/styles.css";
-import { useNavigation, useRoute } from "@react-navigation/native";
+import { useNavigation } from "@react-navigation/native";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { RootStackParamList } from "@/types/types";
 import AvgIntakeCard from "@/components/avgIntakeCard";
 import { nutrients } from "@/constants/nutrientIcons";
-import { strings } from "@/constants/strings";
 import AppLogo from "@/components/appLogo";
-import GoBack from "@/components/ReturnButton";
-import GoNext from "@/components/NextButton";
 import ProfileBox from "@/components/ProfileBox";
 import BottomNavBar from "@/components/BottomNavBar";
 import Calendar from "@/components/Calendar";
