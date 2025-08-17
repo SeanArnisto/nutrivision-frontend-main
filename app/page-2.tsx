@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   StyleSheet,
   View,
@@ -21,14 +21,14 @@ import DateDetailModal from "@/components/DateDetailModal";
 import SessionDetailModal from "@/components/SessionDetailModal";
 
 // Import the hooks and auth store
-import { 
+import {
   useNutritionCalendar,
   Session,
   FoodEntry,
-  NutritionSummary 
+  NutritionSummary,
 } from "@/hooks/useNutritionCalendar";
 import { useAuthStore } from "@/stores/authStore";
-import { useNutritionStats } from "@/hooks/useNutritionStats";
+import { useNutritionIntakeStore } from "@/stores/nutritionIntakeStore";
 import { useAccountCreationDate } from "@/hooks/useAccountCreationDate";
 
 type Page2ScreenNavigationProp = StackNavigationProp<
@@ -38,13 +38,13 @@ type Page2ScreenNavigationProp = StackNavigationProp<
 
 export default function Page2() {
   const navigation = useNavigation<Page2ScreenNavigationProp>();
-  const [activeTab, setActiveTab] = useState('home');
+  const [activeTab, setActiveTab] = useState("home");
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [dateModalVisible, setDateModalVisible] = useState(false);
   const [sessionModalVisible, setSessionModalVisible] = useState(false);
   const [selectedSession, setSelectedSession] = useState<Session | null>(null);
   const [sessionFoodEntries, setSessionFoodEntries] = useState<FoodEntry[]>([]);
-  
+
   // Use the auth store to get user info
   const { user, isAuthenticated } = useAuthStore();
 
@@ -56,23 +56,30 @@ export default function Page2() {
     getSessionsForDate,
     getFoodEntriesForSession,
     getNutritionSummaryForSession,
-    refreshData
+    refreshData,
   } = useNutritionCalendar();
 
-  // Use the nutrition stats hook for average intake cards
+  // Use the correct nutrition intake hook for average intake cards
   const {
     nutritionData,
-    isLoading: isStatsLoading,
-    error: statsError,
-    fetchNutritionStats
-  } = useNutritionStats();
+    isLoading: isIntakeLoading,
+    error: intakeError,
+    fetchNutritionIntake,
+  } = useNutritionIntakeStore();
 
   // Use the account creation date hook
   const {
     accountCreationDate,
     isLoading: isProfileLoading,
-    error: profileError
+    error: profileError,
   } = useAccountCreationDate();
+
+  // Fetch nutrition intake data on component mount
+  useEffect(() => {
+    if (isAuthenticated && user) {
+      fetchNutritionIntake();
+    }
+  }, [isAuthenticated, user, fetchNutritionIntake]);
 
   // If user is not authenticated, show a message or redirect
   if (!isAuthenticated || !user) {
@@ -80,7 +87,9 @@ export default function Page2() {
       <SafeAreaView style={styles.safeArea}>
         <ThemedView style={styles.container}>
           <View style={styles.errorContainer}>
-            <Text style={styles.errorText}>Please log in to view your nutrition data</Text>
+            <Text style={styles.errorText}>
+              Please log in to view your nutrition data
+            </Text>
           </View>
         </ThemedView>
       </SafeAreaView>
@@ -89,21 +98,21 @@ export default function Page2() {
 
   const handleTabPress = (tabName: string) => {
     if (tabName === activeTab) {
-      navigation.replace('page-2');
+      navigation.replace("page-2");
     } else {
       setActiveTab(tabName);
       switch (tabName) {
-        case 'home':
-          navigation.navigate('page-2');
+        case "home":
+          navigation.navigate("page-2");
           break;
-        case 'stats':
-          navigation.navigate('statistics');
+        case "stats":
+          navigation.navigate("statistics");
           break;
-        case 'settings':
-          navigation.navigate('settings');
+        case "settings":
+          navigation.navigate("settings");
           break;
-        case 'profile':
-          navigation.navigate('profile');
+        case "profile":
+          navigation.navigate("profile");
           break;
       }
     }
@@ -112,7 +121,7 @@ export default function Page2() {
   const handleDateSelect = (date: Date) => {
     setSelectedDate(date);
     setDateModalVisible(true);
-    console.log('Selected date:', date.toDateString());
+    console.log("Selected date:", date.toDateString());
   };
 
   const handleModalClose = () => {
@@ -125,16 +134,18 @@ export default function Page2() {
       setSelectedSession(session);
       setDateModalVisible(false);
       setSessionModalVisible(true);
-      
+
       // Fetch food entries for the selected session asynchronously
-      getFoodEntriesForSession(session.id).then(foodEntries => {
-        setSessionFoodEntries(foodEntries);
-      }).catch(error => {
-        console.error('Error loading session details:', error);
-        setSessionFoodEntries([]);
-      });
+      getFoodEntriesForSession(session.id)
+        .then((foodEntries) => {
+          setSessionFoodEntries(foodEntries);
+        })
+        .catch((error) => {
+          console.error("Error loading session details:", error);
+          setSessionFoodEntries([]);
+        });
     } catch (error) {
-      console.error('Error loading session details:', error);
+      console.error("Error loading session details:", error);
     }
   };
 
@@ -156,19 +167,25 @@ export default function Page2() {
     return getNutritionSummaryForSession(selectedSession.id);
   };
 
-  // Calculate averages from nutrition data with fallback values
-  const carbAvg = nutritionData?.avg_carbs ? Math.round(nutritionData.avg_carbs) : 0;
-  const proteinAvg = nutritionData?.avg_protein ? Math.round(nutritionData.avg_protein) : 0;
-  const sodiumAvg = nutritionData?.avg_sodium ? Math.round(nutritionData.avg_sodium / 1000) : 0;
+  // Calculate averages from nutrition intake data (from user_nutrition_intake table)
+  const carbAvg = nutritionData?.avg_carbs
+    ? Math.round(nutritionData.avg_carbs)
+    : 0;
+  const proteinAvg = nutritionData?.avg_protein
+    ? Math.round(nutritionData.avg_protein)
+    : 0;
+  const sodiumAvg = nutritionData?.avg_sodium
+    ? (nutritionData.avg_sodium / 1000)
+    : 0; // No division by 1000 if already in correct units
 
   // Handle retry for different errors
-  const handleRetry = (type: 'calendar' | 'stats') => {
+  const handleRetry = (type: "calendar" | "intake") => {
     switch (type) {
-      case 'calendar':
+      case "calendar":
         refreshData();
         break;
-      case 'stats':
-        fetchNutritionStats();
+      case "intake":
+        fetchNutritionIntake();
         break;
     }
   };
@@ -177,19 +194,19 @@ export default function Page2() {
     <SafeAreaView style={styles.safeArea}>
       <AppLogo />
       <ThemedView style={styles.container}>
-        <ProfileBox 
-          primaryText="Average" 
-          highlightedText="Daily" 
+        <ProfileBox
+          primaryText="Average"
+          highlightedText="Daily"
           secondaryText="Intake"
         />
-        
+
         <View style={styles.rowContainer}>
           {/* Carbohydrate Card */}
           <AvgIntakeCard
             iconSource={nutrients.carbohydrate.icon}
             tintColor={nutrients.carbohydrate.tintColor}
             subtitle="Carbohydrate"
-            value={isStatsLoading ? "..." : carbAvg.toString()}
+            value={isIntakeLoading ? "..." : carbAvg.toString()}
           />
 
           {/* Sodium Card */}
@@ -197,7 +214,7 @@ export default function Page2() {
             iconSource={nutrients.sodium.icon}
             tintColor={nutrients.sodium.tintColor}
             subtitle="Sodium"
-            value={isStatsLoading ? "..." : sodiumAvg.toString()}
+            value={isIntakeLoading ? "..." : sodiumAvg.toString()}
           />
 
           {/* Protein Card */}
@@ -205,18 +222,18 @@ export default function Page2() {
             iconSource={nutrients.protein.icon}
             tintColor={nutrients.protein.tintColor}
             subtitle="Protein"
-            value={isStatsLoading ? "..." : proteinAvg.toString()}
+            value={isIntakeLoading ? "..." : proteinAvg.toString()}
           />
         </View>
 
-        {/* Error handling for stats */}
-        {statsError && (
+        {/* Error handling for nutrition intake */}
+        {intakeError && (
           <View style={styles.errorContainer}>
             <Text style={styles.errorText}>
-              Error loading nutrition stats: {statsError}
+              Error loading nutrition intake: {intakeError}
             </Text>
-            <TouchableOpacity 
-              onPress={() => handleRetry('stats')} 
+            <TouchableOpacity
+              onPress={() => handleRetry("intake")}
               style={styles.retryButton}
             >
               <Text style={styles.retryText}>Retry</Text>
@@ -230,8 +247,8 @@ export default function Page2() {
             <Text style={styles.errorText}>
               Error loading calendar data: {calendarError}
             </Text>
-            <TouchableOpacity 
-              onPress={() => handleRetry('calendar')} 
+            <TouchableOpacity
+              onPress={() => handleRetry("calendar")}
               style={styles.retryButton}
             >
               <Text style={styles.retryText}>Retry</Text>
@@ -240,7 +257,7 @@ export default function Page2() {
         )}
 
         {/* Calendar Component */}
-        <Calendar 
+        <Calendar
           onDateSelect={handleDateSelect}
           sessionsData={sessionsData}
           accountCreationDate={accountCreationDate || new Date()}
@@ -261,20 +278,21 @@ export default function Page2() {
           onClose={handleSessionModalClose}
           session={selectedSession}
           foodEntries={sessionFoodEntries}
-          nutritionSummary={getSelectedSessionNutritionSummary() || {
-            carbs: 0,
-            sodium: 0,
-            protein: 0,
-            total: 0,
-          }}
+          nutritionSummary={
+            getSelectedSessionNutritionSummary() || {
+              carbs: 0,
+              sodium: 0,
+              protein: 0,
+              total: 0,
+            }
+          }
         />
-
       </ThemedView>
-      
-      <BottomNavBar 
+
+      <BottomNavBar
         activeTab={activeTab}
         onTabPress={handleTabPress}
-        onCameraPress={() => navigation.navigate('camera')}
+        onCameraPress={() => navigation.navigate("camera")}
       />
     </SafeAreaView>
   );
@@ -302,14 +320,14 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     padding: 15,
     marginTop: 10,
-    alignItems: 'center',
+    alignItems: "center",
     borderLeftWidth: 4,
     borderLeftColor: "#f44336",
   },
   errorText: {
     fontSize: 14,
     color: "#c62828",
-    textAlign: 'center',
+    textAlign: "center",
     marginBottom: 10,
   },
   retryButton: {
