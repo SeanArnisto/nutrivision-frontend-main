@@ -201,19 +201,19 @@ export default function UserNutrientPage() {
               text: "OK",
               onPress: () => {
                 // Reset the form after successful save
-                reset();
-                setNutrients({
-                  carbohydrate: "0",
-                  sodium: "0",
-                  protein: "0",
-                });
-                setCapturedPhotos([]);
-                setNutritionData({
-                  userIntake: {
-                    breakdown: { carbohydrate: 0, sodium: 0, protein: 0 },
-                    total: 0,
-                  },
-                });
+                // reset();
+                // setNutrients({
+                //   carbohydrate: "0",
+                //   sodium: "0",
+                //   protein: "0",
+                // });
+                // setCapturedPhotos([]);
+                // setNutritionData({
+                //   userIntake: {
+                //     breakdown: { carbohydrate: 0, sodium: 0, protein: 0 },
+                //     total: 0,
+                //   },
+                // });
               }
             }
           ]
