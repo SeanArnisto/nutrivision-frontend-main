@@ -16,6 +16,7 @@ import BottomNavBar from '@/components/BottomNavBar';
 import { CircularProgress } from 'react-native-circular-progress';
 import { BarChart } from 'react-native-gifted-charts';
 import ProfileBox from '@/components/ProfileBox';
+import { format, addDays } from 'date-and-time';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -90,6 +91,8 @@ export default function Statistics() {
         break;
     }
   };
+
+
 
   // Sample data matching the design
   const nutrientData = [
@@ -234,6 +237,21 @@ export default function Statistics() {
     },
   ];
 
+  // date constants
+  const today = new Date();
+  const dayOfWeek = today.getDay(); // start of the current week
+  const startOfWeek = addDays(today, -dayOfWeek)
+  const endOfWeek = addDays(startOfWeek, 6);
+
+  // date formatting ng mga start ng linggo tska dulo
+  let startStr = format(startOfWeek, "MMM D");
+  let endStr = format(endOfWeek, "D");
+
+  // kapag lilipat na ng buwan hahahaha
+  if (startOfWeek.getMonth() !== endOfWeek.getMonth()) {
+    endStr = format(endOfWeek, "MMM D")
+  }
+
   return (
     <SafeAreaView style={styles.safeArea}>
       <AppLogo />
@@ -255,8 +273,8 @@ export default function Statistics() {
         >
           {/* Daily Nutrition Summary - No container */}
           <View style={styles.summarySection}>
-            <Text style={styles.summaryTitle}>Daily Nutrition Summary</Text>
-            <Text style={styles.summaryDate}>August 15, 2025</Text>
+            <Text style={styles.summaryTitle}>Daily Nutrition Summary</Text>          
+            <Text style={styles.summaryDate}>{format(today, 'MMM DD, YYYY')}</Text> 
             
             {/* Legend */}
             <View style={styles.legendContainer}>
@@ -293,7 +311,7 @@ export default function Statistics() {
           {/* Weekly Chart using react-native-gifted-charts */}
           <View style={styles.chartCard}>
             <Text style={styles.chartTitle}>Weekly Intake Ratio</Text>
-            <Text style={styles.chartSubtitle}>Aug 10-15</Text>
+            <Text style={styles.chartSubtitle}>{startStr} - {endStr}</Text>
             
             {/* Legend */}
             <View style={styles.chartLegend}>
