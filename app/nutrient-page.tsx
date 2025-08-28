@@ -24,6 +24,7 @@ import GoBack from "@/components/ReturnButton";
 import ProfileBox from "@/components/ProfileBox";
 import NutritionDonutChart from "@/components/DonuteChart";
 import PhotoThumbnailGallery from "@/components/PhotoThumbnailGallery";
+import GoNext from "@/components/NextButton";
 
 // Helper Function
 const toPercentageText = (value: number): string => `${value}%`;
@@ -365,9 +366,10 @@ export default function UserNutrientPage() {
 
       {/* Navigation */}
       <GoBack />
+      <GoNext next="page-6"/>
       
       {/* Save Button instead of GoNext */}
-      <TouchableOpacity 
+      {/* <TouchableOpacity 
         style={[styles.saveButton, loading && styles.saveButtonDisabled]} 
         onPress={handleSaveToDatabase}
         disabled={loading}
@@ -378,7 +380,7 @@ export default function UserNutrientPage() {
         ) : (
           <Text style={styles.saveButtonText}>Save to Database</Text>
         )}
-      </TouchableOpacity>
+      </TouchableOpacity> */}
     </SafeAreaView>
   );
 }

@@ -290,26 +290,21 @@ export default function Page6() {
         </View>
 
         <ThemedView style={styles.contentContainer}>
-          {/* Title Section */}
-          <View style={styles.titleContainer}>
-            <Text style={styles.mainTitle}>Intake Per Nutrient</Text>
-          </View>
-
           {/* Progress Bars Section */}
           <View style={styles.progressContainer}>
-            {/* Legends */}
+            {/* Legends - Now properly spaced */}
             <View style={styles.legendsContainer}>
               <View style={styles.legendItem}>
                 <View style={[styles.legendSquare, styles.userLegend]} />
-                <Text style={styles.legendText}>User Intake</Text>
+                <Text style={styles.legendText}>Your intake</Text>
               </View>
               <View style={[styles.legendItem, styles.legendItemSpacing]}>
                 <View style={[styles.legendSquare, styles.avgLegend]} />
-                <Text style={styles.legendText}>Average Intake</Text>
+                <Text style={styles.legendText}>Average intake</Text>
               </View>
             </View>
 
-            {/* Carbohydrate Row */}
+            {/* Carbohydrate Row (was Sugar) */}
             <View style={styles.nutrientRow}>
               <View style={styles.nutrientLabel}>
                 <Text style={styles.nutrientText}>Carbs</Text>
@@ -348,10 +343,10 @@ export default function Page6() {
               </View>
               <View style={styles.valueContainer}>
                 <Text style={styles.userValue}>
-                  {formatValue(nutritionData.values.carbohydrate.user)} G
+                  {formatValue(nutritionData.values.carbohydrate.user)}
                 </Text>
                 <Text style={styles.avgValue}>
-                  {formatValue(nutritionData.values.carbohydrate.avg)} G
+                  {formatValue(nutritionData.values.carbohydrate.avg)}
                 </Text>
               </View>
             </View>
@@ -395,15 +390,15 @@ export default function Page6() {
               </View>
               <View style={styles.valueContainer}>
                 <Text style={styles.userValue}>
-                  {formatValue(nutritionData.values.sodium.user)} G
+                  {formatValue(nutritionData.values.sodium.user)}
                 </Text>
                 <Text style={styles.avgValue}>
-                  {formatValue(nutritionData.values.sodium.avg)} G
+                  {formatValue(nutritionData.values.sodium.avg)}
                 </Text>
               </View>
             </View>
 
-            {/* Protein Row */}
+            {/* Protein Row (was Calories) */}
             <View style={styles.nutrientRow}>
               <View style={styles.nutrientLabel}>
                 <Text style={styles.nutrientText}>Protein</Text>
@@ -442,10 +437,10 @@ export default function Page6() {
               </View>
               <View style={styles.valueContainer}>
                 <Text style={styles.userValue}>
-                  {formatValue(nutritionData.values.protein.user)} G
+                  {formatValue(nutritionData.values.protein.user)}
                 </Text>
                 <Text style={styles.avgValue}>
-                  {formatValue(nutritionData.values.protein.avg)} G
+                  {formatValue(nutritionData.values.protein.avg)}
                 </Text>
               </View>
             </View>
@@ -524,14 +519,6 @@ const styles = StyleSheet.create({
     paddingBottom: 16,
     backgroundColor: "#F5F5F5",
   },
-  titleContainer: {
-    marginBottom: 16,
-  },
-  mainTitle: {
-    fontSize: 24,
-    fontWeight: "bold",
-    color: "#333",
-  },
   progressContainer: {
     backgroundColor: "white",
     borderRadius: 12,
@@ -569,39 +556,37 @@ const styles = StyleSheet.create({
     backgroundColor: "#9AB106",
   },
   legendText: {
-    fontSize: 14,
+    fontSize: 18,
     color: "#333",
-    fontWeight: "600",
+    fontWeight: "bold",
   },
   nutrientRow: {
     flexDirection: "row",
     alignItems: "center",
-    marginBottom: 16,
+    marginBottom: 12,
   },
   nutrientLabel: {
-    flex: 1.2,
+    flex: 1.5,
     flexDirection: "row",
     alignItems: "center",
   },
   nutrientText: {
-    fontSize: 16,
+    fontSize: 14,
     color: "#333",
     marginRight: 8,
-    fontWeight: "600",
   },
   icon: {
-    width: 24,
-    height: 24,
+    width: 20,
+    height: 20,
   },
   progressBars: {
-    flex: 3,
-    paddingHorizontal: 8,
+    flex: 3.5,
   },
   progressBarBackground: {
-    height: 6,
+    height: 4,
     backgroundColor: "#EEEEEE",
     borderRadius: 3,
-    marginVertical: 3,
+    marginVertical: 2,
     overflow: "hidden",
   },
   progressBar: {
@@ -615,17 +600,16 @@ const styles = StyleSheet.create({
     backgroundColor: "#9AB106",
   },
   valueContainer: {
-    flex: 1,
+    flex: 0.8,
     alignItems: "flex-end",
   },
   userValue: {
-    fontSize: 14,
+    fontSize: 12,
     fontWeight: "bold",
     color: "#333",
-    marginBottom: 2,
   },
   avgValue: {
-    fontSize: 14,
+    fontSize: 12,
     fontWeight: "bold",
     color: "#9AB106",
   },
