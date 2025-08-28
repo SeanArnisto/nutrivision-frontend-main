@@ -21,6 +21,8 @@ interface BarChartProps {
   barWidth?: number;
   spacing?: number;
   showLegend?: boolean;
+  referenceLine?: number; // Custom reference line position
+  referenceLineColor?: string; // Custom reference line color
   legendData?: Array<{
     color: string;
     label: string;
@@ -37,6 +39,8 @@ const BarChart: React.FC<BarChartProps> = ({
   barWidth = 10,
   spacing = 2,
   showLegend = true,
+  referenceLine,
+  referenceLineColor = '#000000',
   legendData = [
     { color: '#F4D03F', label: 'Carbohydrates' },
     { color: '#8B4513', label: 'Sodium' },
@@ -91,10 +95,10 @@ const BarChart: React.FC<BarChartProps> = ({
           rulesType={'solid'}
           rulesColor={'#E5E5E5'}
           rulesLength={SCREEN_WIDTH - 150}
-          showReferenceLine1
-          referenceLine1Position={maxValue * 0.67} // Reference line at 2/3 of max value
+          showReferenceLine1={!!referenceLine}
+          referenceLine1Position={referenceLine || maxValue * 0.67} // Use custom reference line or default to 2/3
           referenceLine1Config={{
-            color: '#000000',
+            color: referenceLineColor,
             dashWidth: 4,
             dashGap: 4,
             thickness: 1.5,
