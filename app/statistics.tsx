@@ -458,7 +458,6 @@ export default function Statistics() {
              showLegend={true}
              referenceLine={100} // Add constant reference line at 100%
              referenceLineColor="#000000" // Black line for reference
-             referenceLineWidth={2} // Make it visible but not too thick
              legendData={[
                { color: "#F4D03F", label: "Carbohydrates" },
                { color: "#8B4513", label: "Sodium" },
