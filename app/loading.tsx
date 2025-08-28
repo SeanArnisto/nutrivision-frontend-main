@@ -30,7 +30,7 @@ export default function Loading() {
     >
       <View style={styles.centeredContainer}>
         <Image
-          source={require("../assets/images/nutri-logo.png")}
+          source={require("@/assets/images/logoName.png")}
           style={styles.logo}
         />
         <LottieView

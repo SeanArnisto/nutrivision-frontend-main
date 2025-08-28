@@ -1,3 +1,4 @@
+// UserNutrientPage.tsx
 import React, { useEffect, useState, useCallback } from "react";
 import { useFocusEffect } from "@react-navigation/native";
 import { useNutrientsStore } from "@/hooks/store";
@@ -39,6 +40,9 @@ export default function UserNutrientPage() {
   const loading = useNutrientsStore((state) => state.loading);
   const error = useNutrientsStore((state) => state.error);
   const reset = useNutrientsStore((state) => state.reset);
+  const setCarbs = useNutrientsStore((state) => state.setCarbs);
+  const setProtein = useNutrientsStore((state) => state.setProtein);
+  const setSodium = useNutrientsStore((state) => state.setSodium);
 
   const [fontsLoaded] = useFonts({
     "SpaceMono-Regular": require("@/assets/fonts/SpaceMono-Regular.ttf"),
@@ -50,36 +54,7 @@ export default function UserNutrientPage() {
     boolean | null
   >(null);
 
-  useEffect(() => {
-    const carb = Number(carbohydrate) || 0;
-    const prot = Number(protein) || 0;
-    const sod = Number(sodium) || 0;
-
-    const total = carb + prot + sod;
-    if (total === 0) return;
-
-    const pieCarb = parseFloat(((carb / total) * 100).toFixed(2));
-    const pieProtein = parseFloat(((prot / total) * 100).toFixed(2));
-    const pieSodium = parseFloat(((sod / total) * 100).toFixed(2));
-
-    setNutrients({
-      carbohydrate: carb.toString(),
-      protein: prot.toString(),
-      sodium: sod.toString(),
-    });
-    setNutritionData({
-      userIntake: {
-        breakdown: {
-          carbohydrate: pieCarb,
-          protein: pieProtein,
-          sodium: pieSodium,
-        },
-        total: parseFloat(total.toFixed(2)),
-      },
-    });
-  }, [carbohydrate, protein, sodium]);
-
-  // State for nutrient inputs (now as numbers without units)
+  // State for nutrient inputs (as strings for proper decimal handling)
   const [nutrients, setNutrients] = useState({
     carbohydrate: "88",
     sodium: "1.83",
@@ -99,57 +74,104 @@ export default function UserNutrientPage() {
     };
   }
 
-  const [nutritionData1, setNutritionData] = useState<NutritionData>({
+  const [nutritionData, setNutritionData] = useState<NutritionData>({
     userIntake: {
       breakdown: { carbohydrate: 94, sodium: 2, protein: 4 },
       total: 93.33,
     },
   });
 
+  // Initialize from store values on mount
+  useEffect(() => {
+    setNutrients({
+      carbohydrate: carbohydrate.toString(),
+      protein: protein.toString(),
+      sodium: sodium.toString(),
+    });
+  }, []); // Only run once on mount
+
+  // Update pie chart when store values change
+  useEffect(() => {
+    const carb = Number(carbohydrate) || 0;
+    const prot = Number(protein) || 0;
+    const sod = Number(sodium) || 0;
+
+    const total = carb + prot + sod;
+    if (total === 0) {
+      setNutritionData({
+        userIntake: {
+          breakdown: { carbohydrate: 0, sodium: 0, protein: 0 },
+          total: 0,
+        },
+      });
+      return;
+    }
+
+    const pieCarb = parseFloat(((carb / total) * 100).toFixed(2));
+    const pieProtein = parseFloat(((prot / total) * 100).toFixed(2));
+    const pieSodium = parseFloat(((sod / total) * 100).toFixed(2));
+
+    setNutritionData({
+      userIntake: {
+        breakdown: {
+          carbohydrate: pieCarb,
+          protein: pieProtein,
+          sodium: pieSodium,
+        },
+        total: parseFloat(total.toFixed(2)),
+      },
+    });
+  }, [carbohydrate, protein, sodium]);
+
   // Toggle edit mode
   const toggleEdit = (key: "sodium" | "protein" | "carbohydrate") => {
     setIsEditing((prev) => ({ ...prev, [key]: !prev[key] }));
   };
 
-  const setCarbs = useNutrientsStore((state) => state.setCarbs);
-  const setProtein = useNutrientsStore((state) => state.setProtein);
-  const setSodium = useNutrientsStore((state) => state.setSodium);
-
-  // Handle nutrient change
+  // Handle nutrient change with proper decimal support
   const handleNutrientChange = (
     key: "sodium" | "protein" | "carbohydrate",
     value: string
   ) => {
-    // Special handling for decimal point
-    if (value === "." || value === "0.") {
-      // For decimal point only, just update the display value without converting
-      const updatedNutrients = { ...nutrients, [key]: value };
-      setNutrients(updatedNutrients);
+    // Update local state (keep as string for display)
+    setNutrients((prev) => ({ ...prev, [key]: value }));
 
-      // Update the Zustand store with 0 for now
-      if (key === "carbohydrate") setCarbs(0);
-      if (key === "protein") setProtein(0);
-      if (key === "sodium") setSodium(0);
-      return;
+    // Parse the value for store update
+    let numValue = 0;
+    
+    // Handle special cases
+    if (value === "" || value === "." || value === "0.") {
+      numValue = 0;
+    } else {
+      numValue = parseFloat(value) || 0;
     }
 
-    const numValue = parseFloat(value) || 0;
+    // Update the Zustand store with numeric value
+    if (key === "carbohydrate") {
+      setCarbs(numValue);
+    } else if (key === "protein") {
+      setProtein(numValue);
+    } else if (key === "sodium") {
+      setSodium(numValue);
+    }
 
-    // Update the Zustand store
-    if (key === "carbohydrate") setCarbs(numValue);
-    if (key === "protein") setProtein(numValue);
-    if (key === "sodium") setSodium(numValue);
-
-    // Update the local nutrients state
-    const updatedNutrients = { ...nutrients, [key]: value }; // Keep as string for display
-    setNutrients(updatedNutrients);
-
+    // Update nutrition data for pie chart
+    const updatedNutrients = { ...nutrients, [key]: value };
+    
     const total =
       (parseFloat(updatedNutrients.carbohydrate) || 0) +
       (parseFloat(updatedNutrients.protein) || 0) +
       (parseFloat(updatedNutrients.sodium) || 0);
 
-    if (total === 0) return;
+    if (total === 0) {
+      setNutritionData({
+        userIntake: {
+          breakdown: { carbohydrate: 0, protein: 0, sodium: 0 },
+          total: 0,
+        },
+      });
+      return;
+    }
 
     const pieCarb = parseFloat(
       (
@@ -176,7 +198,8 @@ export default function UserNutrientPage() {
     });
   };
 
-  console.log("carbs:", carbohydrate, "protein:", protein, "sodium:", sodium);
+  console.log("Store values - carbs:", carbohydrate, "protein:", protein, "sodium:", sodium);
+  console.log("Local state - nutrients:", nutrients);
 
   // Handle saving to database
   const handleSaveToDatabase = async () => {
@@ -201,7 +224,7 @@ export default function UserNutrientPage() {
             {
               text: "OK",
               onPress: () => {
-                // Reset the form after successful save
+                // Optional: Reset the form after successful save
                 // reset();
                 // setNutrients({
                 //   carbohydrate: "0",
@@ -209,12 +232,6 @@ export default function UserNutrientPage() {
                 //   protein: "0",
                 // });
                 // setCapturedPhotos([]);
-                // setNutritionData({
-                //   userIntake: {
-                //     breakdown: { carbohydrate: 0, sodium: 0, protein: 0 },
-                //     total: 0,
-                //   },
-                // });
               }
             }
           ]
@@ -243,7 +260,6 @@ export default function UserNutrientPage() {
       }
 
       return () => {
-        // Optional: reset or cancel something if needed
         console.log("Leaving the screen");
       };
     }, [mediaLibraryPermission])
@@ -251,17 +267,14 @@ export default function UserNutrientPage() {
 
   const loadRecentPhotos = async () => {
     try {
-      // First, get the NutriVision album
       const album = await MediaLibrary.getAlbumAsync("NutriVision");
 
-      // If the album doesn't exist yet, return empty array
       if (!album) {
         console.log("NutriVision album not found");
         setCapturedPhotos([]);
         return;
       }
 
-      // Get assets from the NutriVision album specifically
       const { assets } = await MediaLibrary.getAssetsAsync({
         album: album.id,
         first: 5,
@@ -324,12 +337,12 @@ export default function UserNutrientPage() {
                   carbs: parseFloat(nutrients.carbohydrate) || 0,
                   sodium: parseFloat(nutrients.sodium) || 0,
                   protein: parseFloat(nutrients.protein) || 0,
-                  servings: 1 // or set dynamically if needed
+                  servings: 1
                 }}
               />
             </View>
 
-            {/* Input section */}
+            {/* Input section with updated props */}
             <NutrientInputSection
               nutrients={nutrients}
               isEditing={isEditing}
@@ -340,7 +353,7 @@ export default function UserNutrientPage() {
             <View style={styles.chartsContainer}>
               {/* User Intake Donut Chart */}
               <NutritionDonutChart
-                nutritionData={nutritionData1.userIntake}
+                nutritionData={nutritionData.userIntake}
                 title="Your Intake"
                 chartSize={150}
                 coverRadius={0.55}
@@ -368,7 +381,7 @@ export default function UserNutrientPage() {
       <GoBack />
       <GoNext next="page-6"/>
       
-      {/* Save Button instead of GoNext */}
+      {/* Optional: Save Button instead of GoNext */}
       {/* <TouchableOpacity 
         style={[styles.saveButton, loading && styles.saveButtonDisabled]} 
         onPress={handleSaveToDatabase}
@@ -399,7 +412,7 @@ const styles = StyleSheet.create({
   },
   scrollContainer: {
     flexGrow: 1,
-    paddingBottom: 100, // Add space for floating button
+    paddingBottom: 100,
   },
   container: {
     flex: 1,

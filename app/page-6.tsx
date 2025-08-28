@@ -17,6 +17,7 @@ import { StackNavigationProp } from "@react-navigation/stack";
 import { useRoute } from "@react-navigation/native";
 import { useNutrientsStore } from "@/hooks/store";
 import { useRecommStore } from "@/hooks/store";
+import { useNutritionIntakeStore, fetchNutritionAverage } from "@/stores/nutritionIntakeStore";
 import { Ionicons } from "@expo/vector-icons";
 import { useFocusEffect } from "@react-navigation/native";
 import { useCallback } from "react";
@@ -58,6 +59,10 @@ export default function Page6() {
   const minSodium = useRecommStore((state) => state.minSodium);
   const maxSodium = useRecommStore((state) => state.maxSodium);
 
+  // Get nutrition intake data from stores
+  const { nutritionData: intakeData, fetchNutritionIntake } = useNutritionIntakeStore();
+  const { nutritionDataAve: averageData, fetchNutritionIntakeAve } = fetchNutritionAverage();
+
   const [nutritionData, setNutritionData] = useState<NutritionData>({
     progress: {
       carbohydrate: { user: 88, avg: 50 },
@@ -71,77 +76,101 @@ export default function Page6() {
     },
   });
 
+  // Fetch nutrition data on component mount
   useEffect(() => {
-    const carbsMin = minCarb;
-    const carbsMax = maxCarb;
-    const carbAvg = Math.round((carbsMin + carbsMax) / 2);
-  
-    const proteinMin = minProtein;
-    const proteinMax = maxProtein;
-    const proteinAvg = Math.round((proteinMin + proteinMax) / 2);
-  
-    const sodiumMin = minSodium;
-    const sodiumMax = maxSodium;
-    const sodiumAvg = Math.round((sodiumMin + sodiumMax) / 2) / 1000;
-  
-    setNutritionData((prev) => ({
-      ...prev,
-      progress: {
-        carbohydrate: { ...prev.progress.carbohydrate, avg: parseFloat(carbAvg.toFixed(1)) },
-        protein: { ...prev.progress.protein, avg: parseFloat(proteinAvg.toFixed(1)) },
-        sodium: { ...prev.progress.sodium, avg: parseFloat(sodiumAvg.toFixed(1)) }, 
-      },
-      values: {
-        carbohydrate: { ...prev.values.carbohydrate, avg: parseFloat(carbAvg.toFixed(1)) },
-        protein: { ...prev.values.protein, avg: parseFloat(proteinAvg.toFixed(1)) },
-        sodium: { ...prev.values.sodium, avg: parseFloat(sodiumAvg.toFixed(1)) },
-      },
-    }));
-  }, [minCarb, maxCarb, minProtein, maxProtein, minSodium, maxSodium]);
+    fetchNutritionIntake();
+    fetchNutritionIntakeAve();
+  }, []);
 
-  function handleGoBack() {
-    navigation.goBack();
-  }
-
-  useFocusEffect(
-    useCallback(() => {
-      const carbohydrate = carbs;
-      const protein = prot;
-      const sodium = sod;
+  // Update nutritionData when store data changes
+  useEffect(() => {
+    if (intakeData && averageData) {
+      setNutritionData((prev) => ({
+        ...prev,
+        values: {
+          carbohydrate: { 
+            user: parseFloat(carbs.toFixed(1)), 
+            avg: parseFloat(intakeData.avg_carbs.toFixed(1)) 
+          },
+          protein: { 
+            user: parseFloat(prot.toFixed(1)), 
+            avg: parseFloat(intakeData.avg_protein.toFixed(1)) 
+          },
+          sodium: { 
+            user: parseFloat((sod / 1000).toFixed(2)), // Convert mg to g
+            avg: parseFloat((intakeData.avg_sodium / 1000).toFixed(2)) // Convert mg to g
+          },
+        },
+      }));
+    } else if (intakeData) {
+      // Use intakeData if averageData is not available
+      setNutritionData((prev) => ({
+        ...prev,
+        values: {
+          carbohydrate: { 
+            user: parseFloat(carbs.toFixed(1)), 
+            avg: parseFloat(intakeData.avg_carbs.toFixed(1)) 
+          },
+          protein: { 
+            user: parseFloat(prot.toFixed(1)), 
+            avg: parseFloat(intakeData.avg_protein.toFixed(1)) 
+          },
+          sodium: { 
+            user: parseFloat((sod / 1000).toFixed(2)), // Convert mg to g
+            avg: parseFloat((intakeData.avg_sodium / 1000).toFixed(2)) // Convert mg to g
+          },
+        },
+      }));
+    } else if (averageData) {
+      // Use averageData as fallback
+      const carbAvg = (averageData.minCarbs + averageData.maxCarbs) / 2;
+      const proteinAvg = (averageData.minProtein + averageData.maxProtein) / 2;
+      const sodiumAvg = (averageData.minSodium + averageData.maxSodium) / 2;
 
       setNutritionData((prev) => ({
         ...prev,
         values: {
-          carbohydrate: {
-            ...prev.values.carbohydrate,
-            user: parseFloat(carbohydrate.toFixed(1)),
+          carbohydrate: { 
+            user: parseFloat(carbs.toFixed(1)), 
+            avg: parseFloat(carbAvg.toFixed(1)) 
           },
-          protein: {
-            ...prev.values.protein,
-            user: parseFloat(protein.toFixed(1)),
+          protein: { 
+            user: parseFloat(prot.toFixed(1)), 
+            avg: parseFloat(proteinAvg.toFixed(1)) 
           },
-          sodium: {
-            ...prev.values.sodium,
-            user: parseFloat(sodium.toFixed(1)),
-          },
-        },
-        progress: {
-          carbohydrate: {
-            ...prev.progress.carbohydrate,
-            user: parseFloat(((carbohydrate / maxCarb) * 100).toFixed(1)),
-          },
-          protein: {
-            ...prev.progress.protein,
-            user: parseFloat(((protein / maxProtein) * 100).toFixed(1)),
-          },
-          sodium: {
-            ...prev.progress.sodium,
-            user: parseFloat(((sodium / maxSodium) * 100).toFixed(1)),
+          sodium: { 
+            user: parseFloat((sod / 1000).toFixed(2)), // Convert mg to g
+            avg: parseFloat((sodiumAvg / 1000).toFixed(2)) // Convert mg to g
           },
         },
       }));
-    }, [carbs, prot, sod, maxCarb, maxProtein, maxSodium])
-  );
+    }
+  }, [carbs, prot, sod, intakeData, averageData]);
+
+  // Update progress bars - Using the same pattern as reference code
+  useEffect(() => {
+    setNutritionData((prev) => ({
+      ...prev,
+      progress: {
+        carbohydrate: {
+          user: parseFloat(((prev.values.carbohydrate.user / prev.values.carbohydrate.avg) * 50).toFixed(1)),
+          avg: 50, // Always 50 for average bar
+        },
+        protein: {
+          user: parseFloat(((prev.values.protein.user / prev.values.protein.avg) * 50).toFixed(1)),
+          avg: 50, // Always 50 for average bar
+        },
+        sodium: {
+          user: parseFloat(((prev.values.sodium.user / prev.values.sodium.avg) * 50).toFixed(1)),
+          avg: 50, // Always 50 for average bar
+        },
+      },
+    }));
+  }, [nutritionData.values]);
+
+  function handleGoBack() {
+    navigation.goBack();
+  }
 
   const navigation = useNavigation<Page6ScreenNavigationProp>();
 
@@ -304,7 +333,7 @@ export default function Page6() {
               </View>
             </View>
 
-            {/* Carbohydrate Row (was Sugar) */}
+            {/* Carbohydrate Row */}
             <View style={styles.nutrientRow}>
               <View style={styles.nutrientLabel}>
                 <Text style={styles.nutrientText}>Carbs</Text>
@@ -320,11 +349,7 @@ export default function Page6() {
                       styles.progressBar,
                       styles.userProgress,
                       {
-                        width: toProgressWidth(
-                          (nutritionData.values.carbohydrate.user /
-                            nutritionData.values.carbohydrate.avg) *
-                            50
-                        ),
+                        width: toProgressWidth(nutritionData.progress.carbohydrate.user),
                       },
                     ]}
                   />
@@ -335,7 +360,7 @@ export default function Page6() {
                       styles.progressBar,
                       styles.avgProgress,
                       {
-                        width: toProgressWidth(50),
+                        width: toProgressWidth(nutritionData.progress.carbohydrate.avg),
                       },
                     ]}
                   />
@@ -367,11 +392,7 @@ export default function Page6() {
                       styles.progressBar,
                       styles.userProgress,
                       {
-                        width: toProgressWidth(
-                          (nutritionData.values.sodium.user /
-                            nutritionData.values.sodium.avg) *
-                            50
-                        ),
+                        width: toProgressWidth(nutritionData.progress.sodium.user),
                       },
                     ]}
                   />
@@ -382,7 +403,7 @@ export default function Page6() {
                       styles.progressBar,
                       styles.avgProgress,
                       {
-                        width: toProgressWidth(50),
+                        width: toProgressWidth(nutritionData.progress.sodium.avg),
                       },
                     ]}
                   />
@@ -398,7 +419,7 @@ export default function Page6() {
               </View>
             </View>
 
-            {/* Protein Row (was Calories) */}
+            {/* Protein Row */}
             <View style={styles.nutrientRow}>
               <View style={styles.nutrientLabel}>
                 <Text style={styles.nutrientText}>Protein</Text>
@@ -414,11 +435,7 @@ export default function Page6() {
                       styles.progressBar,
                       styles.userProgress,
                       {
-                        width: toProgressWidth(
-                          (nutritionData.values.protein.user /
-                            nutritionData.values.protein.avg) *
-                            50
-                        ),
+                        width: toProgressWidth(nutritionData.progress.protein.user),
                       },
                     ]}
                   />
@@ -429,7 +446,7 @@ export default function Page6() {
                       styles.progressBar,
                       styles.avgProgress,
                       {
-                        width: toProgressWidth(50),
+                        width: toProgressWidth(nutritionData.progress.protein.avg),
                       },
                     ]}
                   />
