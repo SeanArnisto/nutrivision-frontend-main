@@ -11,7 +11,6 @@ import {
 } from "react-native";
 import { ThemedView } from "@/components/ThemedView";
 import { ThemedText } from "@/components/ThemedText";
-import PieChart from "react-native-pie-chart";
 import { useNavigation } from "@react-navigation/native";
 import { RootStackParamList } from "@/types/types";
 import { StackNavigationProp } from "@react-navigation/stack";
@@ -21,6 +20,8 @@ import { useRecommStore } from "@/hooks/store";
 import { Ionicons } from "@expo/vector-icons";
 import { useFocusEffect } from "@react-navigation/native";
 import { useCallback } from "react";
+import BarChart from "@/components/Barchart";
+import { format, addDays } from "date-and-time";
 
 const toProgressWidth = (value: number) =>
   `${Math.min(value, 100)}%` as DimensionValue;
@@ -43,14 +44,6 @@ interface NutritionData {
     sodium: { user: number; avg: number };
     protein: { user: number; avg: number };
   };
-  intake: {
-    breakdown: { protein: number; carbohydrate: number; sodium: number };
-    total: number;
-  };
-  avg: {
-    breakdown: { protein: number; carbohydrate: number; sodium: number };
-    total: number;
-  };
 }
 
 export default function Page6() {
@@ -67,28 +60,17 @@ export default function Page6() {
 
   const [nutritionData, setNutritionData] = useState<NutritionData>({
     progress: {
-      // these values are what the black and green bars are based on
       carbohydrate: { user: 88, avg: 50 },
       sodium: { user: 33, avg: 50 },
       protein: { user: 45, avg: 50 },
     },
     values: {
-      // the values that are displayed on the right side of the bars
       carbohydrate: { user: 53, avg: 49 },
       sodium: { user: 15, avg: 11 },
       protein: { user: 180, avg: 147 },
     },
-    intake: {
-      // these values are what the pie chart is based on, this is dependent on the images from user
-      breakdown: { carbohydrate: 94, sodium: 2, protein: 4 },
-      total: 93.33,
-    },
-    avg: {
-      // same as intake but from the average data dependent on the user
-      breakdown: { carbohydrate: 77, sodium: 7, protein: 16 },
-      total: 402,
-    },
   });
+
   useEffect(() => {
     const carbsMin = minCarb;
     const carbsMax = maxCarb;
@@ -102,13 +84,6 @@ export default function Page6() {
     const sodiumMax = maxSodium;
     const sodiumAvg = Math.round((sodiumMin + sodiumMax) / 2) / 1000;
   
-    const total = carbAvg + proteinAvg + sodiumAvg;
-    const safeTotal = total > 0 ? total : 1;
-  
-    const pieCarb = parseFloat(((carbAvg / safeTotal) * 100).toFixed(2));
-    const pieProtein = parseFloat(((proteinAvg / safeTotal) * 100).toFixed(2));
-    const pieSodium = parseFloat(((sodiumAvg / safeTotal) * 100).toFixed(2));
-  
     setNutritionData((prev) => ({
       ...prev,
       progress: {
@@ -121,18 +96,8 @@ export default function Page6() {
         protein: { ...prev.values.protein, avg: parseFloat(proteinAvg.toFixed(1)) },
         sodium: { ...prev.values.sodium, avg: parseFloat(sodiumAvg.toFixed(1)) },
       },
-      avg: {
-        breakdown: {
-          carbohydrate: pieCarb,
-          protein: pieProtein,
-          sodium: pieSodium,
-        },
-        total: parseFloat(total.toFixed(2)),
-      },
     }));
   }, [minCarb, maxCarb, minProtein, maxProtein, minSodium, maxSodium]);
-  
-  
 
   function handleGoBack() {
     navigation.goBack();
@@ -144,25 +109,8 @@ export default function Page6() {
       const protein = prot;
       const sodium = sod;
 
-      const total = carbohydrate + protein + sodium;
-
-      const safeTotal = total > 0 ? total : 1;
-
-      const pieCarb = parseFloat(((carbohydrate / safeTotal) * 100).toFixed(2));
-      const pieProtein = parseFloat(((protein / safeTotal) * 100).toFixed(2));
-      const pieSodium = parseFloat(((sodium / safeTotal) * 100).toFixed(2));
-
       setNutritionData((prev) => ({
         ...prev,
-        intake: {
-          ...prev.intake,
-          breakdown: {
-            carbohydrate: pieCarb,
-            protein: pieProtein,
-            sodium: pieSodium,
-          },
-          total: parseFloat(total.toFixed(2)),
-        },
         values: {
           carbohydrate: {
             ...prev.values.carbohydrate,
@@ -184,11 +132,11 @@ export default function Page6() {
           },
           protein: {
             ...prev.progress.protein,
-            user: parseFloat(((protein / maxProtein) * 100).toFixed(1)), // FIXED
+            user: parseFloat(((protein / maxProtein) * 100).toFixed(1)),
           },
           sodium: {
             ...prev.progress.sodium,
-            user: parseFloat(((sodium / maxSodium) * 100).toFixed(1)), // FIXED
+            user: parseFloat(((sodium / maxSodium) * 100).toFixed(1)),
           },
         },
       }));
@@ -200,6 +148,134 @@ export default function Page6() {
   const handleCheck = () => {
     navigation.navigate("feedback");
   };
+
+  // Generate sample weekly data for the bar chart
+  const weeklyChartData = [
+    // Sunday
+    {
+      value: nutritionData.values.carbohydrate.user,
+      frontColor: "#F4D03F",
+      spacing: 2,
+      label: "S",
+    },
+    {
+      value: nutritionData.values.sodium.user * 10, // Scale up for visibility
+      frontColor: "#8B4513",
+    },
+    {
+      value: nutritionData.values.protein.user / 2, // Scale down for visibility
+      frontColor: "#9AB106",
+      spacing: 8,
+    },
+    // Monday
+    {
+      value: nutritionData.values.carbohydrate.avg,
+      frontColor: "#F4D03F",
+      spacing: 2,
+      label: "M",
+    },
+    {
+      value: nutritionData.values.sodium.avg * 8,
+      frontColor: "#8B4513",
+    },
+    {
+      value: nutritionData.values.protein.avg / 2,
+      frontColor: "#9AB106",
+      spacing: 8,
+    },
+    // Tuesday
+    {
+      value: nutritionData.values.carbohydrate.user * 0.8,
+      frontColor: "#F4D03F",
+      spacing: 2,
+      label: "T",
+    },
+    {
+      value: nutritionData.values.sodium.user * 12,
+      frontColor: "#8B4513",
+    },
+    {
+      value: nutritionData.values.protein.user / 3,
+      frontColor: "#9AB106",
+      spacing: 8,
+    },
+    // Wednesday
+    {
+      value: nutritionData.values.carbohydrate.avg * 1.2,
+      frontColor: "#F4D03F",
+      spacing: 2,
+      label: "W",
+    },
+    {
+      value: nutritionData.values.sodium.avg * 15,
+      frontColor: "#8B4513",
+    },
+    {
+      value: nutritionData.values.protein.avg / 2,
+      frontColor: "#9AB106",
+      spacing: 8,
+    },
+    // Thursday
+    {
+      value: nutritionData.values.carbohydrate.user * 0.9,
+      frontColor: "#F4D03F",
+      spacing: 2,
+      label: "TH",
+    },
+    {
+      value: nutritionData.values.sodium.user * 11,
+      frontColor: "#8B4513",
+    },
+    {
+      value: nutritionData.values.protein.user / 2.5,
+      frontColor: "#9AB106",
+      spacing: 8,
+    },
+    // Friday
+    {
+      value: nutritionData.values.carbohydrate.avg * 0.7,
+      frontColor: "#F4D03F",
+      spacing: 2,
+      label: "F",
+    },
+    {
+      value: nutritionData.values.sodium.avg * 14,
+      frontColor: "#8B4513",
+    },
+    {
+      value: nutritionData.values.protein.avg / 1.8,
+      frontColor: "#9AB106",
+      spacing: 8,
+    },
+    // Saturday
+    {
+      value: nutritionData.values.carbohydrate.user * 1.1,
+      frontColor: "#F4D03F",
+      spacing: 2,
+      label: "S",
+    },
+    {
+      value: nutritionData.values.sodium.user * 9,
+      frontColor: "#8B4513",
+    },
+    {
+      value: nutritionData.values.protein.user / 2.2,
+      frontColor: "#9AB106",
+    },
+  ];
+
+  // Date range for the chart
+  const today = new Date();
+  const dayOfWeek = today.getDay();
+  const startOfWeek = addDays(today, -dayOfWeek);
+  const endOfWeek = addDays(startOfWeek, 6);
+
+  let startStr = format(startOfWeek, "MMM D");
+  let endStr = format(endOfWeek, "D");
+
+  if (startOfWeek.getMonth() !== endOfWeek.getMonth()) {
+    endStr = format(endOfWeek, "MMM D");
+  }
 
   return (
     <SafeAreaView style={styles.safeContainer}>
@@ -214,21 +290,26 @@ export default function Page6() {
         </View>
 
         <ThemedView style={styles.contentContainer}>
+          {/* Title Section */}
+          <View style={styles.titleContainer}>
+            <Text style={styles.mainTitle}>Intake Per Nutrient</Text>
+          </View>
+
           {/* Progress Bars Section */}
           <View style={styles.progressContainer}>
-            {/* Legends - Now properly spaced */}
+            {/* Legends */}
             <View style={styles.legendsContainer}>
               <View style={styles.legendItem}>
                 <View style={[styles.legendSquare, styles.userLegend]} />
-                <Text style={styles.legendText}>Your intake</Text>
+                <Text style={styles.legendText}>User Intake</Text>
               </View>
               <View style={[styles.legendItem, styles.legendItemSpacing]}>
                 <View style={[styles.legendSquare, styles.avgLegend]} />
-                <Text style={styles.legendText}>Average intake</Text>
+                <Text style={styles.legendText}>Average Intake</Text>
               </View>
             </View>
 
-            {/* Carbohydrate Row (was Sugar) */}
+            {/* Carbohydrate Row */}
             <View style={styles.nutrientRow}>
               <View style={styles.nutrientLabel}>
                 <Text style={styles.nutrientText}>Carbs</Text>
@@ -267,10 +348,10 @@ export default function Page6() {
               </View>
               <View style={styles.valueContainer}>
                 <Text style={styles.userValue}>
-                  {formatValue(nutritionData.values.carbohydrate.user)}
+                  {formatValue(nutritionData.values.carbohydrate.user)} G
                 </Text>
                 <Text style={styles.avgValue}>
-                  {formatValue(nutritionData.values.carbohydrate.avg)}
+                  {formatValue(nutritionData.values.carbohydrate.avg)} G
                 </Text>
               </View>
             </View>
@@ -314,15 +395,15 @@ export default function Page6() {
               </View>
               <View style={styles.valueContainer}>
                 <Text style={styles.userValue}>
-                  {formatValue(nutritionData.values.sodium.user)}
+                  {formatValue(nutritionData.values.sodium.user)} G
                 </Text>
                 <Text style={styles.avgValue}>
-                  {formatValue(nutritionData.values.sodium.avg)}
+                  {formatValue(nutritionData.values.sodium.avg)} G
                 </Text>
               </View>
             </View>
 
-            {/* Protein Row (was Calories) */}
+            {/* Protein Row */}
             <View style={styles.nutrientRow}>
               <View style={styles.nutrientLabel}>
                 <Text style={styles.nutrientText}>Protein</Text>
@@ -361,166 +442,32 @@ export default function Page6() {
               </View>
               <View style={styles.valueContainer}>
                 <Text style={styles.userValue}>
-                  {formatValue(nutritionData.values.protein.user)}
+                  {formatValue(nutritionData.values.protein.user)} G
                 </Text>
                 <Text style={styles.avgValue}>
-                  {formatValue(nutritionData.values.protein.avg)}
+                  {formatValue(nutritionData.values.protein.avg)} G
                 </Text>
               </View>
             </View>
           </View>
 
-          {/* Donut Charts Section */}
-          <View style={styles.chartsContainer}>
-            {/* User Intake Donut Chart */}
-            <View style={styles.chartBox}>
-              <View style={styles.chartRow}>
-                <View style={styles.chartWrapper}>
-                  <PieChart
-                    widthAndHeight={150}
-                    series={[
-                      {
-                        value: nutritionData.intake.breakdown.protein,
-                        color: "#000000",
-                      },
-                      {
-                        value: nutritionData.intake.breakdown.carbohydrate,
-                        color: "#7ca844",
-                      },
-                      {
-                        value: nutritionData.intake.breakdown.sodium,
-                        color: "#c0b4b4",
-                      },
-                    ]}
-                    cover={0.55}
-                  />
-                </View>
-                <View style={styles.legendWrapper}>
-                  <Text style={styles.chartTitle}>Your Intake</Text>
-                  <View style={styles.legendItem}>
-                    <View
-                      style={[
-                        styles.colorCircle,
-                        { backgroundColor: "#7ca844" },
-                      ]}
-                    />
-                    <Text style={styles.legendLabel}>
-                      Carbs (
-                      {toPercentageText(
-                        nutritionData.intake.breakdown.carbohydrate
-                      )}
-                      )
-                    </Text>
-                  </View>
-                  <View style={styles.legendItem}>
-                    <View
-                      style={[
-                        styles.colorCircle,
-                        { backgroundColor: "#c0b4b4" },
-                      ]}
-                    />
-                    <Text style={styles.legendLabel}>
-                      Sodium (
-                      {toPercentageText(nutritionData.intake.breakdown.sodium)})
-                    </Text>
-                  </View>
-                  <View style={styles.legendItem}>
-                    <View
-                      style={[
-                        styles.colorCircle,
-                        { backgroundColor: "#000000" },
-                      ]}
-                    />
-                    <Text style={styles.legendLabel}>
-                      Protein (
-                      {toPercentageText(nutritionData.intake.breakdown.protein)}
-                      )
-                    </Text>
-                  </View>
-                  <View style={styles.totalBox}>
-                    <Text style={styles.totalText}>
-                      Total Nutrient{"\n"}Amount ={" "}
-                      {formatValue(nutritionData.intake.total)}
-                    </Text>
-                  </View>
-                </View>
-              </View>
-            </View>
-
-            {/* Average Intake Donut Chart */}
-            <View style={styles.chartBox}>
-              <View style={styles.chartRow}>
-                <View style={styles.chartWrapper}>
-                  <PieChart
-                    widthAndHeight={150}
-                    series={[
-                      {
-                        value: nutritionData.avg.breakdown.protein,
-                        color: "#000000",
-                      },
-                      {
-                        value: nutritionData.avg.breakdown.carbohydrate,
-                        color: "#7ca844",
-                      },
-                      {
-                        value: nutritionData.avg.breakdown.sodium,
-                        color: "#c0b4b4",
-                      },
-                    ]}
-                    cover={0.55}
-                  />
-                </View>
-                <View style={styles.legendWrapper}>
-                  <Text style={styles.chartTitle}>Average Intake</Text>
-                  <View style={styles.legendItem}>
-                    <View
-                      style={[
-                        styles.colorCircle,
-                        { backgroundColor: "#7ca844" },
-                      ]}
-                    />
-                    <Text style={styles.legendLabel}>
-                      Carbs (
-                      {toPercentageText(
-                        nutritionData.avg.breakdown.carbohydrate
-                      )}
-                      )
-                    </Text>
-                  </View>
-                  <View style={styles.legendItem}>
-                    <View
-                      style={[
-                        styles.colorCircle,
-                        { backgroundColor: "#c0b4b4" },
-                      ]}
-                    />
-                    <Text style={styles.legendLabel}>
-                      Sodium (
-                      {toPercentageText(nutritionData.avg.breakdown.sodium)})
-                    </Text>
-                  </View>
-                  <View style={styles.legendItem}>
-                    <View
-                      style={[
-                        styles.colorCircle,
-                        { backgroundColor: "#000000" },
-                      ]}
-                    />
-                    <Text style={styles.legendLabel}>
-                      Protein (
-                      {toPercentageText(nutritionData.avg.breakdown.protein)})
-                    </Text>
-                  </View>
-                  <View style={styles.totalBox}>
-                    <Text style={styles.totalText}>
-                      Total Nutrient{"\n"}Amount ={" "}
-                      {formatValue(nutritionData.avg.total)}
-                    </Text>
-                  </View>
-                </View>
-              </View>
-            </View>
-          </View>
+          {/* Weekly Chart using BarChart component */}
+          <BarChart
+            data={weeklyChartData}
+            title="Weekly Intake Ratio"
+            subtitle={`Aug 10-15`}
+            maxValue={150}
+            stepValue={50}
+            height={200}
+            barWidth={12}
+            spacing={2}
+            showLegend={true}
+            legendData={[
+              { color: "#F4D03F", label: "Carbohydrates" },
+              { color: "#8B4513", label: "Sodium" },
+              { color: "#9AB106", label: "Protein" },
+            ]}
+          />
         </ThemedView>
       </ScrollView>
 
@@ -564,6 +511,7 @@ const styles = StyleSheet.create({
     height: 100,
     justifyContent: "center",
     alignItems: "flex-start",
+    paddingLeft: 16,
   },
   logo: {
     width: 200,
@@ -575,6 +523,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingBottom: 16,
     backgroundColor: "#F5F5F5",
+  },
+  titleContainer: {
+    marginBottom: 16,
+  },
+  mainTitle: {
+    fontSize: 24,
+    fontWeight: "bold",
+    color: "#333",
   },
   progressContainer: {
     backgroundColor: "white",
@@ -613,37 +569,39 @@ const styles = StyleSheet.create({
     backgroundColor: "#9AB106",
   },
   legendText: {
-    fontSize: 18,
+    fontSize: 14,
     color: "#333",
-    fontWeight: "bold",
+    fontWeight: "600",
   },
   nutrientRow: {
     flexDirection: "row",
     alignItems: "center",
-    marginBottom: 12,
+    marginBottom: 16,
   },
   nutrientLabel: {
-    flex: 1.5,
+    flex: 1.2,
     flexDirection: "row",
     alignItems: "center",
   },
   nutrientText: {
-    fontSize: 14,
+    fontSize: 16,
     color: "#333",
     marginRight: 8,
+    fontWeight: "600",
   },
   icon: {
-    width: 20,
-    height: 20,
+    width: 24,
+    height: 24,
   },
   progressBars: {
-    flex: 3.5,
+    flex: 3,
+    paddingHorizontal: 8,
   },
   progressBarBackground: {
-    height: 4,
+    height: 6,
     backgroundColor: "#EEEEEE",
     borderRadius: 3,
-    marginVertical: 2,
+    marginVertical: 3,
     overflow: "hidden",
   },
   progressBar: {
@@ -657,70 +615,19 @@ const styles = StyleSheet.create({
     backgroundColor: "#9AB106",
   },
   valueContainer: {
-    flex: 0.8,
+    flex: 1,
     alignItems: "flex-end",
   },
   userValue: {
-    fontSize: 12,
+    fontSize: 14,
     fontWeight: "bold",
     color: "#333",
+    marginBottom: 2,
   },
   avgValue: {
-    fontSize: 12,
+    fontSize: 14,
     fontWeight: "bold",
     color: "#9AB106",
-  },
-  chartsContainer: {
-    gap: 16,
-  },
-  chartBox: {
-    backgroundColor: "white",
-    borderRadius: 12,
-    padding: 16,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 6,
-    elevation: 4,
-  },
-  chartRow: {
-    flexDirection: "row",
-  },
-  chartWrapper: {
-    position: "relative",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  legendWrapper: {
-    flex: 1,
-    justifyContent: "center",
-    paddingLeft: 16,
-  },
-  chartTitle: {
-    fontSize: 18,
-    fontWeight: "bold",
-    marginBottom: 12,
-  },
-  colorCircle: {
-    width: 12,
-    height: 12,
-    borderRadius: 6,
-    marginHorizontal: 12,
-  },
-  legendLabel: {
-    fontSize: 12,
-    color: "#333",
-  },
-  totalBox: {
-    backgroundColor: "#f8e4e4",
-    padding: 12,
-    borderRadius: 12,
-    marginTop: 12,
-  },
-  totalText: {
-    fontSize: 14,
-    color: "#333",
-    textAlign: "left",
   },
   checkButton: {
     position: "absolute",
@@ -732,10 +639,5 @@ const styles = StyleSheet.create({
     backgroundColor: "#333",
     justifyContent: "center",
     alignItems: "center",
-  },
-  checkMark: {
-    fontSize: 25,
-    color: "#9AB106",
-    fontWeight: "bold",
   },
 });
