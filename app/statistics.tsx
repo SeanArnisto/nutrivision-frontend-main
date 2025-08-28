@@ -405,51 +405,54 @@ export default function Statistics() {
               style={styles.customProfileBox}
             />
           </View>
+          
+{/* Daily Nutrition Summary */}
+<View style={styles.summaryContainer}>
+  <View style={styles.summarySection}>
+    <Text style={styles.summaryTitle}>Daily Nutrition Summary</Text>
+    <Text style={styles.summaryDate}>
+      {format(today, "MMM DD, YYYY")}
+    </Text>
 
-          {/* Daily Nutrition Summary */}
-          <View style={styles.summarySection}>
-            <Text style={styles.summaryTitle}>Daily Nutrition Summary</Text>
-            <Text style={styles.summaryDate}>
-              {format(today, "MMM DD, YYYY")}
-            </Text>
+    {/* Legend */}
+    <View style={styles.legendContainer}>
+      <View style={styles.legendItem}>
+        <View
+          style={[styles.legendDot, { backgroundColor: "#C0C0C0" }]}
+        />
+        <Text style={styles.legendText}>Low Intake</Text>
+      </View>
+      <View style={styles.legendItem}>
+        <View
+          style={[styles.legendDot, { backgroundColor: "#9AB106" }]}
+        />
+        <Text style={styles.legendText}>Guidline Intake</Text>
+      </View>
+      <View style={styles.legendItem}>
+        <View
+          style={[styles.legendDot, { backgroundColor: "#E74C3C" }]}
+        />
+        <Text style={styles.legendText}>High Intake</Text>
+      </View>
+    </View>
 
-            {/* Legend */}
-            <View style={styles.legendContainer}>
-              <View style={styles.legendItem}>
-                <View
-                  style={[styles.legendDot, { backgroundColor: "#C0C0C0" }]}
-                />
-                <Text style={styles.legendText}>Low Intake</Text>
-              </View>
-              <View style={styles.legendItem}>
-                <View
-                  style={[styles.legendDot, { backgroundColor: "#9AB106" }]}
-                />
-                <Text style={styles.legendText}>Guidline Intake</Text>
-              </View>
-              <View style={styles.legendItem}>
-                <View
-                  style={[styles.legendDot, { backgroundColor: "#E74C3C" }]}
-                />
-                <Text style={styles.legendText}>High Intake</Text>
-              </View>
-            </View>
+  </View>
+</View>
 
-            {/* Nutrient Cards */}
-            <View style={styles.nutrientCardsContainer}>
-              {nutrientData.map((nutrient, index) => (
-                <NutrientCard
-                  key={index}
-                  value={nutrient.value}
-                  target={nutrient.target}
-                  label={nutrient.label}
-                  unit={nutrient.unit}
-                  iconSource={nutrient.iconSource}
-                  status={nutrient.status}
-                />
-              ))}
-            </View>
-          </View>
+{/* Nutrient Cards */}
+<View style={styles.nutrientCardsContainer}>
+  {nutrientData.map((nutrient, index) => (
+    <NutrientCard
+      key={index}
+      value={nutrient.value}
+      target={nutrient.target}
+      label={nutrient.label}
+      unit={nutrient.unit}
+      iconSource={nutrient.iconSource}
+      status={nutrient.status}
+    />
+  ))}
+</View>
 
                      {/* Weekly Chart using the new BarChart component */}
            <BarChart
@@ -506,7 +509,7 @@ const styles = StyleSheet.create({
     paddingBottom: 120,
   },
   summarySection: {
-    paddingVertical: 20,
+    paddingVertical: 5,
   },
   summaryTitle: {
     fontSize: 20,
@@ -522,7 +525,6 @@ const styles = StyleSheet.create({
   legendContainer: {
     flexDirection: "row",
     justifyContent: "space-between",
-    marginBottom: 24,
     flexWrap: "wrap",
   },
   legendItem: {
@@ -583,4 +585,15 @@ const styles = StyleSheet.create({
     width: 30,
     height: 30,
   },
+  summaryContainer: {
+  backgroundColor: "#FFFFFF",
+  borderRadius: 12,
+  marginBottom: 20,
+  padding: 16,
+  shadowColor: "#000",
+  shadowOffset: { width: 0, height: 2 },
+  shadowOpacity: 0.1,
+  shadowRadius: 6,
+  elevation: 4,
+},
 });
