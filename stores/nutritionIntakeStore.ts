@@ -8,6 +8,15 @@ interface NutritionIntakeData {
   avg_sodium: number;
 }
 
+interface AverageIntakeData {
+  minCarbs: number,
+  maxCarbs: number,
+  minSodium: number,
+  maxSodium: number,
+  minProtein: number,
+  maxProtein: number,
+}
+
 interface NutritionApiResponse {
   status: string;
   age_range: [number, number];
@@ -36,14 +45,81 @@ interface NutritionIntakeState {
   clearNutritionData: () => void;
 }
 
+// Fixed interface with actions
+interface AverageIntakeState {
+  nutritionDataAve: AverageIntakeData | null;
+  isLoading: boolean;
+  error: string | null;
+  
+  // Actions
+  fetchNutritionIntakeAve: () => Promise<void>;
+  clearNutritionData: () => void;
+}
 
-export const fetchNutritionAverage = create<NutritionIntakeState>((set, get) => ({
-  nutritionData: null,
+export const fetchNutritionAverage = create<AverageIntakeState>((set, get) => ({
+  nutritionDataAve: null,
   isLoading: false,
   error: null,
 
-  fetchNutritionIntake: async () => {
+  fetchNutritionIntakeAve: async () => {
     try {
+      set({ isLoading: true, error: null });
+
+      const { user } = useAuthStore.getState();
+      if (!user) {
+        throw new Error('No authenticated user found');
+      }
+
+       const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('height, weight, age')
+        .eq('id', user.id)
+        .single();
+
+      if (profileError || !profile) {
+        throw new Error('User profile not found or incomplete');
+      }
+
+      if (!profile.height || !profile.weight || !profile.age) {
+        throw new Error('User profile is missing required data (height, weight, age)');
+      }
+
+      // Call nutrition API
+      const apiResponse = await fetch('https://pel1-recommendation.hf.space/get-nutrition-range', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          height: profile.height,
+          weight: profile.weight,
+          age: profile.age,
+        }),
+      });
+
+      if (!apiResponse.ok) {
+        throw new Error(`API request failed: ${apiResponse.status}`);
+      }
+
+      const nutritionResponse: NutritionApiResponse = await apiResponse.json();
+
+      if (nutritionResponse.status !== 'success') {
+        throw new Error('API returned unsuccessful status');
+      }
+
+      const nutritionDataAve: AverageIntakeData = {
+        minCarbs: nutritionResponse.nutrition_range.carbs[0],
+        maxCarbs: nutritionResponse.nutrition_range.carbs[1],
+        minProtein: nutritionResponse.nutrition_range.protein[0],
+        maxProtein: nutritionResponse.nutrition_range.protein[1],
+        minSodium: nutritionResponse.nutrition_range.sodium[0],
+        maxSodium: nutritionResponse.nutrition_range.sodium[1],
+      };
+
+      set({
+        nutritionDataAve,
+        isLoading: false,
+      });
 
     } catch (error: any) {
       console.error('Nutrition intake fetch error:', error);
@@ -56,11 +132,11 @@ export const fetchNutritionAverage = create<NutritionIntakeState>((set, get) => 
 
   clearNutritionData: () => {
     set({
-      nutritionData: null,
+      nutritionDataAve: null,
       error: null,
     });
   },
-}))
+}));
 
 export const useNutritionIntakeStore = create<NutritionIntakeState>((set, get) => ({
   nutritionData: null,
@@ -190,5 +266,15 @@ export const useNutritionIntake = () => {
   return {
     ...store,
     hasNutritionData: !!store.nutritionData,
+  };
+};
+
+// Helper hook for nutrition average
+export const useNutritionAverage = () => {
+  const store = fetchNutritionAverage();
+  
+  return {
+    ...store,
+    hasNutritionData: !!store.nutritionDataAve,
   };
 };
