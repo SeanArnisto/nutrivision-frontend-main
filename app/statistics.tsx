@@ -474,66 +474,64 @@ export default function Statistics() {
               {format(today, "MMM dd, yyyy")}
             </Text>
 
-    {/* Legend */}
-    <View style={styles.legendContainer}>
-      <View style={styles.legendItem}>
-        <View
-          style={[styles.legendDot, { backgroundColor: "#C0C0C0" }]}
-        />
-        <Text style={styles.legendText}>Low Intake</Text>
-      </View>
-      <View style={styles.legendItem}>
-        <View
-          style={[styles.legendDot, { backgroundColor: "#9AB106" }]}
-        />
-        <Text style={styles.legendText}>Guidline Intake</Text>
-      </View>
-      <View style={styles.legendItem}>
-        <View
-          style={[styles.legendDot, { backgroundColor: "#E74C3C" }]}
-        />
-        <Text style={styles.legendText}>High Intake</Text>
-      </View>
-    </View>
+            {/* Legend */}
+            <View style={styles.legendContainer}>
+              <View style={styles.legendItem}>
+                <View
+                  style={[styles.legendDot, { backgroundColor: "#C0C0C0" }]}
+                />
+                <Text style={styles.legendText}>Low Intake</Text>
+              </View>
+              <View style={styles.legendItem}>
+                <View
+                  style={[styles.legendDot, { backgroundColor: "#9AB106" }]}
+                />
+                <Text style={styles.legendText}>Guidline Intake</Text>
+              </View>
+              <View style={styles.legendItem}>
+                <View
+                  style={[styles.legendDot, { backgroundColor: "#E74C3C" }]}
+                />
+                <Text style={styles.legendText}>High Intake</Text>
+              </View>
+            </View>
+          </View>
 
-  </View>
-</View>
+          {/* Nutrient Cards */}
+          <View style={styles.nutrientCardsContainer}>
+            {nutrientData.map((nutrient, index) => (
+              <NutrientCard
+                key={index}
+                value={nutrient.value}
+                target={nutrient.target}
+                label={nutrient.label}
+                unit={nutrient.unit}
+                iconSource={nutrient.iconSource}
+                status={nutrient.status}
+              />
+            ))}
+          </View>
 
-{/* Nutrient Cards */}
-<View style={styles.nutrientCardsContainer}>
-  {nutrientData.map((nutrient, index) => (
-    <NutrientCard
-      key={index}
-      value={nutrient.value}
-      target={nutrient.target}
-      label={nutrient.label}
-      unit={nutrient.unit}
-      iconSource={nutrient.iconSource}
-      status={nutrient.status}
-    />
-  ))}
-</View>
-
-                     {/* Weekly Chart using the new BarChart component */}
-           <BarChart
-             data={weeklyChartData}
-             title="Weekly Intake Ratio"
-             subtitle={`${startStr} - ${endStr}`}
-             maxValue={200} // Increased to show ratios above 1.0 (100%)
-             stepValue={50} // Steps of 50% (0.5 ratio)
-             height={160}
-             barWidth={10}
-             spacing={2}
-             showLegend={true}
-             referenceLine={100} // Add constant reference line at 100%
-             referenceLineColor="#000000" // Black line for reference
-             legendData={[
-               { color: "#F4D03F", label: "Carbohydrates" },
-               { color: "#8B4513", label: "Sodium" },
-               { color: "#9AB106", label: "Protein" },
-               { color: "#000000", label: "Target Ratio (1.0)" },
-             ]}
-           />
+          {/* Weekly Chart using the new BarChart component */}
+          <BarChart
+            data={weeklyChartData}
+            title="Weekly Intake Ratio"
+            subtitle={`${startStr} - ${endStr}`}
+            maxValue={200} // Increased to show ratios above 1.0 (100%)
+            stepValue={50} // Steps of 50% (0.5 ratio)
+            height={160}
+            barWidth={10}
+            spacing={2}
+            showLegend={true}
+            referenceLine={100} // Add constant reference line at 100%
+            referenceLineColor="#000000" // Black line for reference
+            legendData={[
+              { color: "#F4D03F", label: "Carbohydrates" },
+              { color: "#8B4513", label: "Sodium" },
+              { color: "#9AB106", label: "Protein" },
+              { color: "#000000", label: "Target Ratio (1.0)" },
+            ]}
+          />
         </View>
       </ScrollView>
 
