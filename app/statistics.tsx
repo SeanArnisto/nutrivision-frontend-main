@@ -17,7 +17,7 @@ import { CircularProgress } from "react-native-circular-progress";
 import ProfileBox from "@/components/ProfileBox";
 import { format, addDays } from "date-and-time";
 import BarChart from "@/components/Barchart";
-import { useNutritionIntakeStore } from "@/stores/nutritionIntakeStore";
+import { useNutritionIntakeStore, useNutritionAverage } from "@/stores/nutritionIntakeStore";
 import { useAuthStore } from "@/stores/authStore";
 import { getNutritionalHistory } from "@/hooks/store";
 
@@ -26,7 +26,6 @@ const { width: SCREEN_WIDTH } = Dimensions.get("window");
 type StatisticsScreenNavigationProp = StackNavigationProp<
   RootStackParamList,
   "statistics"
-
 >;
 
 interface NutrientCardProps {
@@ -131,6 +130,22 @@ export default function Statistics() {
   };
 
   const { user, isAuthenticated } = useAuthStore();
+
+  // Fix: Use the helper hook instead of the store directly
+  const {
+    nutritionDataAve,
+    isLoading: averageLoading,
+    error: averageError,
+    fetchNutritionIntakeAve,
+    hasNutritionData: hasAverageData
+  } = useNutritionAverage();
+
+  // Fix: Proper useEffect for fetching average data
+  useEffect(() => {
+    if (!hasAverageData && !averageLoading && isAuthenticated && user) {
+      fetchNutritionIntakeAve();
+    }
+  }, [fetchNutritionIntakeAve, hasAverageData, averageLoading, isAuthenticated, user]);
 
   const {
     // nutrition fetching constant
@@ -238,18 +253,32 @@ export default function Statistics() {
   endOfWeek.setDate(startOfWeek.getDate() + 6);
 
   // Format dates for display
-  const startStr = format(startOfWeek, "MMM D");
+  const startStr = format(startOfWeek, "MMM d");
   const endStr = startOfWeek.getMonth() !== endOfWeek.getMonth() 
-    ? format(endOfWeek, "MMM D")
-    : format(endOfWeek, "D");
+    ? format(endOfWeek, "MMM d")
+    : format(endOfWeek, "d");
 
   const todaysNutrition = todaysNutritionTotal();
 
-  const checkCarbStatus = () => {
-    if (todaysNutrition.carbohydrates) {
-      
-    }
-  }
+  // Fix: Complete status determination functions
+  const getNutrientStatus = (value: number, min: number, max: number): 'low' | 'recommended' | 'high' => {
+    if (value < min) return 'low';
+    if (value > max) return 'high';
+    return 'recommended';
+  };
+
+  // Fix: Use average data for status determination
+  const carbsStatus = nutritionDataAve ? 
+    getNutrientStatus(todaysNutrition.carbohydrates, nutritionDataAve.minCarbs, nutritionDataAve.maxCarbs) : 
+    'low';
+  
+  const proteinStatus = nutritionDataAve ? 
+    getNutrientStatus(todaysNutrition.protein, nutritionDataAve.minProtein, nutritionDataAve.maxProtein) : 
+    'low';
+  
+  const sodiumStatus = nutritionDataAve ? 
+    getNutrientStatus(todaysNutrition.sodium, nutritionDataAve.minSodium, nutritionDataAve.maxSodium) : 
+    'low';
 
   // Sample data matching the design
   const nutrientData = [
@@ -259,7 +288,7 @@ export default function Statistics() {
       label: "Carbs",
       unit: "g",
       iconSource: require("@/assets/images/Carbohydrate Icon.png"),
-      status: "low" as const,
+      status: carbsStatus,
     },
     {
       value: todaysNutrition.sodium,
@@ -267,7 +296,7 @@ export default function Statistics() {
       label: "Sodium",
       unit: "g",
       iconSource: require("@/assets/images/Sodium Icon.png"),
-      status: "recommended" as const,
+      status: sodiumStatus,
     },
     {
       value: todaysNutrition.protein,
@@ -275,7 +304,7 @@ export default function Statistics() {
       label: "Protein",
       unit: "g",
       iconSource: require("@/assets/images/Protein Icon.png"),
-      status: "high" as const,
+      status: proteinStatus,
     },
   ];
 
@@ -385,7 +414,27 @@ export default function Statistics() {
   // Weekly data for the bar chart using actual values
   const weeklyChartData = generateWeeklyChartData();
 
-  // These date constants are now moved up before the chart data generation
+  // Show loading state if either average or intake data is loading
+  if (averageLoading || loading) {
+    return (
+      <SafeAreaView style={styles.safeArea}>
+        <View style={styles.loadingContainer}>
+          <Text>Loading nutrition data...</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  // Show error state if there's an error
+  if (averageError || error) {
+    return (
+      <SafeAreaView style={styles.safeArea}>
+        <View style={styles.errorContainer}>
+          <Text>Error: {averageError || error}</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -405,14 +454,13 @@ export default function Statistics() {
               style={styles.customProfileBox}
             />
           </View>
-          
-{/* Daily Nutrition Summary */}
-<View style={styles.summaryContainer}>
-  <View style={styles.summarySection}>
-    <Text style={styles.summaryTitle}>Daily Nutrition Summary</Text>
-    <Text style={styles.summaryDate}>
-      {format(today, "MMM DD, YYYY")}
-    </Text>
+
+          {/* Daily Nutrition Summary */}
+          <View style={styles.summarySection}>
+            <Text style={styles.summaryTitle}>Daily Nutrition Summary</Text>
+            <Text style={styles.summaryDate}>
+              {format(today, "MMM dd, yyyy")}
+            </Text>
 
     {/* Legend */}
     <View style={styles.legendContainer}>
@@ -507,6 +555,16 @@ const styles = StyleSheet.create({
   },
   contentContainer: {
     paddingBottom: 120,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  errorContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   summarySection: {
     paddingVertical: 5,
