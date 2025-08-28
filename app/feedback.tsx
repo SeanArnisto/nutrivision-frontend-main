@@ -25,7 +25,7 @@ import { FindTablespoons } from "../utils/HelperFunctions";
 import EquivalentTablespoon from "../utils/HelperFunctions";
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 import { useRecommStore } from "@/hooks/store";
-import { useNutrientsStore } from "@/hooks/store";
+import { useNutrientsStore } from "@/hooks/store"; 
 import { Ionicons } from "@expo/vector-icons";
 
 type HomeScreenNavigationProp = StackNavigationProp<
