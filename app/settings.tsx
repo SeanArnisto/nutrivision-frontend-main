@@ -122,7 +122,11 @@ export default function Settings() {
           />
         </View>
 
-        <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
+        <ScrollView 
+          style={styles.container} 
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+        >
           <SettingsSection title="Privacy and Security">
             <SettingsItem
               title="Change Password"
@@ -224,6 +228,9 @@ const styles = StyleSheet.create({
   },
   container: {
     flex: 1,
+  },
+  scrollContent: {
+    paddingBottom: 100, // Add padding to prevent content hiding under navigation bar
   },
   lastItem: {
     borderBottomWidth: 0,

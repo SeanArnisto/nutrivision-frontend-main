@@ -199,7 +199,66 @@ export default function Profile() {
   const handleEditGender = () => {
     Alert.alert(
       "Edit Gender",
-      "Gender editing functionality not implemented yet."
+      "Select your gender:",
+      [
+        {
+          text: "Male",
+          onPress: async () => {
+            try {
+              const { user } = useAuthStore.getState();
+              if (!user) return;
+              
+              const { data, error } = await supabase
+                .from("profiles")
+                .update({ gender: "male" })
+                .eq("id", user.id)
+                .select("*");
+              
+              if (error) {
+                console.error("Error updating gender:", error);
+                Alert.alert("Error", "Failed to update gender. Please try again.");
+              } else {
+                console.log("Gender updated successfully:", data);
+                fetchUserProfile();
+              }
+            } catch (error) {
+              console.error("Gender update error:", error);
+              Alert.alert("Error", "Failed to update gender. Please try again.");
+            }
+          },
+        },
+        {
+          text: "Female", 
+          onPress: async () => {
+            try {
+              const { user } = useAuthStore.getState();
+              if (!user) return;
+              
+              const { data, error } = await supabase
+                .from("profiles")
+                .update({ gender: "female" })
+                .eq("id", user.id)
+                .select("*");
+              
+              if (error) {
+                console.error("Error updating gender:", error);
+                Alert.alert("Error", "Failed to update gender. Please try again.");
+              } else {
+                console.log("Gender updated successfully:", data);
+                fetchUserProfile();
+              }
+            } catch (error) {
+              console.error("Gender update error:", error);
+              Alert.alert("Error", "Failed to update gender. Please try again.");
+            }
+          },
+        },
+
+        {
+          text: "Cancel",
+          style: "cancel",
+        },
+      ]
     );
   };
 
