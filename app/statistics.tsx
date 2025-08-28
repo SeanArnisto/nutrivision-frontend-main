@@ -462,15 +462,15 @@ export default function Statistics() {
   const weeklyChartData = generateWeeklyChartData();
 
   // Show loading state if either average or intake data is loading
-  if (averageLoading || loading) {
-    return (
-      <SafeAreaView style={styles.safeArea}>
-        <View style={styles.loadingContainer}>
-          <Text>Loading nutrition data...</Text>
-        </View>
-      </SafeAreaView>
-    );
-  }
+  // if (averageLoading || loading) {
+  //   return (
+  //     <SafeAreaView style={styles.safeArea}>
+  //       <View style={styles.loadingContainer}>
+  //         <Text>Loading nutrition data...</Text>
+  //       </View>
+  //     </SafeAreaView>
+  //   );
+  // }
 
   // Show error state if there's an error
   if (averageError || error) {
