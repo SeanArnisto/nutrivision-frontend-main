@@ -36,6 +36,32 @@ interface NutritionIntakeState {
   clearNutritionData: () => void;
 }
 
+
+export const fetchNutritionAverage = create<NutritionIntakeState>((set, get) => ({
+  nutritionData: null,
+  isLoading: false,
+  error: null,
+
+  fetchNutritionIntake: async () => {
+    try {
+
+    } catch (error: any) {
+      console.error('Nutrition intake fetch error:', error);
+      set({
+        error: error.message || 'Failed to fetch nutrition intake data',
+        isLoading: false,
+      });
+    }
+  },
+
+  clearNutritionData: () => {
+    set({
+      nutritionData: null,
+      error: null,
+    });
+  },
+}))
+
 export const useNutritionIntakeStore = create<NutritionIntakeState>((set, get) => ({
   nutritionData: null,
   isLoading: false,

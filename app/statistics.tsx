@@ -246,7 +246,9 @@ export default function Statistics() {
   const todaysNutrition = todaysNutritionTotal();
 
   const checkCarbStatus = () => {
-    
+    if (todaysNutrition.carbohydrates) {
+      
+    }
   }
 
   // Sample data matching the design
