@@ -35,10 +35,12 @@ export const useNutritionStats = (): UseNutritionStatsReturn => {
 
       const { data, error } = await supabase
         .from('nutritional_records')
-        .select('carbohydrates, protein, sodium')
+        .select('carbohydrates, protein, sodium, created_at')
         .eq('user_id', user.id);
 
       if (error) throw error;
+
+
 
       if (data && data.length > 0) {
         const totals = data.reduce((acc, record) => ({

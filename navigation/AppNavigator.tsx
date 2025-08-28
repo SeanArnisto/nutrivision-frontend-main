@@ -9,7 +9,6 @@ import UserNutrientPage from "@/app/nutrient-page";
 import Camera from "@/app/camera";
 import Feedback from "@/app/feedback";
 import Loading from "@/app/loading";
-import { create } from "react-test-renderer";
 import LandingPage from "@/app/landing_page";
 import onboarding from "@/app/onboarding";
 import Settings from "@/app/settings";
