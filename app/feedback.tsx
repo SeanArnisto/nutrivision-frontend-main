@@ -5,7 +5,7 @@ import {
   Image,
   Text,
   StyleSheet,
-  Dimensions,
+  Dimensions, 
   TouchableOpacity,
   Platform,
   ScrollView,
