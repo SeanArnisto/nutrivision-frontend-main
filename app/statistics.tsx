@@ -311,7 +311,7 @@ export default function Statistics() {
 
   const sodiumStatus = nutritionDataAve
     ? getNutrientStatus(
-        todaysNutrition.sodium,
+        todaysNutrition.sodium * 1000,
         nutritionDataAve.minSodium,
         nutritionDataAve.maxSodium
       )
