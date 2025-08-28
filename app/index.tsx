@@ -1,4 +1,5 @@
-import React from "react";
+// Updated Page2.tsx
+import React, { useState } from "react";
 import {
   SafeAreaView,
   View,
@@ -10,7 +11,7 @@ import {
 import { useNavigation } from "@react-navigation/native";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { RootStackParamList } from "@/types/types";
-import NutrientInputSection from "@/components/NutrientInput";
+import DisclaimerModal from "@/components/DisclaimerModal";
 
 // Navigation prop type for this screen
 type Page2ScreenNavigationProp = StackNavigationProp<
@@ -18,14 +19,24 @@ type Page2ScreenNavigationProp = StackNavigationProp<
   "page-2"
 >;
 
-export default function Page2() {
+const Page2: React.FC = () => {
   const navigation = useNavigation<Page2ScreenNavigationProp>();
+  const [showDisclaimerModal, setShowDisclaimerModal] = useState<boolean>(false);
 
-  const handleGetStarted = () => {
+  const handleGetStarted = (): void => {
+    setShowDisclaimerModal(true);
+  };
+
+  const handleDisclaimerAgree = (): void => {
+    setShowDisclaimerModal(false);
     navigation.navigate("signup"); // TODO: confirm route
   };
 
-  const handleLogin = () => {
+  const handleDisclaimerClose = (): void => {
+    setShowDisclaimerModal(false);
+  };
+
+  const handleLogin = (): void => {
     navigation.navigate("login"); // TODO: confirm route
   };
 
@@ -38,7 +49,6 @@ export default function Page2() {
           style={styles.logo}
         />
       </View>
-
 
       {/* Middle: Main image */}
       <View style={styles.middleContainer}>
@@ -62,9 +72,16 @@ export default function Page2() {
           </Text>
         </TouchableOpacity>
       </View>
+
+      {/* Disclaimer Modal */}
+      <DisclaimerModal
+        visible={showDisclaimerModal}
+        onClose={handleDisclaimerClose}
+        onAgree={handleDisclaimerAgree}
+      />
     </SafeAreaView>
   );
-}
+};
 
 const styles = StyleSheet.create({
   container: {
@@ -123,3 +140,5 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
   },
 });
+
+export default Page2;
