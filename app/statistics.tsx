@@ -364,8 +364,14 @@ export default function Statistics() {
 
   return (
     <SafeAreaView style={styles.safeArea}>
+       <ScrollView 
+          style={styles.container} 
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={styles.contentContainer}
+        >
       <AppLogo />
 
+      
       <View style={styles.mainContainer}>
         <View style={styles.profileBoxContainer}>
           <ProfileBox
@@ -376,11 +382,7 @@ export default function Statistics() {
           />
         </View>
 
-        <ScrollView
-          style={styles.container}
-          showsVerticalScrollIndicator={false}
-          contentContainerStyle={styles.contentContainer}
-        >
+       
           {/* Daily Nutrition Summary - No container */}
           <View style={styles.summarySection}>
             <Text style={styles.summaryTitle}>Daily Nutrition Summary</Text>
@@ -493,15 +495,16 @@ export default function Statistics() {
                 barBorderRadius={4}
               />
             </View>
-          </View>
-        </ScrollView>
+          </View> 
+        
       </View>
-
-      <BottomNavBar
-        activeTab="stats"
+       </ScrollView>           
+      <BottomNavBar 
+        activeTab="stats" 
         onTabPress={handleTabPress}
         onCameraPress={() => navigation.navigate("camera")}
       />
+      
     </SafeAreaView>
   );
 }
