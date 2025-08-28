@@ -39,36 +39,20 @@ const Calendar: React.FC<CalendarProps> = ({ onDateSelect, sessionsData = {}, ac
       newDate.setMonth(currentDate.getMonth() + 1);
     }
     
-    // Check if we can navigate to this month based on account creation date
-    if (accountCreationDate && direction === 'prev') {
-      const firstDayOfNewMonth = new Date(newDate.getFullYear(), newDate.getMonth(), 1);
-      const accountMonth = new Date(accountCreationDate.getFullYear(), accountCreationDate.getMonth(), 1);
-      
-      // Don't allow going before the account creation month
-      if (firstDayOfNewMonth < accountMonth) {
-        return;
-      }
-    }
-    
+    // Allow navigation to any month - users can explore their nutrition history freely
     setCurrentDate(newDate);
   };
 
   const canNavigateToPrevMonth = (): boolean => {
-    if (!accountCreationDate) return true;
-    
-    const prevMonth = new Date(currentDate);
-    prevMonth.setMonth(currentDate.getMonth() - 1);
-    const firstDayOfPrevMonth = new Date(prevMonth.getFullYear(), prevMonth.getMonth(), 1);
-    const accountMonth = new Date(accountCreationDate.getFullYear(), accountCreationDate.getMonth(), 1);
-    
-    return firstDayOfPrevMonth >= accountMonth;
+    // Always allow navigation to previous months
+    // Users can explore their nutrition history freely
+    return true;
   };
 
   const isDateDisabled = (day: number): boolean => {
-    if (!accountCreationDate) return false;
-    
-    const date = new Date(currentDate.getFullYear(), currentDate.getMonth(), day);
-    return date < accountCreationDate;
+    // Enable all dates - users can navigate to any date they want
+    // Session indicators (dots) will show which dates have nutrition data
+    return false;
   };
 
   const handleDatePress = (day: number) => {
@@ -151,7 +135,10 @@ const Calendar: React.FC<CalendarProps> = ({ onDateSelect, sessionsData = {}, ac
       days.push(
         <TouchableOpacity
           key={day}
-          style={styles.dayContainer}
+          style={[
+            styles.dayContainer,
+            isDisabled && styles.disabledDay
+          ]}
           onPress={() => handleDatePress(day)}
           disabled={isDisabled}
         >
@@ -169,8 +156,8 @@ const Calendar: React.FC<CalendarProps> = ({ onDateSelect, sessionsData = {}, ac
             {day}
           </Text>
           
-          {/* Session indicator (dots or line) */}
-          {!isDisabled && renderSessionIndicator(day)}
+          {/* Session indicator (dots or line) - always show if there are sessions */}
+          {renderSessionIndicator(day)}
         </TouchableOpacity>
       );
     }
