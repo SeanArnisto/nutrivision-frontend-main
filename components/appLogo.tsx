@@ -3,7 +3,7 @@ export default function AppLogo() {
     return(
         <>
             <Image
-                source={require("@/assets/images/NutriVision.png")}
+                source={require("@/assets/images/logoName.png")}
                 style={styles.logo}
                 accessibilityRole="image"
                 accessibilityLabel="NutriVision logo"
@@ -18,5 +18,6 @@ const styles = StyleSheet.create({
     height: 60,
     resizeMode: "contain",
     alignSelf: "flex-start",
+    marginLeft: 8
   },
 })
