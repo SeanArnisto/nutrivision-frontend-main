@@ -467,35 +467,38 @@ export default function Statistics() {
             />
           </View>
 
-          {/* Daily Nutrition Summary */}
-          <View style={styles.summarySection}>
-            <Text style={styles.summaryTitle}>Daily Nutrition Summary</Text>
-            <Text style={styles.summaryDate}>
-              {format(today, "MMM dd, yyyy")}
-            </Text>
+         {/* Daily Nutrition Summary */}
+<View style={styles.summaryContainer}>
+  <View style={styles.summarySection}>
+    <Text style={styles.summaryTitle}>Daily Nutrition Summary</Text>
+    <Text style={styles.summaryDate}>
+      {format(today, "MMM DD, YYYY")}
+    </Text>
 
-            {/* Legend */}
-            <View style={styles.legendContainer}>
-              <View style={styles.legendItem}>
-                <View
-                  style={[styles.legendDot, { backgroundColor: "#C0C0C0" }]}
-                />
-                <Text style={styles.legendText}>Low Intake</Text>
-              </View>
-              <View style={styles.legendItem}>
-                <View
-                  style={[styles.legendDot, { backgroundColor: "#9AB106" }]}
-                />
-                <Text style={styles.legendText}>Guidline Intake</Text>
-              </View>
-              <View style={styles.legendItem}>
-                <View
-                  style={[styles.legendDot, { backgroundColor: "#E74C3C" }]}
-                />
-                <Text style={styles.legendText}>High Intake</Text>
-              </View>
-            </View>
-          </View>
+    {/* Legend */}
+    <View style={styles.legendContainer}>
+      <View style={styles.legendItem}>
+        <View
+          style={[styles.legendDot, { backgroundColor: "#C0C0C0" }]}
+        />
+        <Text style={styles.legendText}>Low Intake</Text>
+      </View>
+      <View style={styles.legendItem}>
+        <View
+          style={[styles.legendDot, { backgroundColor: "#9AB106" }]}
+        />
+        <Text style={styles.legendText}>Guidline Intake</Text>
+      </View>
+      <View style={styles.legendItem}>
+        <View
+          style={[styles.legendDot, { backgroundColor: "#E74C3C" }]}
+        />
+        <Text style={styles.legendText}>High Intake</Text>
+      </View>
+    </View>
+
+  </View>
+</View>
 
           {/* Nutrient Cards */}
           <View style={styles.nutrientCardsContainer}>
