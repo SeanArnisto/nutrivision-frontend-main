@@ -190,6 +190,31 @@ export default function Statistics() {
     );
   };
 
+  const getWeeklyRecords = () => {
+    // Convert startOfWeek and endOfWeek to timestamps for comparison
+    const startTimestamp = startOfWeek.getTime();
+    const endTimestamp = endOfWeek.getTime() + (24 * 60 * 60 * 1000 - 1); // Include the entire last day
+
+    return nutritionalData.filter((record) => {
+      const recordDate = new Date(record.created_at).getTime();
+      return recordDate >= startTimestamp && recordDate <= endTimestamp;
+    });
+  };
+
+  const weeklyNutritionTotal = () => {
+    // total util to get total of 3 nutrients from weekly inputs
+    const weeklyRecords = getWeeklyRecords();
+
+    return weeklyRecords.reduce(
+      (totals, record) => ({
+        carbohydrates: totals.carbohydrates + (record.carbohydrates || 0),
+        protein: totals.protein + (record.protein || 0),
+        sodium: totals.sodium + (record.sodium || 0),
+      }),
+      { carbohydrates: 0, protein: 0, sodium: 0 }
+    );
+  };
+
   const todaysNutritionTotal = () => {
     // total util to get total of 3 nutrients from todays inputs
     const todaysRecord = getTodaysRecords();
@@ -203,6 +228,20 @@ export default function Statistics() {
       { carbohydrates: 0, protein: 0, sodium: 0 }
     );
   };
+
+  // Initialize date constants first
+  const today = new Date();
+  const dayOfWeek = today.getDay(); // 0 = Sunday, 1 = Monday, etc.
+  const startOfWeek = new Date(today); // Create a new date object
+  startOfWeek.setDate(today.getDate() - dayOfWeek); // Set to start of week
+  const endOfWeek = new Date(startOfWeek);
+  endOfWeek.setDate(startOfWeek.getDate() + 6);
+
+  // Format dates for display
+  const startStr = format(startOfWeek, "MMM D");
+  const endStr = startOfWeek.getMonth() !== endOfWeek.getMonth() 
+    ? format(endOfWeek, "MMM D")
+    : format(endOfWeek, "D");
 
   const todaysNutrition = todaysNutritionTotal();
 
@@ -234,135 +273,113 @@ export default function Statistics() {
     },
   ];
 
-  // Weekly data for the bar chart
-  const weeklyChartData = [
-    // Sunday
-    {
-      value: 75,
-      frontColor: "#F4D03F", // Carbs - Yellow
-      spacing: 2,
-      label: "S",
-    },
-    {
-      value: 150,
-      frontColor: "#8B4513", // Sodium - Brown
-    },
-    {
-      value: 30,
-      frontColor: "#9AB106", // Protein - Green
-      spacing: 8,
-    },
-    // Monday
-    {
-      value: 75,
-      frontColor: "#F4D03F", // Carbs - Yellow
-      spacing: 2,
-      label: "M",
-    },
-    {
-      value: 30,
-      frontColor: "#8B4513", // Sodium - Brown
-    },
-    {
-      value: 75,
-      frontColor: "#9AB106", // Protein - Green
-      spacing: 8,
-    },
-    // Tuesday
-    {
-      value: 30,
-      frontColor: "#F4D03F", // Carbs - Yellow
-      spacing: 2,
-      label: "T",
-    },
-    {
-      value: 120,
-      frontColor: "#8B4513", // Sodium - Brown
-    },
-    {
-      value: 30,
-      frontColor: "#9AB106", // Protein - Green
-      spacing: 8,
-    },
-    // Wednesday
-    {
-      value: 75,
-      frontColor: "#F4D03F", // Carbs - Yellow
-      spacing: 2,
-      label: "W",
-    },
-    {
-      value: 150,
-      frontColor: "#8B4513", // Sodium - Brown
-    },
-    {
-      value: 30,
-      frontColor: "#9AB106", // Protein - Green
-      spacing: 8,
-    },
-    // Thursday
-    {
-      value: 75,
-      frontColor: "#F4D03F", // Carbs - Yellow
-      spacing: 2,
-      label: "TH",
-    },
-    {
-      value: 150,
-      frontColor: "#8B4513", // Sodium - Brown
-    },
-    {
-      value: 30,
-      frontColor: "#9AB106", // Protein - Green
-      spacing: 8,
-    },
-    // Friday
-    {
-      value: 75,
-      frontColor: "#F4D03F", // Carbs - Yellow
-      spacing: 2,
-      label: "F",
-    },
-    {
-      value: 150,
-      frontColor: "#8B4513", // Sodium - Brown
-    },
-    {
-      value: 30,
-      frontColor: "#9AB106", // Protein - Green
-      spacing: 8,
-    },
-    // Saturday
-    {
-      value: 120,
-      frontColor: "#F4D03F", // Carbs - Yellow
-      spacing: 2,
-      label: "S",
-    },
-    {
-      value: 75,
-      frontColor: "#8B4513", // Sodium - Brown
-    },
-    {
-      value: 30,
-      frontColor: "#9AB106", // Protein - Green
-    },
-  ];
+  // Function to get nutrition totals for a specific date
+  const getDailyNutritionTotals = (date: Date | null) => {
+    try {
+      if (!date) {
+        console.warn('Invalid date provided to getDailyNutritionTotals');
+        return { carbohydrates: 0, protein: 0, sodium: 0 };
+      }
 
-  // date constants
-  const today = new Date();
-  const dayOfWeek = today.getDay(); // start of the current week
-  const startOfWeek = addDays(today, -dayOfWeek);
-  const endOfWeek = addDays(startOfWeek, 6);
+      const targetDate = new Date(date).toDateString();
+      
+      if (!nutritionalData || !Array.isArray(nutritionalData)) {
+        console.warn('No nutritional data available');
+        return { carbohydrates: 0, protein: 0, sodium: 0 };
+      }
 
-  // date formatting ng mga start ng linggo tska dulo
-  let startStr = format(startOfWeek, "MMM D");
-  let endStr = format(endOfWeek, "D");
+      const dayRecords = nutritionalData.filter((record) => {
+        try {
+          return record && record.created_at && 
+                 new Date(record.created_at).toDateString() === targetDate;
+        } catch (e) {
+          console.warn('Invalid record date:', record?.created_at);
+          return false;
+        }
+      });
 
-  // kapag lilipat na ng buwan hahahaha
-  if (startOfWeek.getMonth() !== endOfWeek.getMonth()) {
-    endStr = format(endOfWeek, "MMM D");
-  }
+      return dayRecords.reduce(
+        (totals, record) => ({
+          carbohydrates: totals.carbohydrates + (Number(record?.carbohydrates) || 0),
+          protein: totals.protein + (Number(record?.protein) || 0),
+          sodium: totals.sodium + (Number(record?.sodium) || 0),
+        }),
+        { carbohydrates: 0, protein: 0, sodium: 0 }
+      );
+    } catch (error) {
+      console.error('Error in getDailyNutritionTotals:', error);
+      return { carbohydrates: 0, protein: 0, sodium: 0 };
+    }
+  };
+
+  // Generate data for each day of the week
+  const generateWeeklyChartData = () => {
+    try {
+      const days = ['S', 'M', 'T', 'W', 'TH', 'F', 'S'];
+      const chartData = [];
+
+      if (!startOfWeek) {
+        console.warn('startOfWeek is not defined');
+        return [];
+      }
+
+      // Get recommended values from nutrition store
+      const recommendedCarbs = carbAvg || 0;
+      const recommendedProtein = proteinAvg || 0;
+      const recommendedSodium = sodiumAvg || 0;
+
+      for (let i = 0; i < 7; i++) {
+        let currentDate;
+        try {
+          currentDate = addDays(startOfWeek, i);
+        } catch (e) {
+          console.warn(`Error adding days to startOfWeek: ${e}`);
+          currentDate = new Date();
+        }
+
+        const dailyTotals = getDailyNutritionTotals(currentDate);
+
+        // Ensure values are numbers and non-negative
+        const safeValue = (val: number) => Math.max(0, Number(val) || 0);
+
+        // Calculate ratios (multiply by 100 to match the 100 = ratio of 1 scale)
+        const carbsRatio = recommendedCarbs ? (safeValue(dailyTotals.carbohydrates) / recommendedCarbs) * 100 : 0;
+        const sodiumRatio = recommendedSodium ? (safeValue(dailyTotals.sodium) / recommendedSodium) * 100 : 0;
+        const proteinRatio = recommendedProtein ? (safeValue(dailyTotals.protein) / recommendedProtein) * 100 : 0;
+
+                 // Add carbohydrates bar
+         chartData.push({
+           value: carbsRatio,
+           frontColor: "#F4D03F", // Carbs - Yellow
+           spacing: 2,
+           label: days[i] || '',
+         });
+
+         // Add sodium bar
+         chartData.push({
+           value: sodiumRatio,
+           frontColor: "#8B4513", // Sodium - Brown
+         });
+
+         // Add protein bar
+         chartData.push({
+           value: proteinRatio,
+           frontColor: "#9AB106", // Protein - Green
+           spacing: i < 6 ? 8 : 0, // No spacing after the last day
+         });
+      }
+
+      return chartData;
+    } catch (error) {
+      console.error('Error in generateWeeklyChartData:', error);
+      return [];
+    }
+  };
+
+  // Weekly data for the bar chart using actual values
+  const weeklyChartData = generateWeeklyChartData();
+
+  // These date constants are now moved up before the chart data generation
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -428,23 +445,27 @@ export default function Statistics() {
             </View>
           </View>
 
-          {/* Weekly Chart using the new BarChart component */}
-          <BarChart
-            data={weeklyChartData}
-            title="Weekly Intake Ratio"
-            subtitle={`${startStr} - ${endStr}`}
-            maxValue={150}
-            stepValue={50}
-            height={160}
-            barWidth={10}
-            spacing={2}
-            showLegend={true}
-            legendData={[
-              { color: "#F4D03F", label: "Carbohydrates" },
-              { color: "#8B4513", label: "Sodium" },
-              { color: "#9AB106", label: "Protein" },
-            ]}
-          />
+                     {/* Weekly Chart using the new BarChart component */}
+           <BarChart
+             data={weeklyChartData}
+             title="Weekly Intake Ratio"
+             subtitle={`${startStr} - ${endStr}`}
+             maxValue={200} // Increased to show ratios above 1.0 (100%)
+             stepValue={50} // Steps of 50% (0.5 ratio)
+             height={160}
+             barWidth={10}
+             spacing={2}
+             showLegend={true}
+             referenceLine={100} // Add constant reference line at 100%
+             referenceLineColor="#000000" // Black line for reference
+             referenceLineWidth={2} // Make it visible but not too thick
+             legendData={[
+               { color: "#F4D03F", label: "Carbohydrates" },
+               { color: "#8B4513", label: "Sodium" },
+               { color: "#9AB106", label: "Protein" },
+               { color: "#000000", label: "Target Ratio (1.0)" },
+             ]}
+           />
         </View>
       </ScrollView>
 
