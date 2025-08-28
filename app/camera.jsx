@@ -33,6 +33,7 @@ import axios from "axios";
 import PhotoPreviewSection from "@/components/PhotoPreviewSection";
 import { useRoute } from "@react-navigation/native";
 import Loading from "./loading";
+import { useAuthStore } from "@/stores/authStore";
 
 const { height, width: screenWidth } = Dimensions.get("window");
 
@@ -302,6 +303,7 @@ const SegmentedControl = ({
 export default function Camera() {
   const route = useRoute();
   const navigation = useNavigation();
+  const { isAuthenticated } = useAuthStore();
   const [permission, requestPermission] = useCameraPermissions();
   const [photo, setPhoto] = useState(null);
   const [selectedSegmentIndex, setSelectedSegmentIndex] = useState(0);
@@ -311,6 +313,13 @@ export default function Camera() {
   const [submit, setSubmit] = useState(false);
   const [previewLayout, setPreviewLayout] = useState({ width: 0, height: 0 });
   const [uploadProgress, setUploadProgress] = useState(0);
+
+  // Redirect unauthenticated users to login
+  useEffect(() => {
+    if (!isAuthenticated) {
+      navigation.replace('login');
+    }
+  }, [isAuthenticated, navigation]);
 
   const isLabelMode = selectedSegmentIndex === 0;
   

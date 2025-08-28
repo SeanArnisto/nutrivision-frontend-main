@@ -81,19 +81,16 @@ export default function Page2() {
     }
   }, [isAuthenticated, user, fetchNutritionIntake]);
 
-  // If user is not authenticated, show a message or redirect
+  // Redirect unauthenticated users to login
+  useEffect(() => {
+    if (!isAuthenticated) {
+      navigation.replace('login');
+    }
+  }, [isAuthenticated, navigation]);
+
+  // Don't render anything if not authenticated
   if (!isAuthenticated || !user) {
-    return (
-      <SafeAreaView style={styles.safeArea}>
-        <ThemedView style={styles.container}>
-          <View style={styles.errorContainer}>
-            <Text style={styles.errorText}>
-              Please log in to view your nutrition data
-            </Text>
-          </View>
-        </ThemedView>
-      </SafeAreaView>
-    );
+    return null;
   }
 
   const handleTabPress = (tabName: string) => {

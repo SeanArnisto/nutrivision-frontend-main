@@ -18,6 +18,9 @@ import SettingsSection from '@/components/SettingsSection';
 import SettingsItem from '@/components/SettingsItem';
 import ToggleSwitch from '@/components/ToggleSwitch';
 import ProfileBox from '@/components/ProfileBox';
+import FullTextModal from '@/components/FullTextModal';
+import { useAuthStore } from '@/stores/authStore';
+
 type SettingsScreenNavigationProp = StackNavigationProp<
   RootStackParamList,
   'settings'
@@ -25,7 +28,13 @@ type SettingsScreenNavigationProp = StackNavigationProp<
 
 export default function Settings() {
   const navigation = useNavigation<SettingsScreenNavigationProp>();
+  const { signOut, isAuthenticated } = useAuthStore();
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
+  const [showTermsModal, setShowTermsModal] = useState(false);
+  const [showPrivacyModal, setShowPrivacyModal] = useState(false);
+  const [showDisclaimerModal, setShowDisclaimerModal] = useState(false);
+
+
 
   const handleTabPress = (tabName: string) => {
     switch (tabName) {
@@ -53,7 +62,11 @@ export default function Settings() {
   };
 
   const handleContactSupport = () => {
-    Alert.alert('Contact Support', 'Support contact functionality not implemented yet.');
+    Alert.alert(
+      'Contact Support', 
+      'Please contact support via email: nutrixtract@gmail.com',
+      [{ text: 'OK', style: 'default' }]
+    );
   };
 
   const handleLogout = () => {
@@ -68,9 +81,14 @@ export default function Settings() {
         {
           text: 'Logout',
           style: 'destructive',
-          onPress: () => {
-            // Add logout logic here
-            navigation.navigate('login');
+          onPress: async () => {
+            try {
+              await signOut();
+              // Navigation will be handled automatically by the auth store
+            } catch (error) {
+              console.error('Logout error:', error);
+              Alert.alert('Error', 'Failed to logout. Please try again.');
+            }
           },
         },
       ],
@@ -79,11 +97,15 @@ export default function Settings() {
   };
 
   const handleTermsAndConditions = () => {
-    Alert.alert('Terms and Conditions', 'Terms and conditions page not implemented yet.');
+    setShowTermsModal(true);
   };
 
   const handlePrivacyPolicy = () => {
-    Alert.alert('Privacy Policy', 'Privacy policy page not implemented yet.');
+    setShowPrivacyModal(true);
+  };
+
+  const handleDisclaimer = () => {
+    setShowDisclaimerModal(true);
   };
 
   return (
@@ -146,6 +168,10 @@ export default function Settings() {
             <SettingsItem
               title="Privacy Policy"
               onPress={handlePrivacyPolicy}
+            />
+            <SettingsItem
+              title="Disclaimer"
+              onPress={handleDisclaimer}
               style={styles.lastItem}
             />
           </SettingsSection>
@@ -156,6 +182,25 @@ export default function Settings() {
         activeTab="settings" 
         onTabPress={handleTabPress}
         onCameraPress={() => navigation.navigate('camera')}
+      />
+
+      {/* Modals */}
+      <FullTextModal
+        visible={showTermsModal}
+        type="terms"
+        onClose={() => setShowTermsModal(false)}
+      />
+      
+      <FullTextModal
+        visible={showPrivacyModal}
+        type="privacy"
+        onClose={() => setShowPrivacyModal(false)}
+      />
+      
+      <FullTextModal
+        visible={showDisclaimerModal}
+        type="disclaimer"
+        onClose={() => setShowDisclaimerModal(false)}
       />
     </SafeAreaView>
   );

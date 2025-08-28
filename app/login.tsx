@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   View, 
   Text, 
@@ -48,7 +48,14 @@ const moderateScale = (size: number, factor = 0.5) =>
 export default function LoginScreen() {
   const navigation = useNavigation<LoginScreenNavigationProp>();
 
-  const { signIn, isLoading: authLoading } = useAuthStore();
+  const { signIn, isLoading: authLoading, isAuthenticated } = useAuthStore();
+
+  // Redirect authenticated users to the main app
+  useEffect(() => {
+    if (isAuthenticated) {
+      navigation.replace('page-2');
+    }
+  }, [isAuthenticated, navigation]);
   
   const [formData, setFormData] = useState<LoginFormData>({
     email: '',

@@ -139,6 +139,18 @@ export default function Statistics() {
     fetchNutritionIntake,
   } = useNutritionIntakeStore();
 
+  // Redirect unauthenticated users to login
+  useEffect(() => {
+    if (!isAuthenticated) {
+      navigation.replace('login');
+    }
+  }, [isAuthenticated, navigation]);
+
+  // Don't render anything if not authenticated
+  if (!isAuthenticated || !user) {
+    return null;
+  }
+
   // Fetch nutrition intake data on component mount
   useEffect(() => {
     if (isAuthenticated && user) {
