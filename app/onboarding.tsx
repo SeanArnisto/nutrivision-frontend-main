@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { View, StyleSheet, Animated } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import { StackNavigationProp } from "@react-navigation/stack";
@@ -33,9 +33,17 @@ interface OnboardingData {
 
 export default function OnboardingScreen() {
   const navigation = useNavigation<OnboardingScreenNavigationProp>();
+  const { isAuthenticated } = useAuthStore();
   const [currentStep, setCurrentStep] = useState(1);
   const [progressAnimation] = useState(new Animated.Value(1));
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Redirect unauthenticated users to login
+  useEffect(() => {
+    if (!isAuthenticated) {
+      navigation.replace('login');
+    }
+  }, [isAuthenticated, navigation]);
 
   const [formData, setFormData] = useState<OnboardingData>({
     fullName: "",

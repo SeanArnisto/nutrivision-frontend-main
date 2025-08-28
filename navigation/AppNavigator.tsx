@@ -1,4 +1,4 @@
-import React, { useContext, createContext } from "react";
+import React from "react";
 import { NavigationContainer } from "@react-navigation/native";
 import { createStackNavigator } from "@react-navigation/stack";
 import index from "@/app/index"; // adjust the path if needed
@@ -22,12 +22,13 @@ import ForgotOtpScreen from "@/app/forgot-otp";
 import ForgotResetScreen from "@/app/forgot-reset";
 import NutritionalLabelScreen from "@/app/photo-label-details";
 import FruitDetailsScreen from '@/app/photo-fruit-details';
+import { navigationRef } from "./navigationRef";
 
 const Stack = createStackNavigator<RootStackParamList>();
 
 export default function AppNavigator() {
   return (
-     <NavigationContainer>
+     <NavigationContainer ref={navigationRef}>
         <Stack.Navigator initialRouteName="index">
           <Stack.Screen name="index" component={index} />
           <Stack.Screen name="page-6" component={Page6} />

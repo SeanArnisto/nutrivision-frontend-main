@@ -45,9 +45,17 @@ type ProfileScreenNavigationProp = StackNavigationProp<
 
 export default function Profile() {
   const navigation = useNavigation<ProfileScreenNavigationProp>();
+  const { isAuthenticated } = useAuthStore();
 
   const [userProfile, setUserProfile] = useState<UserProfile>({});
   const [isLoading, setIsLoading] = useState(true);
+
+  // Redirect unauthenticated users to login
+  useEffect(() => {
+    if (!isAuthenticated) {
+      navigation.replace('login');
+    }
+  }, [isAuthenticated, navigation]);
 
   const handleTabPress = (tabName: string) => {
     switch (tabName) {

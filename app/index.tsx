@@ -1,5 +1,5 @@
 // Updated Page2.tsx
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   SafeAreaView,
   View,
@@ -12,6 +12,7 @@ import { useNavigation } from "@react-navigation/native";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { RootStackParamList } from "@/types/types";
 import DisclaimerModal from "@/components/DisclaimerModal";
+import { useAuthStore } from "@/stores/authStore";
 
 // Navigation prop type for this screen
 type Page2ScreenNavigationProp = StackNavigationProp<
@@ -21,7 +22,15 @@ type Page2ScreenNavigationProp = StackNavigationProp<
 
 const Page2: React.FC = () => {
   const navigation = useNavigation<Page2ScreenNavigationProp>();
+  const { isAuthenticated } = useAuthStore();
   const [showDisclaimerModal, setShowDisclaimerModal] = useState<boolean>(false);
+
+  // Redirect authenticated users to the main app
+  useEffect(() => {
+    if (isAuthenticated) {
+      navigation.replace('page-2');
+    }
+  }, [isAuthenticated, navigation]);
 
   const handleGetStarted = (): void => {
     setShowDisclaimerModal(true);

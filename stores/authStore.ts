@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { supabase } from "@/config/supabase";
+import { reset } from "@/navigation/navigationRef";
 
 interface User {
   id: string;
@@ -139,9 +140,13 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         user: null,
         session: null,
         isAuthenticated: false,
+        profileComplete: null,
       });
       AsyncStorage.removeItem("auth_user");
       AsyncStorage.removeItem("auth_session");
+      
+      // Reset navigation to prevent going back to authenticated pages
+      reset('login');
     } catch (error) {
       console.error("Sign out error:", error);
     } finally {

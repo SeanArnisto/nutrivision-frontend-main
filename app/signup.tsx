@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -51,7 +51,14 @@ const moderateScale = (size: number, factor = 0.5) =>
 export default function SignUpScreen() {
   const navigation = useNavigation<SignUpScreenNavigationProp>();
 
-  const { signUp, isLoading: authLoading } = useAuthStore();
+  const { signUp, isLoading: authLoading, isAuthenticated } = useAuthStore();
+
+  // Redirect authenticated users to the main app
+  useEffect(() => {
+    if (isAuthenticated) {
+      navigation.replace('page-2');
+    }
+  }, [isAuthenticated, navigation]);
 
   const [formData, setFormData] = useState<SignUpFormData>({
     email: "",
