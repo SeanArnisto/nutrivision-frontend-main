@@ -6,6 +6,7 @@ import {
   SafeAreaView,
   ScrollView,
   Image,
+  Dimensions
 } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import { StackNavigationProp } from "@react-navigation/stack";
@@ -66,7 +67,8 @@ function NutrientCard({
         {value}
         {unit}
         <Text style={styles.nutrientTarget}>
-          /{target}
+          {"\n"}/
+          {target}
           {unit}
         </Text>
       </Text>
@@ -535,6 +537,7 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     color: "#385802",
     marginBottom: 4,
+    textAlign: "center",
   },
   nutrientTarget: {
     fontSize: 14,
