@@ -98,14 +98,14 @@ export const FindTablespoons = (value: number, minIntake: number, maxIntake: num
     return number;
 }
 
-export default function EquivalentTablespoon(value: number): string {
+export const EquivalentTablespoon = (value: number): string => {
     let tbpsCount = '';
 
     if (value < 15) {
         tbpsCount = 'less than 1 tbsp';
     } else {
-        value = Math.round(value / 15);
-        tbpsCount = `${value} tbsp${value > 1 ? '`s' : ''}`;
+        const tablespoons = Math.round(value / 15);
+        tbpsCount = `${tablespoons} tbsp${tablespoons > 1 ? 's' : ''}`;
     }
 
     return tbpsCount;
