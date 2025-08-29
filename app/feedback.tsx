@@ -21,6 +21,7 @@ import { useRecommStore } from "@/hooks/store";
 import { useNutrientsStore } from "@/hooks/store"; 
 import { Ionicons } from "@expo/vector-icons";
 import  AppLogo  from "@/components/appLogo";
+import GoNext from "@/components/NextButton";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 
@@ -378,12 +379,7 @@ function Feedback() {
         <Ionicons name="arrow-undo-outline" size={28} color="#9AB206" />
       </TouchableOpacity>
 
-      <TouchableOpacity style={styles.checkButton} onPress={() => navigation.pop(5)}>
-        <Image
-          source={require("@/assets/images/Home.png")}
-          style={styles.homeIcon}
-        />
-      </TouchableOpacity>
+      <GoNext next="page-2"/>
     </SafeAreaView>
   );
 }

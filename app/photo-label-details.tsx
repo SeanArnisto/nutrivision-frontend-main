@@ -108,14 +108,9 @@ function PhotoLabelDetailsPage({
 
   // Placeholder icons - replace these with your actual icon paths
   // For now, comment these out to avoid errors until you add the icon files
-  // const carbsIcon = require('@/assets/images/carbs-icon.png'); 
-  // const sodiumIcon = require('@/assets/images/sodium-icon.png');  
-  // const proteinIcon = require('@/assets/images/protein-icon.png');
-
-  // Temporary placeholders - replace with actual icons
-  const carbsIcon = null;
-  const sodiumIcon = null;
-  const proteinIcon = null;
+  const carbsIcon = require('@/assets/images/Carbohydrate Icon.png'); 
+  const sodiumIcon = require('@/assets/images/Sodium Icon.png');  
+  const proteinIcon = require('@/assets/images/Protein Icon.png');
 
   return (
     <View style={styles.container}>
@@ -317,7 +312,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'white',
     borderRadius: 12,
     padding: 20,
-    marginTop: 12,
+    marginTop: 22,
     shadowColor: '#000',
     shadowOffset: {
       width: 0,

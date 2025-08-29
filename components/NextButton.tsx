@@ -22,7 +22,7 @@ export default function GoNext({next}: GoNextProp) {
   return (
     <>
       <TouchableOpacity style={styles.checkButton} onPress={handleCheck}>
-        <Ionicons name="camera-outline" size={33} color="#9AB206" />
+        <Ionicons name="arrow-redo-outline" size={28} color="#9AB206" />
       </TouchableOpacity>
     </>
   );

@@ -30,7 +30,7 @@ export default function AvgIntakeCard({
       <View style={[styles.column]}>
         {
           <View style={styles.textRow}>
-            <Text style={styles.title}>{value} g</Text>
+            <Text style={styles.titlegrams}>{value} g</Text>
           </View>
         }
         <View style={styles.textRow}>
@@ -76,11 +76,12 @@ const styles = StyleSheet.create({
     backgroundColor: "white",
     borderRadius: 8,
     padding: 10,
+    minHeight: 170,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 6,
-    elevation: 4,
+    elevation: 4
   },
   textRow: {
     alignItems: "flex-start",
@@ -88,6 +89,11 @@ const styles = StyleSheet.create({
   progressRow: {},
   title: {
     fontSize: 24,
+    fontWeight: "bold",
+    color: "#385802",
+  },
+  titlegrams: {
+    fontSize: 14,
     fontWeight: "bold",
     color: "#385802",
   },
