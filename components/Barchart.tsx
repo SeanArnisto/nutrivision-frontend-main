@@ -140,7 +140,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'flex-start',
     marginBottom: 20,
-    gap: 20,
+    gap: 26,
   },
   legendItem: {
     flexDirection: 'row',

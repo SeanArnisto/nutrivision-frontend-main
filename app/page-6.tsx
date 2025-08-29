@@ -17,12 +17,13 @@ import { StackNavigationProp } from "@react-navigation/stack";
 import { useRoute } from "@react-navigation/native";
 import { useNutrientsStore } from "@/hooks/store";
 import { useRecommStore } from "@/hooks/store";
-import { useNutritionIntakeStore, fetchNutritionAverage } from "@/stores/nutritionIntakeStore";
+import { useNutritionIntakeStore, fetchNutritionAverage, useNutritionAverage } from "@/stores/nutritionIntakeStore";
 import { Ionicons } from "@expo/vector-icons";
 import { useFocusEffect } from "@react-navigation/native";
 import { useCallback } from "react";
 import BarChart from "@/components/Barchart";
 import { format, addDays } from "date-and-time";
+import { getNutritionalHistory } from "@/hooks/store";
 
 const toProgressWidth = (value: number) =>
   `${Math.min(value, 100)}%` as DimensionValue;
@@ -47,6 +48,20 @@ interface NutritionData {
   };
 }
 
+interface NutritionalRecord {
+  id: string;
+  user_id: string;
+  calories?: number;
+  carbohydrates?: number;
+  protein?: number;
+  sodium?: number;
+  created_at: string;
+  nutritional_images?: Array<{
+    image_url: string;
+    image_order: number;
+  }>;
+}
+
 export default function Page6() {
   const carbs = useNutrientsStore((state) => state.carbs);
   const prot = useNutrientsStore((state) => state.protein);
@@ -61,7 +76,12 @@ export default function Page6() {
 
   // Get nutrition intake data from stores
   const { nutritionData: intakeData, fetchNutritionIntake } = useNutritionIntakeStore();
-  const { nutritionDataAve: averageData, fetchNutritionIntakeAve } = fetchNutritionAverage();
+  const { nutritionDataAve: averageData, fetchNutritionIntakeAve } = useNutritionAverage();
+
+  // Add nutritional history state for bar chart
+  const [nutritionalData, setNutritionalData] = useState<NutritionalRecord[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   const [nutritionData, setNutritionData] = useState<NutritionData>({
     progress: {
@@ -82,6 +102,30 @@ export default function Page6() {
     fetchNutritionIntakeAve();
   }, []);
 
+  // Fetch nutritional history for bar chart (same as statistics)
+  useEffect(() => {
+    const fetchNutritionHistory = async () => {
+      setLoading(true);
+      setError(null);
+
+      try {
+        const result = await getNutritionalHistory(30);
+
+        if (result.success) {
+          setNutritionalData(result.data || []);
+        } else {
+          setError(result.error || "Failed to load nutritional data");
+        }
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Unknown error occurred");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchNutritionHistory();
+  }, []);
+
   // Update nutritionData when store data changes
   useEffect(() => {
     if (intakeData && averageData) {
@@ -97,8 +141,8 @@ export default function Page6() {
             avg: parseFloat(intakeData.avg_protein.toFixed(1)) 
           },
           sodium: { 
-            user: parseFloat(sod.toFixed(2)), // Convert mg to g
-            avg: parseFloat((intakeData.avg_sodium / 1000).toFixed(2)) // Convert mg to g
+            user: parseFloat(sod.toFixed(2)), 
+            avg: parseFloat((intakeData.avg_sodium / 1000).toFixed(2)) 
           },
         },
       }));
@@ -178,133 +222,153 @@ export default function Page6() {
     navigation.navigate("feedback");
   };
 
-  // Generate sample weekly data for the bar chart
-  const weeklyChartData = [
-    // Sunday
-    {
-      value: nutritionData.values.carbohydrate.user,
-      frontColor: "#F4D03F",
-      spacing: 2,
-      label: "S",
-    },
-    {
-      value: nutritionData.values.sodium.user * 10, // Scale up for visibility
-      frontColor: "#8B4513",
-    },
-    {
-      value: nutritionData.values.protein.user / 2, // Scale down for visibility
-      frontColor: "#9AB106",
-      spacing: 8,
-    },
-    // Monday
-    {
-      value: nutritionData.values.carbohydrate.avg,
-      frontColor: "#F4D03F",
-      spacing: 2,
-      label: "M",
-    },
-    {
-      value: nutritionData.values.sodium.avg * 8,
-      frontColor: "#8B4513",
-    },
-    {
-      value: nutritionData.values.protein.avg / 2,
-      frontColor: "#9AB106",
-      spacing: 8,
-    },
-    // Tuesday
-    {
-      value: nutritionData.values.carbohydrate.user * 0.8,
-      frontColor: "#F4D03F",
-      spacing: 2,
-      label: "T",
-    },
-    {
-      value: nutritionData.values.sodium.user * 12,
-      frontColor: "#8B4513",
-    },
-    {
-      value: nutritionData.values.protein.user / 3,
-      frontColor: "#9AB106",
-      spacing: 8,
-    },
-    // Wednesday
-    {
-      value: nutritionData.values.carbohydrate.avg * 1.2,
-      frontColor: "#F4D03F",
-      spacing: 2,
-      label: "W",
-    },
-    {
-      value: nutritionData.values.sodium.avg * 15,
-      frontColor: "#8B4513",
-    },
-    {
-      value: nutritionData.values.protein.avg / 2,
-      frontColor: "#9AB106",
-      spacing: 8,
-    },
-    // Thursday
-    {
-      value: nutritionData.values.carbohydrate.user * 0.9,
-      frontColor: "#F4D03F",
-      spacing: 2,
-      label: "TH",
-    },
-    {
-      value: nutritionData.values.sodium.user * 11,
-      frontColor: "#8B4513",
-    },
-    {
-      value: nutritionData.values.protein.user / 2.5,
-      frontColor: "#9AB106",
-      spacing: 8,
-    },
-    // Friday
-    {
-      value: nutritionData.values.carbohydrate.avg * 0.7,
-      frontColor: "#F4D03F",
-      spacing: 2,
-      label: "F",
-    },
-    {
-      value: nutritionData.values.sodium.avg * 14,
-      frontColor: "#8B4513",
-    },
-    {
-      value: nutritionData.values.protein.avg / 1.8,
-      frontColor: "#9AB106",
-      spacing: 8,
-    },
-    // Saturday
-    {
-      value: nutritionData.values.carbohydrate.user * 1.1,
-      frontColor: "#F4D03F",
-      spacing: 2,
-      label: "S",
-    },
-    {
-      value: nutritionData.values.sodium.user * 9,
-      frontColor: "#8B4513",
-    },
-    {
-      value: nutritionData.values.protein.user / 2.2,
-      frontColor: "#9AB106",
-    },
-  ];
+  // Get average values for bar chart calculations
+  const carbAvg = intakeData?.avg_carbs ? Math.round(intakeData.avg_carbs) : 0;
+  const proteinAvg = intakeData?.avg_protein ? Math.round(intakeData.avg_protein) : 0;
+  const sodiumAvg = intakeData?.avg_sodium ? intakeData.avg_sodium / 1000 : 0;
 
-  // Date range for the chart
+  // Initialize date constants (same as statistics)
   const today = new Date();
-  const dayOfWeek = today.getDay();
-  const startOfWeek = addDays(today, -dayOfWeek);
-  const endOfWeek = addDays(startOfWeek, 6);
+  const dayOfWeek = today.getDay(); // 0 = Sunday, 1 = Monday, etc.
+  const startOfWeek = new Date(today);
+  startOfWeek.setDate(today.getDate() - dayOfWeek);
+  const endOfWeek = new Date(startOfWeek);
+  endOfWeek.setDate(startOfWeek.getDate() + 6);
 
-  let startStr = format(startOfWeek, "MMM D");
-  let endStr = format(endOfWeek, "D");
+  // Format dates for display
+  const startStr = format(startOfWeek, "MMM DD");
+  const endStr = startOfWeek.getMonth() !== endOfWeek.getMonth()
+    ? format(endOfWeek, "MMM DD")
+    : format(endOfWeek, "DD");
 
-  if (startOfWeek.getMonth() !== endOfWeek.getMonth()) {
-    endStr = format(endOfWeek, "MMM D");
-  }
+  // Function to get nutrition totals for a specific date (same as statistics)
+  const getDailyNutritionTotals = (date: Date | null) => {
+    try {
+      if (!date) {
+        console.warn("Invalid date provided to getDailyNutritionTotals");
+        return { carbohydrates: 0, protein: 0, sodium: 0 };
+      }
+
+      const targetDate = new Date(date).toDateString();
+
+      if (!nutritionalData || !Array.isArray(nutritionalData)) {
+        console.warn("No nutritional data available");
+        return { carbohydrates: 0, protein: 0, sodium: 0 };
+      }
+
+      const dayRecords = nutritionalData.filter((record) => {
+        try {
+          return (
+            record &&
+            record.created_at &&
+            new Date(record.created_at).toDateString() === targetDate
+          );
+        } catch (e) {
+          console.warn("Invalid record date:", record?.created_at);
+          return false;
+        }
+      });
+
+      return dayRecords.reduce(
+        (totals, record) => ({
+          carbohydrates:
+            totals.carbohydrates + (Number(record?.carbohydrates) || 0),
+          protein: totals.protein + (Number(record?.protein) || 0),
+          sodium: totals.sodium + (Number(record?.sodium) || 0),
+        }),
+        { carbohydrates: 0, protein: 0, sodium: 0 }
+      );
+    } catch (error) {
+      console.error("Error in getDailyNutritionTotals:", error);
+      return { carbohydrates: 0, protein: 0, sodium: 0 };
+    }
+  };
+
+  // Generate weekly chart data (same logic as statistics but with current values for today)
+  const generateWeeklyChartData = () => {
+    try {
+      const days = ["S", "M", "T", "W", "Th", "F", "S"];
+      const chartData = [];
+
+      if (!startOfWeek) {
+        console.warn("startOfWeek is not defined");
+        return [];
+      }
+
+      // Get recommended values from nutrition store
+      const recommendedCarbs = carbAvg || 0;
+      const recommendedProtein = proteinAvg || 0;
+      const recommendedSodium = sodiumAvg || 0;
+
+      for (let i = 0; i < 7; i++) {
+        let currentDate;
+        try {
+          currentDate = addDays(startOfWeek, i);
+        } catch (e) {
+          console.warn(`Error adding days to startOfWeek: ${e}`);
+          currentDate = new Date();
+        }
+
+        let dailyTotals;
+        
+        // Check if current date is today, use current store values
+        if (currentDate.toDateString() === today.toDateString()) {
+          dailyTotals = {
+            carbohydrates: carbs,
+            protein: prot,
+            sodium: sod / 1000 // Convert mg to g
+          };
+        } else {
+          // Use historical data for other days
+          dailyTotals = getDailyNutritionTotals(currentDate);
+          dailyTotals.sodium = dailyTotals.sodium / 1000; // Convert mg to g
+        }
+
+        // Ensure values are numbers and non-negative
+        const safeValue = (val: number) => Math.max(0, Number(val) || 0);
+
+        // Calculate ratios (multiply by 100 to match the 100 = ratio of 1 scale)
+        const carbsRatio = recommendedCarbs
+          ? (safeValue(dailyTotals.carbohydrates) / recommendedCarbs) * 100
+          : 0;
+        const sodiumRatio = recommendedSodium
+          ? (safeValue(dailyTotals.sodium) / recommendedSodium) * 100
+          : 0;
+        const proteinRatio = recommendedProtein
+          ? (safeValue(dailyTotals.protein) / recommendedProtein) * 100
+          : 0;
+
+        // Add carbohydrates bar
+        chartData.push({
+          value: carbsRatio,
+          frontColor: "#F4D03F", // Carbs - Yellow
+          spacing: 2,
+          label: days[i] || "",
+        });
+
+        // Add sodium bar
+        chartData.push({
+          value: sodiumRatio,
+          frontColor: "#8B4513", // Sodium - Brown
+        });
+
+        // Add protein bar
+        chartData.push({
+          value: proteinRatio,
+          frontColor: "#9AB106", // Protein - Green
+          spacing: i < 6 ? 8 : 0, // No spacing after the last day
+        });
+      }
+
+      return chartData;
+    } catch (error) {
+      console.error("Error in generateWeeklyChartData:", error);
+      return [];
+    }
+  };
+
+  // Weekly data for the bar chart using actual values
+  const weeklyChartData = generateWeeklyChartData();
 
   return (
     <SafeAreaView style={styles.safeContainer}>
@@ -463,21 +527,24 @@ export default function Page6() {
             </View>
           </View>
 
-          {/* Weekly Chart using BarChart component */}
+          {/* Weekly Chart using BarChart component - Same implementation as statistics */}
           <BarChart
             data={weeklyChartData}
             title="Weekly Intake Ratio"
-            subtitle={`Aug 10-15`}
-            maxValue={150}
-            stepValue={50}
-            height={200}
-            barWidth={12}
+            subtitle={`${startStr} - ${endStr}`}
+            maxValue={200} // Increased to show ratios above 1.0 (100%)
+            stepValue={50} // Steps of 50% (0.5 ratio)
+            height={160}
+            barWidth={10}
             spacing={2}
             showLegend={true}
+            referenceLine={100} // Add constant reference line at 100%
+            referenceLineColor="#000000" // Black line for reference
             legendData={[
               { color: "#F4D03F", label: "Carbohydrates" },
               { color: "#8B4513", label: "Sodium" },
               { color: "#9AB106", label: "Protein" },
+              { color: "#000000", label: "Target Ratio (1.0)" },
             ]}
           />
         </ThemedView>
