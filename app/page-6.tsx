@@ -97,7 +97,7 @@ export default function Page6() {
             avg: parseFloat(intakeData.avg_protein.toFixed(1)) 
           },
           sodium: { 
-            user: parseFloat((sod / 1000).toFixed(2)), // Convert mg to g
+            user: parseFloat(sod.toFixed(2)), // Convert mg to g
             avg: parseFloat((intakeData.avg_sodium / 1000).toFixed(2)) // Convert mg to g
           },
         },
