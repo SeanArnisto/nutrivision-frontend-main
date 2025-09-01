@@ -584,18 +584,18 @@ export default function Statistics() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: "#F5F5F5",
+    backgroundColor: "#eff1f6",
   },
   mainContainer: {
     flex: 1,
-    paddingHorizontal: 20,
-    paddingTop: 20,
+    paddingHorizontal: 16,
+    paddingTop: 16,
   },
   profileBoxContainer: {
     marginBottom: 20,
   },
   customProfileBox: {
-    width: 200, // Wider than default 150px to accommodate longer text
+    width: 175, // Wider than default 150px to accommodate longer text
   },
   container: {
     flex: 1,

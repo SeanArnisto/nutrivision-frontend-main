@@ -341,18 +341,18 @@ export default function Profile() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: "#f8f9fa",
+    backgroundColor: "#eff1f6",
   },
   mainContainer: {
     flex: 1,
-    paddingHorizontal: 24,
-    paddingTop: 20,
+    paddingHorizontal: 16,
+    paddingTop: 16,
   },
   profileBoxContainer: {
     marginBottom: 20,
   },
   customProfileBox: {
-    width: 240, // Wider for "Personal Profile Information"
+    width: 200, // Wider for "Personal Profile Information"
   },
   container: {
     flex: 1,

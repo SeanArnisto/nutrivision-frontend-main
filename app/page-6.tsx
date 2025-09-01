@@ -24,6 +24,7 @@ import { useCallback } from "react";
 import BarChart from "@/components/Barchart";
 import { format, addDays } from "date-and-time";
 import { getNutritionalHistory } from "@/hooks/store";
+import AppLogo from "@/components/appLogo";
 
 const toProgressWidth = (value: number) =>
   `${Math.min(value, 100)}%` as DimensionValue;
@@ -373,16 +374,9 @@ export default function Page6() {
   return (
     <SafeAreaView style={styles.safeContainer}>
       <ScrollView contentContainerStyle={styles.scrollContainer}>
-        <View style={styles.header}>
-          <Image
-            source={require("@/assets/images/NutriVision.png")}
-            style={styles.logo}
-            accessibilityRole="image"
-            accessibilityLabel="NutriVision logo"
-          />
-        </View>
+        <AppLogo />
 
-        <ThemedView style={styles.contentContainer}>
+        <View style={styles.contentContainer}>
           {/* Progress Bars Section */}
           <View style={styles.progressContainer}>
             {/* Legends - Now properly spaced */}
@@ -547,7 +541,8 @@ export default function Page6() {
               { color: "#000000", label: "Target Ratio (1.0)" },
             ]}
           />
-        </ThemedView>
+        </View>
+       
       </ScrollView>
 
       <TouchableOpacity
@@ -568,7 +563,7 @@ export default function Page6() {
 const styles = StyleSheet.create({
   safeContainer: {
     flex: 1,
-    backgroundColor: "#F5F5F5",
+    backgroundColor: "#eff1f6",
   },
   roundButton: {
     width: 60,
@@ -600,8 +595,8 @@ const styles = StyleSheet.create({
   contentContainer: {
     flex: 1,
     paddingHorizontal: 16,
-    paddingBottom: 16,
-    backgroundColor: "#F5F5F5",
+    paddingVertical: 16,
+    backgroundColor: "#eff1f6",
   },
   progressContainer: {
     backgroundColor: "white",

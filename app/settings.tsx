@@ -111,7 +111,11 @@ export default function Settings() {
   return (
     <SafeAreaView style={styles.safeArea}>
       <AppLogo />
-      
+      <ScrollView 
+          style={styles.container} 
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+        >
       <View style={styles.mainContainer}>
         <View style={styles.profileBoxContainer}>
           <ProfileBox 
@@ -122,11 +126,7 @@ export default function Settings() {
           />
         </View>
 
-        <ScrollView 
-          style={styles.container} 
-          contentContainerStyle={styles.scrollContent}
-          showsVerticalScrollIndicator={false}
-        >
+        
           <SettingsSection title="Privacy and Security">
             <SettingsItem
               title="Change Password"
@@ -179,8 +179,9 @@ export default function Settings() {
               style={styles.lastItem}
             />
           </SettingsSection>
+           </View>
         </ScrollView>
-      </View>
+      
 
       <BottomNavBar 
         activeTab="settings" 
@@ -206,6 +207,9 @@ export default function Settings() {
         type="disclaimer"
         onClose={() => setShowDisclaimerModal(false)}
       />
+      
+     
+      
     </SafeAreaView>
   );
 }
@@ -213,18 +217,18 @@ export default function Settings() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: '#f8f9fa',
+    backgroundColor: '#eff1f6',
   },
   mainContainer: {
     flex: 1,
-    paddingTop: 20,
+    paddingTop: 16,
   },
   profileBoxContainer: {
     marginBottom: 20,
     paddingHorizontal: 24,
   },
   customProfileBox: {
-    width: 220, // Wider for "Settings & Preferences"
+    width: 180, // Wider for "Settings & Preferences"
   },
   container: {
     flex: 1,

@@ -175,7 +175,7 @@ export default function SignUpScreen() {
           {/* Logo Container */}
           <View style={styles.logoContainer}>
             <Image
-              source={require("@/assets/images/nutrivision_headstarted.png")}
+              source={require("@/assets/images/nutrixtract_headstarted.png")}
               style={styles.logo}
               resizeMode="contain"
             />

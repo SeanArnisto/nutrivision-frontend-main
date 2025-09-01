@@ -54,7 +54,7 @@ const Page2: React.FC = () => {
       {/* Top: App logo */}
       <View style={styles.topContainer}>
         <Image
-          source={require("@/assets/images/nutrivision_headstarted.png")}
+          source={require("@/assets/images/nutrixtract_headstarted.png")}
           style={styles.logo}
         />
       </View>

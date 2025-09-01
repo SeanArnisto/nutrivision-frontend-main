@@ -53,7 +53,7 @@ export default function BottomNavBar({
         onPress={onCameraPress || (() => onTabPress('camera'))}
       >
         <View style={styles.cameraButtonInner}>
-          <Ionicons name="add" size={32} color="#fff" />
+          <Ionicons name="camera" size={32} color="#fff" />
         </View>
       </TouchableOpacity>
 
@@ -127,13 +127,13 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
   },
   cameraSpace: {
-    width: 56, // Updated to match new button size
+    width: 56,
   },
   cameraButtonContainer: {
     position: 'absolute',
-    top: -28, // Updated for larger button
+    top: -28,
     left: '50%',
-    marginLeft: -28, // Updated for larger button
+    marginLeft: -28,
     zIndex: 101,
   },
   cameraButtonInner: {

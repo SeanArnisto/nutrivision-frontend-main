@@ -170,7 +170,7 @@ export default function LoginScreen() {
           {/* Logo Container - Responsive with maintained proportions */}
           <View style={styles.logoContainer}>
             <Image
-              source={require('@/assets/images/nutrivision_headstarted.png')}
+              source={require('@/assets/images/nutrixtract_headstarted.png')}
               style={styles.logo}
               resizeMode="contain"
             />

@@ -325,8 +325,9 @@ export default function UserNutrientPage() {
         keyboardVerticalOffset={Platform.OS === "ios" ? 20 : 0}
       >
         <ScrollView contentContainerStyle={styles.scrollContainer}>
+          <AppLogo />
           <View style={styles.container}>
-            <AppLogo />
+            
             <ProfileBox primaryText="Average" highlightedText="Intake" />
 
             {/* Thumbnail section with added top margin */}
@@ -408,7 +409,7 @@ const styles = StyleSheet.create({
   },
   safeContainer: {
     flex: 1,
-    backgroundColor: "#F5F5F5",
+    backgroundColor: "#eff1f6",
   },
   scrollContainer: {
     flexGrow: 1,
@@ -416,8 +417,9 @@ const styles = StyleSheet.create({
   },
   container: {
     flex: 1,
-    backgroundColor: "#F5F5F5",
-    paddingHorizontal: 20,
+    backgroundColor: "#eff1f6",
+    paddingHorizontal: 16,
+    paddingVertical: 16
   },
   saveButton: {
     position: 'absolute',

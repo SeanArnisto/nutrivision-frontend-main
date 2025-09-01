@@ -368,10 +368,11 @@ function Feedback() {
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         keyboardVerticalOffset={Platform.OS === "ios" ? 20 : 0}
       >
+        <AppLogo />
         <ScrollView contentContainerStyle={styles.scrollContainer}>
           <View style={styles.container}>
             {/* Header with App Logo */}
-              <AppLogo />
+              
 
             {/* Photo Thumbnail Section */}
             <View style={styles.thumbnailSection}>
@@ -518,7 +519,7 @@ function Feedback() {
         <Ionicons name="arrow-undo-outline" size={28} color="#9AB206" />
       </TouchableOpacity>
 
-      <TouchableOpacity style={styles.checkButton} onPress={() => navigation.pop(5)}>
+      <TouchableOpacity style={styles.checkButton} onPress={() => navigation.navigate("page-2")}>
         <Image
           source={require("@/assets/images/Home.png")}
           style={styles.homeIcon}
@@ -531,7 +532,7 @@ function Feedback() {
 const styles = StyleSheet.create({
   safeContainer: {
     flex: 1,
-    backgroundColor: "#F5F5F5",
+    backgroundColor: "#eff1f6",
   },
   scrollContainer: {
     flexGrow: 1,
@@ -539,8 +540,9 @@ const styles = StyleSheet.create({
   },
   container: {
     flex: 1,
-    backgroundColor: "#F5F5F5",
-    paddingHorizontal: 20,
+    backgroundColor: "#eff1f6",
+    paddingHorizontal: 16,
+    paddingVertical: 16
   },
   header: {
     width: "100%",
@@ -761,6 +763,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: "gray",
     textAlign: "center",
+    marginTop: 20
   },
   roundButton: {
     width: 60,

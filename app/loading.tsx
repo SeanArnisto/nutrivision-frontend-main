@@ -30,7 +30,7 @@ export default function Loading() {
     >
       <View style={styles.centeredContainer}>
         <Image
-          source={require("@/assets/images/logoName.png")}
+          source={require("@/assets/images/loading_logo.png")}
           style={styles.logo}
         />
         <LottieView
@@ -57,9 +57,10 @@ const styles = StyleSheet.create({
     paddingVertical: 20, // Add padding to bring elements closer
   },
   logo: {
-    width: 200,
-    height: 200,
-    marginBottom: -20, // Adjust spacing between logo and Lottie animation
+    width: 300,
+    height: 300,
+    resizeMode: "contain",
+    marginBottom: -100, // Adjust spacing between logo and Lottie animation
   },
   loading: {
     width: 150, // Adjust width for better alignment

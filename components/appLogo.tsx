@@ -18,6 +18,7 @@ const styles = StyleSheet.create({
     height: 60,
     resizeMode: "contain",
     alignSelf: "flex-start",
-    marginLeft: -6
+    marginLeft: 5,
+    marginBottom: -15
   },
 })
