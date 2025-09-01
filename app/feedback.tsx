@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState, useMemo } from "react";
 import { useFocusEffect } from "@react-navigation/native";
 import {
   View,
@@ -16,12 +16,10 @@ import { useNavigation } from "expo-router";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { RootStackParamList } from "@/types/types";
 import * as MediaLibrary from "expo-media-library";
-import axios from "axios";
-import { useRecommStore } from "@/hooks/store";
-import { useNutrientsStore } from "@/hooks/store"; 
+import { useRecommStore, useNutrientsStore } from "@/hooks/store";
+import { useNutritionAverage, fetchNutritionAverage } from "@/stores/nutritionIntakeStore"; 
 import { Ionicons } from "@expo/vector-icons";
 import  AppLogo  from "@/components/appLogo";
-import GoNext from "@/components/NextButton";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 
@@ -30,7 +28,14 @@ type HomeScreenNavigationProp = StackNavigationProp<
   "index"
 >;
 
-// Helper function to convert grams to tablespoon equivalent
+// Memoized spoon images to prevent re-creation
+const SPOON_IMAGES = {
+  green: require("@/assets/images/spoongreen.png"),
+  red: require("@/assets/images/spoonred.png"),
+  gray: require("@/assets/images/spoongray.png"),
+} as const;
+
+// Helper function moved outside component to prevent re-creation
 const getTablespoonEquivalent = (grams: number, isNutrient: 'carbs' | 'protein' | 'sodium'): string => {
   const tablespoons = grams / 15;
   
@@ -57,6 +62,80 @@ const getTablespoonEquivalent = (grams: number, isNutrient: 'carbs' | 'protein' 
   }
 };
 
+// Memoized SpoonVisualization component
+const SpoonVisualization = React.memo(({ value, minIntake, maxIntake }: { 
+  value: number; 
+  minIntake: number; 
+  maxIntake: number; 
+}) => {
+  const spoonData = useMemo(() => {
+    const maxSpoons = 5;
+    const gramsPerSpoon = 15;
+    const totalTablespoons = value / gramsPerSpoon;
+    
+    // Calculate how many spoons should be filled based on the value
+    const filledSpoons = Math.min(Math.ceil(totalTablespoons), maxSpoons);
+    
+    // Check if we need to show a plus sign (more than 5 tablespoons)
+    const showPlusSign = totalTablespoons > maxSpoons;
+    
+    // Check if we need to show a less than sign (very small amounts)
+    const showLessThanSign = totalTablespoons < 1;
+    
+    // Spoons turn GREEN when value is within recommended range
+    const isInGoodRange = value >= minIntake && value <= maxIntake;
+    
+    // Create array of spoon states
+    const spoonStates = Array.from({ length: maxSpoons }, (_, index) => {
+      if (index < filledSpoons) {
+        return isInGoodRange ? 'green' : 'red';
+      }
+      return 'gray';
+    });
+
+    return {
+      spoonStates,
+      showPlusSign,
+      showLessThanSign,
+      isInGoodRange
+    };
+  }, [value, minIntake, maxIntake]);
+
+  const getSpoonImage = useCallback((state: string) => {
+    return SPOON_IMAGES[state as keyof typeof SPOON_IMAGES] || SPOON_IMAGES.gray;
+  }, []);
+
+  return (
+    <View style={styles.rightContainer}>
+      <View style={styles.spoonContainer}>
+        {spoonData.spoonStates.map((state, index) => (
+          <Image
+            key={index}
+            source={getSpoonImage(state)}
+            style={styles.individualSpoon}
+          />
+        ))}
+        {spoonData.showLessThanSign && (
+          <Text style={[
+            styles.lessThanSign, 
+            { color: spoonData.isInGoodRange ? '#4CAF50' : '#F44336' }
+          ]}>
+            &lt;
+          </Text>
+        )}
+        {spoonData.showPlusSign && (
+          <Text style={[
+            styles.plusSign, 
+            { color: spoonData.isInGoodRange ? '#4CAF50' : '#F44336' }
+          ]}>
+            +
+          </Text>
+        )}
+      </View>
+    </View>
+  );
+});
+
 function Feedback() {
   const carbs = useNutrientsStore((state) => state.carbs);
   const prot = useNutrientsStore((state) => state.protein);
@@ -68,14 +147,35 @@ function Feedback() {
   const maxProtein = useRecommStore((state) => state.maxProtein);
   const minSodium = useRecommStore((state) => state.minSodium);
   const maxSodium = useRecommStore((state) => state.maxSodium);
+  const loadUserRecommendations = useRecommStore((state) => state.loadUserRecommendations);
 
-  const [requestMessage, setRequestMessage] = useState<string>("");
+  // Nutrition average store for better recommendation ranges
+  const {
+    nutritionDataAve,
+    isLoading: nutritionAveLoading,
+    error: nutritionAveError,
+    fetchNutritionIntakeAve,
+  } = useNutritionAverage();
+
+  const [comparisonAnalysis, setComparisonAnalysis] = useState<string>("");
+  const [healthImplication, setHealthImplication] = useState<string>("");
   const [loading, setLoading] = useState<boolean>(true);
+  const [currentSlide, setCurrentSlide] = useState<number>(0);
   const [capturedPhotos, setCapturedPhotos] = useState<{ uri: string }[]>([]);
   const [mediaLibraryPermission, setMediaLibraryPermission] = useState<boolean | null>(null);
   const [photosLoading, setPhotosLoading] = useState<boolean>(true);
 
   const navigation = useNavigation() as HomeScreenNavigationProp;
+
+  // Memoize recommendation values to prevent unnecessary re-renders
+  const recommendationValues = useMemo(() => ({
+    carbsMin: nutritionDataAve && minCarb === 0 ? nutritionDataAve.minCarbs : minCarb,
+    carbsMax: nutritionDataAve && maxCarb === 0 ? nutritionDataAve.maxCarbs : maxCarb,
+    sodiumMin: nutritionDataAve && minSodium === 0 ? nutritionDataAve.minSodium : minSodium,
+    sodiumMax: nutritionDataAve && maxSodium === 0 ? nutritionDataAve.maxSodium : maxSodium,
+    proteinMin: nutritionDataAve && minProtein === 0 ? nutritionDataAve.minProtein : minProtein,
+    proteinMax: nutritionDataAve && maxProtein === 0 ? nutritionDataAve.maxProtein : maxProtein,
+  }), [nutritionDataAve, minCarb, maxCarb, minSodium, maxSodium, minProtein, maxProtein]);
 
   // Request media library permissions
   useEffect(() => {
@@ -84,6 +184,11 @@ function Feedback() {
       setMediaLibraryPermission(status === "granted");
     })();
   }, []);
+
+  // Fetch nutrition average data for better recommendations
+  useEffect(() => {
+    fetchNutritionIntakeAve();
+  }, [fetchNutritionIntakeAve]);
 
   // Load photos when screen is focused
   useFocusEffect(
@@ -141,122 +246,120 @@ function Feedback() {
     }
   };
 
-  const fetchFeedback = async () => {
+  const fetchFeedback = useCallback(async () => {
     try {
       setLoading(true);
-      const response = await axios.post(
-        "https://pel1-recommendation.hf.space/get-nutrient-feedback",
+
+      // Use nutrition average data as fallback if regular recommendations aren't available
+      const useNutritionAve = !(minCarb > 0 && maxCarb > 0 && minProtein > 0 && maxProtein > 0 && minSodium > 0 && maxSodium > 0) && nutritionDataAve;
+      
+      const finalMinCarb = useNutritionAve ? nutritionDataAve!.minCarbs : minCarb;
+      const finalMaxCarb = useNutritionAve ? nutritionDataAve!.maxCarbs : maxCarb;
+      const finalMinProtein = useNutritionAve ? nutritionDataAve!.minProtein : minProtein;
+      const finalMaxProtein = useNutritionAve ? nutritionDataAve!.maxProtein : maxProtein;
+      const finalMinSodium = useNutritionAve ? nutritionDataAve!.minSodium : minSodium;
+      const finalMaxSodium = useNutritionAve ? nutritionDataAve!.maxSodium : maxSodium;
+
+      const requestData = {
+        carbs_total: carbs,
+        sodium_total: sod * 1000, // Convert g to mg
+        protein_total: prot,
+        recommended_carbs: [finalMinCarb, finalMaxCarb],
+        recommended_sodium: [finalMinSodium, finalMaxSodium],
+        recommended_protein: [finalMinProtein, finalMaxProtein],
+      };
+      
+      console.log("Sending feedback request:", requestData);
+      
+      const response = await fetch(
+        "https://pel1-feedback-llm.hf.space/get-response",
         {
-          carbs_total: carbs,
-          sodium_total: sod * 1000, // Convert g to mg
-          protein_total: prot,
-          recommended_carbs: [minCarb, maxCarb],
-          recommended_sodium: [minSodium, maxSodium],
-          recommended_protein: [minProtein, maxProtein],
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(requestData),
         }
       );
 
-      if (response.data && response.data.feedback) {
-        const { comparison_analysis, range_assessment, health_implications } = response.data.feedback;
-        setRequestMessage(
-          `${comparison_analysis}\n\n${range_assessment}\n\n${health_implications}`
-        );
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error(`HTTP error! status: ${response.status}, response:`, errorText);
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      console.log("Received feedback response:", data);
+
+      if (data && data.feedback) {
+        const { comparison_analysis, health_implication } = data.feedback;
+        setComparisonAnalysis(comparison_analysis || "No comparison analysis available.");
+        setHealthImplication(health_implication || "No health implications available.");
       } else {
-        setRequestMessage("No feedback available. If values are 0, make sure to manually input them.");
+        setComparisonAnalysis("No feedback available. If values are 0, make sure to manually input them.");
+        setHealthImplication("No feedback available. If values are 0, make sure to manually input them.");
       }
     } catch (error) {
       console.error("Feedback fetch error:", error);
-      setRequestMessage("Error fetching feedback. If values are 0, make sure to manually input them.");
+      if (error instanceof Error && error.message.includes("500")) {
+        setComparisonAnalysis("The feedback service is currently experiencing issues. Your nutritional data has been recorded and displayed above.");
+        setHealthImplication("Unable to generate health implications at this time due to a server error. Please try again later.");
+      } else {
+        setComparisonAnalysis("Unable to connect to feedback service. Please check your internet connection and try again.");
+        setHealthImplication("Unable to connect to feedback service. Please check your internet connection and try again.");
+      }
     } finally {
       setLoading(false);
     }
-  };
+  }, [carbs, prot, sod, minCarb, maxCarb, minProtein, maxProtein, minSodium, maxSodium, nutritionDataAve]);
 
   // Fetch feedback when nutrient values change
   useEffect(() => {
-    if (carbs !== 0 && prot !== 0 && sod !== 0) {
+    // Debug: Log all recommendation values
+    console.log("Recommendation values:", {
+      minCarb,
+      maxCarb,
+      minProtein,
+      maxProtein,
+      minSodium,
+      maxSodium
+    });
+
+    console.log("Nutrition average data:", nutritionDataAve);
+    
+    // Check if recommendation ranges are valid (not zero)
+    const hasValidRecommendations = 
+      minCarb > 0 && maxCarb > 0 && 
+      minProtein > 0 && maxProtein > 0 && 
+      minSodium > 0 && maxSodium > 0;
+    
+    // Check if we have valid nutrition average data as fallback
+    const hasValidNutritionAve = nutritionDataAve &&
+      nutritionDataAve.minCarbs > 0 && nutritionDataAve.maxCarbs > 0 &&
+      nutritionDataAve.minProtein > 0 && nutritionDataAve.maxProtein > 0 &&
+      nutritionDataAve.minSodium > 0 && nutritionDataAve.maxSodium > 0;
+    
+    console.log("hasValidRecommendations:", hasValidRecommendations);
+    console.log("hasValidNutritionAve:", hasValidNutritionAve);
+    
+    if (hasValidRecommendations || hasValidNutritionAve) {
       fetchFeedback();
     } else {
-      setRequestMessage(
-        "Some nutrient values are detected to be 0. To maximize the feedback result, make sure to manually input the possible amount of nutrients."
+      setComparisonAnalysis(
+        "Recommendation ranges are not properly set. Please configure your dietary recommendations in settings."
+      );
+      setHealthImplication(
+        "Recommendation ranges are not properly set. Please configure your dietary recommendations in settings."
       );
       setLoading(false);
     }
-  }, [carbs, prot, sod]);
+  }, [fetchFeedback]);
 
-  // Spoon visualization component
-  // Spoons turn GREEN when the value is within the min-max range
-  // Spoons turn RED when the value is outside the min-max range (too low or too high)
-  const SpoonVisualization = ({ value, minIntake, maxIntake }: { 
-    value: number; 
-    minIntake: number; 
-    maxIntake: number; 
-  }) => {
-    const maxSpoons = 5;
-    const gramsPerSpoon = 15;
-    const totalTablespoons = value / gramsPerSpoon;
-    
-    // Calculate how many spoons should be filled based on the value
-    const filledSpoons = Math.min(Math.ceil(totalTablespoons), maxSpoons);
-    
-    // Check if we need to show a plus sign (more than 5 tablespoons)
-    const showPlusSign = totalTablespoons > maxSpoons;
-    
-    // Check if we need to show a less than sign (very small amounts)
-    const showLessThanSign = totalTablespoons < 1;
-    
-    // Spoons turn GREEN when value is within recommended range
-    const isInGoodRange = value >= minIntake && value <= maxIntake;
-    
-    // Create array of spoon states
-    const spoonStates = Array.from({ length: maxSpoons }, (_, index) => {
-      if (index < filledSpoons) {
-        return isInGoodRange ? 'green' : 'red';
-      }
-      return 'gray';
-    });
-
-    const getSpoonImage = (state: string) => {
-      switch (state) {
-        case 'green':
-          return require("@/assets/images/spoongreen.png");
-        case 'red':
-          return require("@/assets/images/spoonred.png");
-        default:
-          return require("@/assets/images/spoongray.png");
-      }
-    };
-
-    return (
-      <View style={styles.rightContainer}>
-        <View style={styles.spoonContainer}>
-          {spoonStates.map((state, index) => (
-            <Image
-              key={index}
-              source={getSpoonImage(state)}
-              style={styles.individualSpoon}
-            />
-          ))}
-          {showLessThanSign && (
-            <Text style={[
-              styles.lessThanSign, 
-              { color: isInGoodRange ? '#4CAF50' : '#F44336' }
-            ]}>
-              &lt;
-            </Text>
-          )}
-          {showPlusSign && (
-            <Text style={[
-              styles.plusSign, 
-              { color: isInGoodRange ? '#4CAF50' : '#F44336' }
-            ]}>
-              +
-            </Text>
-          )}
-        </View>
-      </View>
-    );
-  };
+  // Memoized carousel scroll handler to prevent unnecessary re-renders
+  const handleCarouselScroll = useCallback((event: any) => {
+    const slideIndex = Math.round(event.nativeEvent.contentOffset.x / SCREEN_WIDTH * 1.11);
+    setCurrentSlide(slideIndex);
+  }, []);
 
   return (
     <SafeAreaView style={styles.safeContainer}>
@@ -269,7 +372,6 @@ function Feedback() {
           <View style={styles.container}>
             {/* Header with App Logo */}
               <AppLogo />
-
 
             {/* Photo Thumbnail Section */}
             <View style={styles.thumbnailSection}>
@@ -322,8 +424,8 @@ function Feedback() {
               </View>
               <SpoonVisualization 
                 value={carbs} 
-                minIntake={minCarb} 
-                maxIntake={maxCarb} 
+                minIntake={recommendationValues.carbsMin} 
+                maxIntake={recommendationValues.carbsMax} 
               />
             </View>
 
@@ -337,8 +439,8 @@ function Feedback() {
               </View>
               <SpoonVisualization 
                 value={sod} 
-                minIntake={minSodium} 
-                maxIntake={maxSodium} 
+                minIntake={recommendationValues.sodiumMin} 
+                maxIntake={recommendationValues.sodiumMax} 
               />
             </View>
 
@@ -352,23 +454,60 @@ function Feedback() {
               </View>
               <SpoonVisualization 
                 value={prot} 
-                minIntake={minProtein} 
-                maxIntake={maxProtein} 
+                minIntake={recommendationValues.proteinMin} 
+                maxIntake={recommendationValues.proteinMax} 
               />
             </View>
 
-            {/* Feedback Section */}
+            {/* Feedback Carousel Section */}
             <View style={styles.feedbackContainer}>
-              <ScrollView
-                style={styles.feedbackScroll}
-                contentContainerStyle={styles.feedbackContent}
-              >
-                {loading ? (
-                  <Text style={styles.loadingText}>Generating feedback...</Text>
-                ) : (
-                  <Text style={styles.feedbackText}>{requestMessage}</Text>
-                )}
-              </ScrollView>
+              {loading ? (
+                <Text style={styles.loadingText}>Generating feedback...</Text>
+              ) : (
+                <>
+                  <ScrollView
+                    horizontal
+                    pagingEnabled
+                    showsHorizontalScrollIndicator={false}
+                    onMomentumScrollEnd={handleCarouselScroll}
+                    style={styles.carouselScroll}
+                  >
+                    {/* Slide 1: Comparison Analysis */}
+                    <View style={styles.slideContainer}>
+                      <Text style={styles.slideTitle}>Nutritional Analysis</Text>
+                      <ScrollView
+                        style={styles.slideContentScroll}
+                        contentContainerStyle={styles.slideContent}
+                      >
+                        <Text style={styles.feedbackText}>{comparisonAnalysis}</Text>
+                      </ScrollView>
+                    </View>
+
+                    {/* Slide 2: Health Implications */}
+                    <View style={styles.slideContainer}>
+                      <Text style={styles.slideTitle}>Health Implications</Text>
+                      <ScrollView
+                        style={styles.slideContentScroll}
+                        contentContainerStyle={styles.slideContent}
+                      >
+                        <Text style={styles.feedbackText}>{healthImplication}</Text>
+                      </ScrollView>
+                    </View>
+                  </ScrollView>
+
+                  {/* Carousel Indicators */}
+                  <View style={styles.indicatorContainer}>
+                    <View style={[
+                      styles.indicator,
+                      currentSlide === 0 ? styles.activeIndicator : styles.inactiveIndicator
+                    ]} />
+                    <View style={[
+                      styles.indicator,
+                      currentSlide === 1 ? styles.activeIndicator : styles.inactiveIndicator
+                    ]} />
+                  </View>
+                </>
+              )}
             </View>
           </View>
         </ScrollView>
@@ -379,7 +518,12 @@ function Feedback() {
         <Ionicons name="arrow-undo-outline" size={28} color="#9AB206" />
       </TouchableOpacity>
 
-      <GoNext next="page-2"/>
+      <TouchableOpacity style={styles.checkButton} onPress={() => navigation.pop(5)}>
+        <Image
+          source={require("@/assets/images/Home.png")}
+          style={styles.homeIcon}
+        />
+      </TouchableOpacity>
     </SafeAreaView>
   );
 }
@@ -545,21 +689,60 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   feedbackContainer: {
-    flexDirection: "row",
     width: SCREEN_WIDTH * 0.9,
     height: 320,
-    paddingVertical: 10,
     borderRadius: 10,
-    justifyContent: "space-between",
-    alignItems: "center",
     backgroundColor: "white",
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 6,
     elevation: 4,
-    paddingHorizontal: 15,
     marginBottom: 15,
+    overflow: "hidden",
+  },
+  carouselScroll: {
+    flex: 1,
+  },
+  slideContainer: {
+    width: SCREEN_WIDTH * 0.9,
+    height: 300,
+    paddingHorizontal: 15,
+    paddingVertical: 10,
+    justifyContent: "flex-start",
+  },
+  slideTitle: {
+    fontSize: 16,
+    fontWeight: "bold",
+    color: "#4D4444",
+    marginBottom: 10,
+    textAlign: "center",
+  },
+  slideContentScroll: {
+    flex: 1,
+  },
+  slideContent: {
+    flexGrow: 1,
+    justifyContent: "flex-start",
+  },
+  indicatorContainer: {
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
+    paddingVertical: 10,
+    backgroundColor: "white",
+  },
+  indicator: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    marginHorizontal: 4,
+  },
+  activeIndicator: {
+    backgroundColor: "#9AB206",
+  },
+  inactiveIndicator: {
+    backgroundColor: "#CCCCCC",
   },
   feedbackScroll: {
     flex: 1,
