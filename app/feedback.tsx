@@ -183,17 +183,13 @@ function Feedback() {
   const [healthImplication, setHealthImplication] = useState<string>("");
   const [loading, setLoading] = useState<boolean>(true);
   const [currentSlide, setCurrentSlide] = useState<number>(0);
-  //  const [capturedPhotos, setCapturedPhotos] = useState<{ uri: string }[]>([]);
   const [mediaLibraryPermission, setMediaLibraryPermission] = useState<
     boolean | null
   >(null);
   const [photosLoading, setPhotosLoading] = useState<boolean>(true);
   const [capturedPhotos, setCapturedPhotos] = useState<
-    { uri: string; type: string; orientation: string }[]
+    { uri: string; type: string; orientation: string; id: string }[]
   >([]);
-  // const [mediaLibraryPermission, setMediaLibraryPermission] = useState<
-  //   boolean | null
-  // >(null);
 
   const navigation = useNavigation() as HomeScreenNavigationProp;
 
@@ -291,6 +287,7 @@ function Feedback() {
           uri: uriToUse,
           type: Math.random() > 0.5 ? "label" : "fruit",
           orientation: Math.random() > 0.5 ? "vertical" : "horizontal",
+          id: asset.id,
         });
       }
 
@@ -303,6 +300,7 @@ function Feedback() {
       console.error("Error loading photos from NutriVision album:", error);
     }
   };
+
   const fetchFeedback = useCallback(async () => {
     try {
       setLoading(true);
@@ -424,6 +422,52 @@ function Feedback() {
   const protein = useNutrientsStore((state) => state.protein);
   const sodium = useNutrientsStore((state) => state.sodium);
   const saveWithPhotos = useNutrientsStore((state) => state.saveWithPhotos);
+  const reset = useNutrientsStore((state) => state.reset);
+
+  const deleteAllCapturedPhotos = useCallback(async (photos: { uri: string; type: string; orientation: string; id: string }[]) => {
+      console.log("🗑️ Starting cleanup of captured photos...");
+      
+      if (!photos || photos.length === 0) {
+        console.log("No photos to delete");
+        return;
+      }
+  
+      try {
+        const { status } = await MediaLibrary.requestPermissionsAsync();
+        if (status !== "granted") {
+          console.warn("Media library permission not granted, skipping photo cleanup");
+          // Still clear the state even if we can't delete from storage
+          setCapturedPhotos([]);
+          return;
+        }
+  
+        // Extract asset IDs from photos (now guaranteed to have ID since we store them)
+        const assetIds = photos.map(photo => photo.id);
+        
+        // Delete the assets from device storage using the asset IDs directly
+        if (assetIds.length > 0) {
+          console.log(`Deleting ${assetIds.length} photos from device storage using asset IDs`);
+          const deleteSuccess = await MediaLibrary.deleteAssetsAsync(assetIds);
+          
+          if (deleteSuccess) {
+            console.log("✅ Successfully deleted photos from device storage");
+          } else {
+            console.warn("⚠️ Some photos may not have been deleted from storage");
+          }
+        }
+  
+        // Clear the state regardless of deletion success
+        setCapturedPhotos([]);
+        console.log("✅ Cleared captured photos from UI");
+  
+      } catch (error) {
+        console.error("❌ Error during photo cleanup:", error);
+        // Even if deletion fails, clear the UI state
+        setCapturedPhotos([]);
+        console.log("⚠️ Cleared UI state despite cleanup errors");
+      }
+    }, []);
+  
 
   const handleSaveToDatabase = async () => {
     // Validate that we have nutrition data
@@ -444,19 +488,14 @@ function Feedback() {
           [
             {
               text: "OK",
-              onPress: () => {
-                // Optional: Reset the form after successful save
-                // reset();
-                // setNutrients({
-                //   carbohydrate: "0",
-                //   sodium: "0",
-                //   protein: "0",
-                // });
-                // setCapturedPhotos([]);
+              onPress: () => {                
+                reset();
+                setCapturedPhotos([]);
               },
             },
           ]
         );
+        await deleteAllCapturedPhotos(capturedPhotos)
         navigation.navigate("page-2")
       } else {
         Alert.alert("Error", result.error || "Failed to save data");
