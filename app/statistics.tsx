@@ -63,13 +63,28 @@ function NutrientCard({
 
   const percentage = Math.min((value / target) * 100, 100);
 
+  // Format values to 3 decimal places for sodium, round for others
+  const formatValue = (val: number) => {
+    if (label === "Sodium") {
+      return Math.ceil(val * 1000) / 1000; // Round up to 3 decimal places
+    }
+    return Math.round(val);
+  };
+
+  const formatTarget = (val: number) => {
+    if (label === "Sodium") {
+      return Math.ceil(val * 1000) / 1000; // Round up to 3 decimal places
+    }
+    return Math.round(val);
+  };
+
   return (
     <View style={styles.nutrientCard}>
       <Text style={styles.nutrientValue}>
-        {value}
+        {formatValue(value)}
         {unit}
         <Text style={styles.nutrientTarget}>
-          {"\n"}/{target}
+          {"\n"}/{formatTarget(target)}
           {unit}
         </Text>
       </Text>
