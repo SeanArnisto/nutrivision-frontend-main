@@ -5,21 +5,26 @@ import {
   Image,
   Text,
   StyleSheet,
-  Dimensions, 
+  Dimensions,
   TouchableOpacity,
   Platform,
   ScrollView,
   SafeAreaView,
   KeyboardAvoidingView,
+  Alert,
+  ActivityIndicator
 } from "react-native";
 import { useNavigation } from "expo-router";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { RootStackParamList } from "@/types/types";
 import * as MediaLibrary from "expo-media-library";
 import { useRecommStore, useNutrientsStore } from "@/hooks/store";
-import { useNutritionAverage, fetchNutritionAverage } from "@/stores/nutritionIntakeStore"; 
+import {
+  useNutritionAverage,
+  fetchNutritionAverage,
+} from "@/stores/nutritionIntakeStore";
 import { Ionicons } from "@expo/vector-icons";
-import  AppLogo  from "@/components/appLogo";
+import AppLogo from "@/components/appLogo";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 
@@ -36,105 +41,120 @@ const SPOON_IMAGES = {
 } as const;
 
 // Helper function moved outside component to prevent re-creation
-const getTablespoonEquivalent = (grams: number, isNutrient: 'carbs' | 'protein' | 'sodium'): string => {
+const getTablespoonEquivalent = (
+  grams: number,
+  isNutrient: "carbs" | "protein" | "sodium"
+): string => {
   const tablespoons = grams / 15;
-  
-  if (isNutrient === 'sodium') {
+
+  if (isNutrient === "sodium") {
     // Sodium is usually much smaller amounts
     if (tablespoons < 0.25) {
-      return 'less than ¼ tbsp';
+      return "less than ¼ tbsp";
     } else if (tablespoons < 0.5) {
-      return '¼ tbsp';
+      return "¼ tbsp";
     } else if (tablespoons < 1) {
-      return '½ tbsp';
+      return "½ tbsp";
     } else {
       const rounded = Math.round(tablespoons * 4) / 4; // Round to nearest quarter
-      return `${rounded} tbsp${rounded > 1 ? 's' : ''}`;
+      return `${rounded} tbsp${rounded > 1 ? "s" : ""}`;
     }
   }
-  
+
   // For carbs and protein
   if (tablespoons < 1) {
-    return 'less than 1 tbsp';
+    return "less than 1 tbsp";
   } else {
     const rounded = Math.round(tablespoons);
-    return `${rounded} tbsp${rounded > 1 ? 's' : ''}`;
+    return `${rounded} tbsp${rounded > 1 ? "s" : ""}`;
   }
 };
 
 // Memoized SpoonVisualization component
-const SpoonVisualization = React.memo(({ value, minIntake, maxIntake }: { 
-  value: number; 
-  minIntake: number; 
-  maxIntake: number; 
-}) => {
-  const spoonData = useMemo(() => {
-    const maxSpoons = 5;
-    const gramsPerSpoon = 15;
-    const totalTablespoons = value / gramsPerSpoon;
-    
-    // Calculate how many spoons should be filled based on the value
-    const filledSpoons = Math.min(Math.ceil(totalTablespoons), maxSpoons);
-    
-    // Check if we need to show a plus sign (more than 5 tablespoons)
-    const showPlusSign = totalTablespoons > maxSpoons;
-    
-    // Check if we need to show a less than sign (very small amounts)
-    const showLessThanSign = totalTablespoons < 1;
-    
-    // Spoons turn GREEN when value is within recommended range
-    const isInGoodRange = value >= minIntake && value <= maxIntake;
-    
-    // Create array of spoon states
-    const spoonStates = Array.from({ length: maxSpoons }, (_, index) => {
-      if (index < filledSpoons) {
-        return isInGoodRange ? 'green' : 'red';
-      }
-      return 'gray';
-    });
+const SpoonVisualization = React.memo(
+  ({
+    value,
+    minIntake,
+    maxIntake,
+  }: {
+    value: number;
+    minIntake: number;
+    maxIntake: number;
+  }) => {
+    const spoonData = useMemo(() => {
+      const maxSpoons = 5;
+      const gramsPerSpoon = 15;
+      const totalTablespoons = value / gramsPerSpoon;
 
-    return {
-      spoonStates,
-      showPlusSign,
-      showLessThanSign,
-      isInGoodRange
-    };
-  }, [value, minIntake, maxIntake]);
+      // Calculate how many spoons should be filled based on the value
+      const filledSpoons = Math.min(Math.ceil(totalTablespoons), maxSpoons);
 
-  const getSpoonImage = useCallback((state: string) => {
-    return SPOON_IMAGES[state as keyof typeof SPOON_IMAGES] || SPOON_IMAGES.gray;
-  }, []);
+      // Check if we need to show a plus sign (more than 5 tablespoons)
+      const showPlusSign = totalTablespoons > maxSpoons;
 
-  return (
-    <View style={styles.rightContainer}>
-      <View style={styles.spoonContainer}>
-        {spoonData.spoonStates.map((state, index) => (
-          <Image
-            key={index}
-            source={getSpoonImage(state)}
-            style={styles.individualSpoon}
-          />
-        ))}
-        {spoonData.showLessThanSign && (
-          <Text style={[
-            styles.lessThanSign, 
-            { color: spoonData.isInGoodRange ? '#4CAF50' : '#F44336' }
-          ]}>
-            &lt;
-          </Text>
-        )}
-        {spoonData.showPlusSign && (
-          <Text style={[
-            styles.plusSign, 
-            { color: spoonData.isInGoodRange ? '#4CAF50' : '#F44336' }
-          ]}>
-            +
-          </Text>
-        )}
+      // Check if we need to show a less than sign (very small amounts)
+      const showLessThanSign = totalTablespoons < 1;
+
+      // Spoons turn GREEN when value is within recommended range
+      const isInGoodRange = value >= minIntake && value <= maxIntake;
+
+      // Create array of spoon states
+      const spoonStates = Array.from({ length: maxSpoons }, (_, index) => {
+        if (index < filledSpoons) {
+          return isInGoodRange ? "green" : "red";
+        }
+        return "gray";
+      });
+
+      return {
+        spoonStates,
+        showPlusSign,
+        showLessThanSign,
+        isInGoodRange,
+      };
+    }, [value, minIntake, maxIntake]);
+
+    const getSpoonImage = useCallback((state: string) => {
+      return (
+        SPOON_IMAGES[state as keyof typeof SPOON_IMAGES] || SPOON_IMAGES.gray
+      );
+    }, []);
+
+    return (
+      <View style={styles.rightContainer}>
+        <View style={styles.spoonContainer}>
+          {spoonData.spoonStates.map((state, index) => (
+            <Image
+              key={index}
+              source={getSpoonImage(state)}
+              style={styles.individualSpoon}
+            />
+          ))}
+          {spoonData.showLessThanSign && (
+            <Text
+              style={[
+                styles.lessThanSign,
+                { color: spoonData.isInGoodRange ? "#4CAF50" : "#F44336" },
+              ]}
+            >
+              &lt;
+            </Text>
+          )}
+          {spoonData.showPlusSign && (
+            <Text
+              style={[
+                styles.plusSign,
+                { color: spoonData.isInGoodRange ? "#4CAF50" : "#F44336" },
+              ]}
+            >
+              +
+            </Text>
+          )}
+        </View>
       </View>
-    </View>
-  );
-});
+    );
+  }
+);
 
 function Feedback() {
   const carbs = useNutrientsStore((state) => state.carbs);
@@ -147,7 +167,9 @@ function Feedback() {
   const maxProtein = useRecommStore((state) => state.maxProtein);
   const minSodium = useRecommStore((state) => state.minSodium);
   const maxSodium = useRecommStore((state) => state.maxSodium);
-  const loadUserRecommendations = useRecommStore((state) => state.loadUserRecommendations);
+  const loadUserRecommendations = useRecommStore(
+    (state) => state.loadUserRecommendations
+  );
 
   // Nutrition average store for better recommendation ranges
   const {
@@ -161,21 +183,54 @@ function Feedback() {
   const [healthImplication, setHealthImplication] = useState<string>("");
   const [loading, setLoading] = useState<boolean>(true);
   const [currentSlide, setCurrentSlide] = useState<number>(0);
-  const [capturedPhotos, setCapturedPhotos] = useState<{ uri: string }[]>([]);
-  const [mediaLibraryPermission, setMediaLibraryPermission] = useState<boolean | null>(null);
+  //  const [capturedPhotos, setCapturedPhotos] = useState<{ uri: string }[]>([]);
+  const [mediaLibraryPermission, setMediaLibraryPermission] = useState<
+    boolean | null
+  >(null);
   const [photosLoading, setPhotosLoading] = useState<boolean>(true);
+  const [capturedPhotos, setCapturedPhotos] = useState<
+    { uri: string; type: string; orientation: string }[]
+  >([]);
+  // const [mediaLibraryPermission, setMediaLibraryPermission] = useState<
+  //   boolean | null
+  // >(null);
 
   const navigation = useNavigation() as HomeScreenNavigationProp;
 
   // Memoize recommendation values to prevent unnecessary re-renders
-  const recommendationValues = useMemo(() => ({
-    carbsMin: nutritionDataAve && minCarb === 0 ? nutritionDataAve.minCarbs : minCarb,
-    carbsMax: nutritionDataAve && maxCarb === 0 ? nutritionDataAve.maxCarbs : maxCarb,
-    sodiumMin: nutritionDataAve && minSodium === 0 ? nutritionDataAve.minSodium : minSodium,
-    sodiumMax: nutritionDataAve && maxSodium === 0 ? nutritionDataAve.maxSodium : maxSodium,
-    proteinMin: nutritionDataAve && minProtein === 0 ? nutritionDataAve.minProtein : minProtein,
-    proteinMax: nutritionDataAve && maxProtein === 0 ? nutritionDataAve.maxProtein : maxProtein,
-  }), [nutritionDataAve, minCarb, maxCarb, minSodium, maxSodium, minProtein, maxProtein]);
+  const recommendationValues = useMemo(
+    () => ({
+      carbsMin:
+        nutritionDataAve && minCarb === 0 ? nutritionDataAve.minCarbs : minCarb,
+      carbsMax:
+        nutritionDataAve && maxCarb === 0 ? nutritionDataAve.maxCarbs : maxCarb,
+      sodiumMin:
+        nutritionDataAve && minSodium === 0
+          ? nutritionDataAve.minSodium
+          : minSodium,
+      sodiumMax:
+        nutritionDataAve && maxSodium === 0
+          ? nutritionDataAve.maxSodium
+          : maxSodium,
+      proteinMin:
+        nutritionDataAve && minProtein === 0
+          ? nutritionDataAve.minProtein
+          : minProtein,
+      proteinMax:
+        nutritionDataAve && maxProtein === 0
+          ? nutritionDataAve.maxProtein
+          : maxProtein,
+    }),
+    [
+      nutritionDataAve,
+      minCarb,
+      maxCarb,
+      minSodium,
+      maxSodium,
+      minProtein,
+      maxProtein,
+    ]
+  );
 
   // Request media library permissions
   useEffect(() => {
@@ -203,7 +258,6 @@ function Feedback() {
 
   const loadRecentPhotos = async () => {
     try {
-      setPhotosLoading(true);
       const album = await MediaLibrary.getAlbumAsync("NutriVision");
 
       if (!album) {
@@ -233,32 +287,55 @@ function Feedback() {
           }
         }
 
-        recentPhotos.push({ uri: uriToUse });
+        recentPhotos.push({
+          uri: uriToUse,
+          type: Math.random() > 0.5 ? "label" : "fruit",
+          orientation: Math.random() > 0.5 ? "vertical" : "horizontal",
+        });
       }
 
       setCapturedPhotos(
-        recentPhotos.filter(photo => photo.uri && typeof photo.uri === "string")
+        recentPhotos.filter(
+          (photo) => photo.uri && typeof photo.uri === "string"
+        )
       );
     } catch (error) {
       console.error("Error loading photos from NutriVision album:", error);
-    } finally {
-      setPhotosLoading(false);
     }
   };
-
   const fetchFeedback = useCallback(async () => {
     try {
       setLoading(true);
 
       // Use nutrition average data as fallback if regular recommendations aren't available
-      const useNutritionAve = !(minCarb > 0 && maxCarb > 0 && minProtein > 0 && maxProtein > 0 && minSodium > 0 && maxSodium > 0) && nutritionDataAve;
-      
-      const finalMinCarb = useNutritionAve ? nutritionDataAve!.minCarbs : minCarb;
-      const finalMaxCarb = useNutritionAve ? nutritionDataAve!.maxCarbs : maxCarb;
-      const finalMinProtein = useNutritionAve ? nutritionDataAve!.minProtein : minProtein;
-      const finalMaxProtein = useNutritionAve ? nutritionDataAve!.maxProtein : maxProtein;
-      const finalMinSodium = useNutritionAve ? nutritionDataAve!.minSodium : minSodium;
-      const finalMaxSodium = useNutritionAve ? nutritionDataAve!.maxSodium : maxSodium;
+      const useNutritionAve =
+        !(
+          minCarb > 0 &&
+          maxCarb > 0 &&
+          minProtein > 0 &&
+          maxProtein > 0 &&
+          minSodium > 0 &&
+          maxSodium > 0
+        ) && nutritionDataAve;
+
+      const finalMinCarb = useNutritionAve
+        ? nutritionDataAve!.minCarbs
+        : minCarb;
+      const finalMaxCarb = useNutritionAve
+        ? nutritionDataAve!.maxCarbs
+        : maxCarb;
+      const finalMinProtein = useNutritionAve
+        ? nutritionDataAve!.minProtein
+        : minProtein;
+      const finalMaxProtein = useNutritionAve
+        ? nutritionDataAve!.maxProtein
+        : maxProtein;
+      const finalMinSodium = useNutritionAve
+        ? nutritionDataAve!.minSodium
+        : minSodium;
+      const finalMaxSodium = useNutritionAve
+        ? nutritionDataAve!.maxSodium
+        : maxSodium;
 
       const requestData = {
         carbs_total: carbs,
@@ -268,9 +345,9 @@ function Feedback() {
         recommended_sodium: [finalMinSodium, finalMaxSodium],
         recommended_protein: [finalMinProtein, finalMaxProtein],
       };
-      
+
       console.log("Sending feedback request:", requestData);
-      
+
       const response = await fetch(
         "https://pel1-feedback-llm.hf.space/get-response",
         {
@@ -284,7 +361,10 @@ function Feedback() {
 
       if (!response.ok) {
         const errorText = await response.text();
-        console.error(`HTTP error! status: ${response.status}, response:`, errorText);
+        console.error(
+          `HTTP error! status: ${response.status}, response:`,
+          errorText
+        );
         throw new Error(`HTTP error! status: ${response.status}`);
       }
 
@@ -293,25 +373,99 @@ function Feedback() {
 
       if (data && data.feedback) {
         const { comparison_analysis, health_implication } = data.feedback;
-        setComparisonAnalysis(comparison_analysis || "No comparison analysis available.");
-        setHealthImplication(health_implication || "No health implications available.");
+        setComparisonAnalysis(
+          comparison_analysis || "No comparison analysis available."
+        );
+        setHealthImplication(
+          health_implication || "No health implications available."
+        );
       } else {
-        setComparisonAnalysis("No feedback available. If values are 0, make sure to manually input them.");
-        setHealthImplication("No feedback available. If values are 0, make sure to manually input them.");
+        setComparisonAnalysis(
+          "No feedback available. If values are 0, make sure to manually input them."
+        );
+        setHealthImplication(
+          "No feedback available. If values are 0, make sure to manually input them."
+        );
       }
     } catch (error) {
       console.error("Feedback fetch error:", error);
       if (error instanceof Error && error.message.includes("500")) {
-        setComparisonAnalysis("The feedback service is currently experiencing issues. Your nutritional data has been recorded and displayed above.");
-        setHealthImplication("Unable to generate health implications at this time due to a server error. Please try again later.");
+        setComparisonAnalysis(
+          "The feedback service is currently experiencing issues. Your nutritional data has been recorded and displayed above."
+        );
+        setHealthImplication(
+          "Unable to generate health implications at this time due to a server error. Please try again later."
+        );
       } else {
-        setComparisonAnalysis("Unable to connect to feedback service. Please check your internet connection and try again.");
-        setHealthImplication("Unable to connect to feedback service. Please check your internet connection and try again.");
+        setComparisonAnalysis(
+          "Unable to connect to feedback service. Please check your internet connection and try again."
+        );
+        setHealthImplication(
+          "Unable to connect to feedback service. Please check your internet connection and try again."
+        );
       }
     } finally {
       setLoading(false);
     }
-  }, [carbs, prot, sod, minCarb, maxCarb, minProtein, maxProtein, minSodium, maxSodium, nutritionDataAve]);
+  }, [
+    carbs,
+    prot,
+    sod,
+    minCarb,
+    maxCarb,
+    minProtein,
+    maxProtein,
+    minSodium,
+    maxSodium,
+    nutritionDataAve,
+  ]);
+
+  const carbohydrate = useNutrientsStore((state) => state.carbs);
+  const protein = useNutrientsStore((state) => state.protein);
+  const sodium = useNutrientsStore((state) => state.sodium);
+  const saveWithPhotos = useNutrientsStore((state) => state.saveWithPhotos);
+
+  const handleSaveToDatabase = async () => {
+    // Validate that we have nutrition data
+    if (carbohydrate === 0 && protein === 0 && sodium === 0) {
+      Alert.alert("No Data", "Please enter nutritional values before saving.", [
+        { text: "OK" },
+      ]);
+      return;
+    }
+
+    try {
+      const result = await saveWithPhotos(capturedPhotos);
+
+      if (result.success) {
+        Alert.alert(
+          "Success",
+          "Nutritional data and photos saved successfully!",
+          [
+            {
+              text: "OK",
+              onPress: () => {
+                // Optional: Reset the form after successful save
+                // reset();
+                // setNutrients({
+                //   carbohydrate: "0",
+                //   sodium: "0",
+                //   protein: "0",
+                // });
+                // setCapturedPhotos([]);
+              },
+            },
+          ]
+        );
+        navigation.navigate("page-2")
+      } else {
+        Alert.alert("Error", result.error || "Failed to save data");
+      }
+    } catch (error) {
+      Alert.alert("Error", "An unexpected error occurred");
+      console.error("Save error:", error);
+    }
+  };
 
   // Fetch feedback when nutrient values change
   useEffect(() => {
@@ -322,26 +476,33 @@ function Feedback() {
       minProtein,
       maxProtein,
       minSodium,
-      maxSodium
+      maxSodium,
     });
 
     console.log("Nutrition average data:", nutritionDataAve);
-    
+
     // Check if recommendation ranges are valid (not zero)
-    const hasValidRecommendations = 
-      minCarb > 0 && maxCarb > 0 && 
-      minProtein > 0 && maxProtein > 0 && 
-      minSodium > 0 && maxSodium > 0;
-    
+    const hasValidRecommendations =
+      minCarb > 0 &&
+      maxCarb > 0 &&
+      minProtein > 0 &&
+      maxProtein > 0 &&
+      minSodium > 0 &&
+      maxSodium > 0;
+
     // Check if we have valid nutrition average data as fallback
-    const hasValidNutritionAve = nutritionDataAve &&
-      nutritionDataAve.minCarbs > 0 && nutritionDataAve.maxCarbs > 0 &&
-      nutritionDataAve.minProtein > 0 && nutritionDataAve.maxProtein > 0 &&
-      nutritionDataAve.minSodium > 0 && nutritionDataAve.maxSodium > 0;
-    
+    const hasValidNutritionAve =
+      nutritionDataAve &&
+      nutritionDataAve.minCarbs > 0 &&
+      nutritionDataAve.maxCarbs > 0 &&
+      nutritionDataAve.minProtein > 0 &&
+      nutritionDataAve.maxProtein > 0 &&
+      nutritionDataAve.minSodium > 0 &&
+      nutritionDataAve.maxSodium > 0;
+
     console.log("hasValidRecommendations:", hasValidRecommendations);
     console.log("hasValidNutritionAve:", hasValidNutritionAve);
-    
+
     if (hasValidRecommendations || hasValidNutritionAve) {
       fetchFeedback();
     } else {
@@ -357,7 +518,9 @@ function Feedback() {
 
   // Memoized carousel scroll handler to prevent unnecessary re-renders
   const handleCarouselScroll = useCallback((event: any) => {
-    const slideIndex = Math.round(event.nativeEvent.contentOffset.x / SCREEN_WIDTH * 1.11);
+    const slideIndex = Math.round(
+      (event.nativeEvent.contentOffset.x / SCREEN_WIDTH) * 1.11
+    );
     setCurrentSlide(slideIndex);
   }, []);
 
@@ -372,7 +535,6 @@ function Feedback() {
         <ScrollView contentContainerStyle={styles.scrollContainer}>
           <View style={styles.container}>
             {/* Header with App Logo */}
-              
 
             {/* Photo Thumbnail Section */}
             <View style={styles.thumbnailSection}>
@@ -397,7 +559,9 @@ function Feedback() {
                   </ScrollView>
                 ) : (
                   <View style={styles.placeholderContainer}>
-                    <Text style={styles.placeholderText}>No photos available</Text>
+                    <Text style={styles.placeholderText}>
+                      No photos available
+                    </Text>
                   </View>
                 )}
               </View>
@@ -420,13 +584,13 @@ function Feedback() {
               <View style={styles.textContainer}>
                 <Text style={styles.textHeader}>Carbs: {carbs}g</Text>
                 <Text style={styles.textSubHeader}>
-                  {getTablespoonEquivalent(carbs, 'carbs')}
+                  {getTablespoonEquivalent(carbs, "carbs")}
                 </Text>
               </View>
-              <SpoonVisualization 
-                value={carbs} 
-                minIntake={recommendationValues.carbsMin} 
-                maxIntake={recommendationValues.carbsMax} 
+              <SpoonVisualization
+                value={carbs}
+                minIntake={recommendationValues.carbsMin}
+                maxIntake={recommendationValues.carbsMax}
               />
             </View>
 
@@ -435,13 +599,13 @@ function Feedback() {
               <View style={styles.textContainer}>
                 <Text style={styles.textHeader}>Sodium: {sod}g</Text>
                 <Text style={styles.textSubHeader}>
-                  {getTablespoonEquivalent(sod, 'sodium')}
+                  {getTablespoonEquivalent(sod, "sodium")}
                 </Text>
               </View>
-              <SpoonVisualization 
-                value={sod} 
-                minIntake={recommendationValues.sodiumMin} 
-                maxIntake={recommendationValues.sodiumMax} 
+              <SpoonVisualization
+                value={sod}
+                minIntake={recommendationValues.sodiumMin}
+                maxIntake={recommendationValues.sodiumMax}
               />
             </View>
 
@@ -450,13 +614,13 @@ function Feedback() {
               <View style={styles.textContainer}>
                 <Text style={styles.textHeader}>Protein: {prot}g</Text>
                 <Text style={styles.textSubHeader}>
-                  {getTablespoonEquivalent(prot, 'protein')}
+                  {getTablespoonEquivalent(prot, "protein")}
                 </Text>
               </View>
-              <SpoonVisualization 
-                value={prot} 
-                minIntake={recommendationValues.proteinMin} 
-                maxIntake={recommendationValues.proteinMax} 
+              <SpoonVisualization
+                value={prot}
+                minIntake={recommendationValues.proteinMin}
+                maxIntake={recommendationValues.proteinMax}
               />
             </View>
 
@@ -475,12 +639,16 @@ function Feedback() {
                   >
                     {/* Slide 1: Comparison Analysis */}
                     <View style={styles.slideContainer}>
-                      <Text style={styles.slideTitle}>Nutritional Analysis</Text>
+                      <Text style={styles.slideTitle}>
+                        Nutritional Analysis
+                      </Text>
                       <ScrollView
                         style={styles.slideContentScroll}
                         contentContainerStyle={styles.slideContent}
                       >
-                        <Text style={styles.feedbackText}>{comparisonAnalysis}</Text>
+                        <Text style={styles.feedbackText}>
+                          {comparisonAnalysis}
+                        </Text>
                       </ScrollView>
                     </View>
 
@@ -491,21 +659,31 @@ function Feedback() {
                         style={styles.slideContentScroll}
                         contentContainerStyle={styles.slideContent}
                       >
-                        <Text style={styles.feedbackText}>{healthImplication}</Text>
+                        <Text style={styles.feedbackText}>
+                          {healthImplication}
+                        </Text>
                       </ScrollView>
                     </View>
                   </ScrollView>
 
                   {/* Carousel Indicators */}
                   <View style={styles.indicatorContainer}>
-                    <View style={[
-                      styles.indicator,
-                      currentSlide === 0 ? styles.activeIndicator : styles.inactiveIndicator
-                    ]} />
-                    <View style={[
-                      styles.indicator,
-                      currentSlide === 1 ? styles.activeIndicator : styles.inactiveIndicator
-                    ]} />
+                    <View
+                      style={[
+                        styles.indicator,
+                        currentSlide === 0
+                          ? styles.activeIndicator
+                          : styles.inactiveIndicator,
+                      ]}
+                    />
+                    <View
+                      style={[
+                        styles.indicator,
+                        currentSlide === 1
+                          ? styles.activeIndicator
+                          : styles.inactiveIndicator,
+                      ]}
+                    />
                   </View>
                 </>
               )}
@@ -515,16 +693,31 @@ function Feedback() {
       </KeyboardAvoidingView>
 
       {/* Navigation Buttons */}
-      <TouchableOpacity style={styles.roundButton} onPress={() => navigation.goBack()}>
+      <TouchableOpacity
+        style={styles.roundButton}
+        onPress={() => navigation.goBack()}
+      >
         <Ionicons name="arrow-undo-outline" size={28} color="#9AB206" />
       </TouchableOpacity>
 
-      <TouchableOpacity style={styles.checkButton} onPress={() => navigation.navigate("page-2")}>
+      {/* <TouchableOpacity style={styles.checkButton} onPress={() => navigation.navigate("page-2")}>
         <Image
           source={require("@/assets/images/Home.png")}
           style={styles.homeIcon}
         />
-      </TouchableOpacity>
+      </TouchableOpacity> */}
+       <TouchableOpacity 
+        style={[styles.saveButton, loading && styles.saveButtonDisabled]} 
+        onPress={handleSaveToDatabase}
+        disabled={loading}
+        activeOpacity={0.8}
+      >
+        {loading ? (
+          <ActivityIndicator color="#fff" size="small" />
+        ) : (
+          <Text style={styles.saveButtonText}>Save to Database</Text>
+        )}
+      </TouchableOpacity> 
     </SafeAreaView>
   );
 }
@@ -534,6 +727,26 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#eff1f6",
   },
+  saveButton: {
+    position: 'absolute',
+    bottom: 40,
+    right: 20,
+    backgroundColor: '#7ca844',
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    borderRadius: 25,
+    minWidth: 150,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
+  },
   scrollContainer: {
     flexGrow: 1,
     paddingBottom: 100,
@@ -542,7 +755,7 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#eff1f6",
     paddingHorizontal: 16,
-    paddingVertical: 16
+    paddingVertical: 16,
   },
   header: {
     width: "100%",
@@ -579,6 +792,16 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#DDDDDD",
     overflow: "hidden",
+  },
+  saveButtonDisabled: {
+    backgroundColor: '#c0b4b4',
+    opacity: 0.7,
+  },
+  saveButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
+    fontFamily: 'SpaceMono-Regular',
   },
   thumbnail: {
     width: "100%",
@@ -668,10 +891,10 @@ const styles = StyleSheet.create({
     width: SCREEN_WIDTH * 0.35,
   },
   spoonContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    width: '100%',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    width: "100%",
   },
   individualSpoon: {
     width: 40,
@@ -681,14 +904,14 @@ const styles = StyleSheet.create({
   plusSign: {
     fontSize: 24,
     marginTop: 20,
-    textAlign: 'center',
-    marginLeft: -10
+    textAlign: "center",
+    marginLeft: -10,
   },
   lessThanSign: {
     fontSize: 24,
     marginTop: 20,
     marginLeft: -10,
-    textAlign: 'center',
+    textAlign: "center",
   },
   feedbackContainer: {
     width: SCREEN_WIDTH * 0.9,
@@ -763,7 +986,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: "gray",
     textAlign: "center",
-    marginTop: 20
+    marginTop: 20,
   },
   roundButton: {
     width: 60,
