@@ -85,7 +85,7 @@ export default function Page2() {
   // Redirect unauthenticated users to login
   useEffect(() => {
     if (!isAuthenticated) {
-      navigation.replace('login');
+      navigation.replace("login");
     }
   }, [isAuthenticated, navigation]);
 
@@ -173,7 +173,7 @@ export default function Page2() {
     ? Math.round(nutritionData.avg_protein)
     : 0;
   const sodiumAvg = nutritionData?.avg_sodium
-    ? (nutritionData.avg_sodium / 1000)
+    ? nutritionData.avg_sodium / 1000
     : 0; // No division by 1000 if already in correct units
 
   // Handle retry for different errors
@@ -288,9 +288,13 @@ export default function Page2() {
       </ThemedView>
 
       <BottomNavBar
-        activeTab={activeTab}
-        onTabPress={handleTabPress}
         onCameraPress={() => navigation.navigate("camera")}
+        routeMapping={{
+          home: "page-2",
+          stats: "statistics",
+          settings: "settings",
+          profile: "profile",
+        }}
       />
     </SafeAreaView>
   );

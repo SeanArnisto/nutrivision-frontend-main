@@ -589,9 +589,13 @@ export default function Statistics() {
       </ScrollView>
 
       <BottomNavBar
-        activeTab="stats"
-        onTabPress={handleTabPress}
         onCameraPress={() => navigation.navigate("camera")}
+        routeMapping={{
+          home: "page-2",
+          stats: "statistics",
+          settings: "settings",
+          profile: "profile",
+        }}
       />
     </SafeAreaView>
   );

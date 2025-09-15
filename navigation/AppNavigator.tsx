@@ -21,36 +21,42 @@ import ForgotEmailScreen from "@/app/forgot-email";
 import ForgotOtpScreen from "@/app/forgot-otp";
 import ForgotResetScreen from "@/app/forgot-reset";
 import NutritionalLabelScreen from "@/app/photo-label-details";
-import FruitDetailsScreen from '@/app/photo-fruit-details';
+import FruitDetailsScreen from "@/app/photo-fruit-details";
 import { navigationRef } from "./navigationRef";
 
 const Stack = createStackNavigator<RootStackParamList>();
 
 export default function AppNavigator() {
   return (
-     <NavigationContainer ref={navigationRef}>
-        <Stack.Navigator initialRouteName="index">
-          <Stack.Screen name="index" component={index} />
-          <Stack.Screen name="page-6" component={Page6} />
-          <Stack.Screen name="page-2" component={Page2} />
-          <Stack.Screen name="nutrient-page" component={UserNutrientPage} />
-          <Stack.Screen name="camera" component={Camera} />
-          <Stack.Screen name="feedback" component={Feedback} />
-          <Stack.Screen name="loading" component={Loading} />
-          <Stack.Screen name="landing_page" component={LandingPage} />
-          <Stack.Screen name="onboarding" component={onboarding} />
-          <Stack.Screen name="settings" component={Settings} />
-          <Stack.Screen name="profile" component={Profile} />
-          <Stack.Screen name="statistics" component={Statistics} />
-          <Stack.Screen name="login" component={LoginScreen} />
-          <Stack.Screen name="signup" component={SignUpScreen} />
-          <Stack.Screen name="otp" component={OtpScreen} />
-          <Stack.Screen name="forgot-email" component={ForgotEmailScreen} />
-          <Stack.Screen name="forgot-otp" component={ForgotOtpScreen} />
-          <Stack.Screen name="forgot-reset" component={ForgotResetScreen} />
-          <Stack.Screen name="photo-label-details" component={NutritionalLabelScreen} />
-          <Stack.Screen name="photo-fruit-details" component={FruitDetailsScreen} />
-        </Stack.Navigator>
-      </NavigationContainer>
+    <NavigationContainer ref={navigationRef}>
+      <Stack.Navigator initialRouteName="index">
+        <Stack.Screen name="index" component={index} />
+        <Stack.Screen name="page-6" component={Page6} />
+        <Stack.Screen name="page-2" component={Page2} />
+        <Stack.Screen name="nutrient-page" component={UserNutrientPage} />
+        <Stack.Screen name="camera" component={Camera} />
+        <Stack.Screen name="feedback" component={Feedback} />
+        <Stack.Screen name="loading" component={Loading} />
+        <Stack.Screen name="landing_page" component={LandingPage} />
+        <Stack.Screen name="onboarding" component={onboarding} />
+        <Stack.Screen name="settings" component={Settings} />
+        <Stack.Screen name="profile" component={Profile} />
+        <Stack.Screen name="statistics" component={Statistics} />
+        <Stack.Screen name="login" component={LoginScreen} />
+        <Stack.Screen name="signup" component={SignUpScreen} />
+        <Stack.Screen name="otp" component={OtpScreen} />
+        <Stack.Screen name="forgot-email" component={ForgotEmailScreen} />
+        <Stack.Screen name="forgot-otp" component={ForgotOtpScreen} />
+        <Stack.Screen name="forgot-reset" component={ForgotResetScreen} />
+        <Stack.Screen
+          name="photo-label-details"
+          component={NutritionalLabelScreen}
+        />
+        <Stack.Screen
+          name="photo-fruit-details"
+          component={FruitDetailsScreen}
+        />
+      </Stack.Navigator>
+    </NavigationContainer>
   );
 }
