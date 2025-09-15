@@ -205,6 +205,7 @@ export default function Page2() {
             tintColor={nutrients.carbohydrate.tintColor}
             subtitle="Carbohydrate"
             value={isIntakeLoading ? "..." : carbAvg.toString()}
+            index={0}
           />
 
           {/* Sodium Card */}
@@ -213,6 +214,7 @@ export default function Page2() {
             tintColor={nutrients.sodium.tintColor}
             subtitle="Sodium"
             value={isIntakeLoading ? "..." : sodiumAvg.toString()}
+            index={1}
           />
 
           {/* Protein Card */}
@@ -221,6 +223,7 @@ export default function Page2() {
             tintColor={nutrients.protein.tintColor}
             subtitle="Protein"
             value={isIntakeLoading ? "..." : proteinAvg.toString()}
+            index={2}
           />
         </View>
 

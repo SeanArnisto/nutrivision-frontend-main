@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { AnimatedCircularProgress } from "react-native-circular-progress";
 import {
   StyleSheet,
@@ -8,6 +8,7 @@ import {
   SafeAreaView,
   Text,
   TouchableOpacity,
+  Platform,
 } from "react-native";
 
 interface AvgIntakeCardProps {
@@ -16,6 +17,7 @@ interface AvgIntakeCardProps {
   subtitle: string;
   value: number | string;
   fill?: number;
+  index?: number;
 }
 
 export default function AvgIntakeCard({ 
@@ -23,8 +25,26 @@ export default function AvgIntakeCard({
   tintColor, 
   subtitle, 
   value,
-  fill = 100 
+  fill = 100,
+  index = 0
 }: AvgIntakeCardProps) {
+  // State to trigger immediate animation
+  const [animatedFill, setAnimatedFill] = useState(0);
+  
+  // Calculate staggered delay for animations - shorter delays for better performance
+  const animationDelay = 100 + (index * 100);
+  
+  // Reduce animation duration on Android for better performance
+  const animationDuration = Platform.OS === 'android' ? 500 : 600;
+
+  // Start animation immediately when component mounts
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setAnimatedFill(fill);
+    }, animationDelay);
+
+    return () => clearTimeout(timer);
+  }, [fill, animationDelay]);
   return (
     <>
       <View style={[styles.column]}>
@@ -45,9 +65,11 @@ export default function AvgIntakeCard({
                 style={{ transform: [{ rotate: "90deg" }, { scaleX: -1 }] }}
                 size={85}
                 width={8}
-                fill={fill} // Percentage fill
+                fill={animatedFill} // Animated percentage fill
                 tintColor={tintColor}
                 backgroundColor="#dddddd"
+                duration={animationDuration}
+                prefill={0}
               >
                 {() => (
                   <Image

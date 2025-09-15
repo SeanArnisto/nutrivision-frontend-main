@@ -7,6 +7,7 @@ import {
   ScrollView,
   Image,
   Dimensions,
+  Platform,
 } from "react-native";
 import SafeViewAndroid from "@/components/SafeViewAndroid";
 import { useNavigation } from "@react-navigation/native";
@@ -14,7 +15,7 @@ import { StackNavigationProp } from "@react-navigation/stack";
 import { RootStackParamList } from "@/types/types";
 import AppLogo from "@/components/appLogo";
 import BottomNavBar from "@/components/BottomNavBar";
-import { CircularProgress } from "react-native-circular-progress";
+import { AnimatedCircularProgress } from "react-native-circular-progress";
 import ProfileBox from "@/components/ProfileBox";
 import { format, addDays } from "date-and-time";
 import BarChart from "@/components/Barchart";
@@ -39,6 +40,7 @@ interface NutrientCardProps {
   unit: string;
   iconSource: any;
   status: "low" | "recommended" | "high";
+  index?: number;
 }
 
 function NutrientCard({
@@ -48,7 +50,14 @@ function NutrientCard({
   unit,
   iconSource,
   status,
+  index = 0,
 }: NutrientCardProps) {
+  // Calculate staggered delay for animations
+  const animationDelay = 200 + (index * 150);
+  
+  // Shorter duration on Android for better performance
+  const animationDuration = Platform.OS === 'android' ? 600 : 800;
+  
   const getStatusColor = () => {
     switch (status) {
       case "low":
@@ -91,18 +100,21 @@ function NutrientCard({
       </Text>
       <Text style={styles.nutrientLabel}>{label}</Text>
 
-      <View style={styles.circularProgressContainer}>
-        <CircularProgress
-          size={80}
-          width={6}
-          fill={percentage}
-          tintColor={getStatusColor()}
-          backgroundColor="#DDDDDD"
-          lineCap="round"
-        >
-          {() => <Image source={iconSource} style={styles.nutrientIcon} />}
-        </CircularProgress>
-      </View>
+       <View style={styles.circularProgressContainer}>
+         <AnimatedCircularProgress
+           size={80}
+           width={6}
+           fill={percentage}
+           tintColor={getStatusColor()}
+           backgroundColor="#DDDDDD"
+           lineCap="round"
+           duration={animationDuration}
+           delay={animationDelay}
+           prefill={0}
+         >
+           {() => <Image source={iconSource} style={styles.nutrientIcon} />}
+         </AnimatedCircularProgress>
+       </View>
     </View>
   );
 }
@@ -550,23 +562,25 @@ export default function Statistics() {
             </View>
           </View>
 
-          {/* Nutrient Cards */}
-          <View style={styles.nutrientCardsContainer}>
-            {nutrientData.map((nutrient, index) => (
-              <NutrientCard
-                key={index}
-                value={nutrient.value}
-                target={nutrient.target}
-                label={nutrient.label}
-                unit={nutrient.unit}
-                iconSource={nutrient.iconSource}
-                status={nutrient.status}
-              />
-            ))}
-          </View>
+           {/* Nutrient Cards */}
+           <View style={styles.nutrientCardsContainer}>
+             {nutrientData.map((nutrient, index) => (
+               <NutrientCard
+                 key={index}
+                 value={nutrient.value}
+                 target={nutrient.target}
+                 label={nutrient.label}
+                 unit={nutrient.unit}
+                 iconSource={nutrient.iconSource}
+                 status={nutrient.status}
+                 index={index}
+               />
+             ))}
+           </View>
 
           {/* Weekly Chart using the new BarChart component */}
           <BarChart
+            key={`chart-${startStr}-${endStr}`}
             data={weeklyChartData}
             title="Weekly Intake Ratio"
             subtitle={`${startStr} - ${endStr}`}
