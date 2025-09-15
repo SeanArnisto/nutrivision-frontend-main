@@ -526,8 +526,8 @@ export default function Page6() {
             data={weeklyChartData}
             title="Weekly Intake Ratio"
             subtitle={`${startStr} - ${endStr}`}
-            maxValue={200} // Increased to show ratios above 1.0 (100%)
-            stepValue={50} // Steps of 50% (0.5 ratio)
+            maxValue={150} // Maximum value on Y-axis
+            stepValue={25} // Steps of 25 (0.25 ratio increments)
             height={160}
             barWidth={10}
             spacing={2}
@@ -538,7 +538,7 @@ export default function Page6() {
               { color: "#F4D03F", label: "Carbohydrates" },
               { color: "#8B4513", label: "Sodium" },
               { color: "#9AB106", label: "Protein" },
-              { color: "#000000", label: "Target Ratio (1.0)" },
+              { color: "#000000", label: "Target" },
             ]}
           />
         </View>

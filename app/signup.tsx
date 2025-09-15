@@ -9,6 +9,7 @@ import {
   ScrollView,
   Dimensions,
 } from "react-native";
+import SafeViewAndroid from "@/components/SafeViewAndroid";
 import { useNavigation } from "@react-navigation/native";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { RootStackParamList } from "@/types/types";

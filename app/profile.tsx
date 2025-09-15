@@ -8,6 +8,7 @@ import {
   Alert,
   Image,
 } from "react-native";
+import SafeViewAndroid from "@/components/SafeViewAndroid";
 import { useNavigation } from "@react-navigation/native";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { RootStackParamList } from "@/types/types";
@@ -16,6 +17,8 @@ import AppLogo from "@/components/appLogo";
 import BottomNavBar from "@/components/BottomNavBar";
 import ProfileField from "@/components/ProfileField";
 import ProfileBox from "@/components/ProfileBox";
+import TextInputModal from "@/components/TextInputModal";
+import GenderSelectionModal from "@/components/GenderSelectionModal";
 
 import { useAuthStore } from "@/stores/authStore";
 import { supabase } from "@/config/supabase";
@@ -49,6 +52,17 @@ export default function Profile() {
 
   const [userProfile, setUserProfile] = useState<UserProfile>({});
   const [isLoading, setIsLoading] = useState(true);
+  
+  // Modal state
+  const [modalVisible, setModalVisible] = useState(false);
+  const [genderModalVisible, setGenderModalVisible] = useState(false);
+  const [modalConfig, setModalConfig] = useState({
+    title: '',
+    placeholder: '',
+    keyboardType: 'default' as 'default' | 'numeric' | 'email-address',
+    initialValue: '',
+    fieldType: '' as 'name' | 'age' | 'weight' | 'height',
+  });
 
   // Redirect unauthenticated users to login
   useEffect(() => {
@@ -128,142 +142,164 @@ export default function Profile() {
     fetchUserProfile();
   }, []);
 
-  const handleEditName = async () => {
-    Alert.prompt("Edit Name", "Enter new name.", async (text: string) => {
-      await supabase
-        .from("profiles")
-        .update({
-          name: text,
-        })
-        .eq("email", userProfile.email)
-        .select("*");
+  // Validation functions
+  const validateAge = (age: number): boolean => {
+    return age >= 18 && age <= 120;
+  };
 
-      fetchUserProfile();
+  const validateWeight = (weight: number): boolean => {
+    return weight >= 40 && weight <= 120;
+  };
+
+  const validateHeight = (height: number): boolean => {
+    return height >= 140 && height <= 188;
+  };
+
+  // Handle modal submission
+  const handleModalSubmit = async (value: string) => {
+    const { fieldType } = modalConfig;
+    const { user } = useAuthStore.getState();
+    
+    if (!user) return;
+
+    try {
+      let updateData: any = {};
+      let numericValue: number;
+      
+      switch (fieldType) {
+        case 'name':
+          if (!value.trim()) {
+            Alert.alert("Validation Error", "Name cannot be empty.");
+            return;
+          }
+          updateData.name = value.trim();
+          break;
+        case 'age':
+          numericValue = Number(value);
+          if (isNaN(numericValue) || !validateAge(numericValue)) {
+            Alert.alert("Validation Error", "Age must be between 18 and 120 years.");
+            return;
+          }
+          updateData.age = numericValue;
+          break;
+        case 'weight':
+          numericValue = Number(value);
+          if (isNaN(numericValue) || !validateWeight(numericValue)) {
+            Alert.alert("Validation Error", "Weight must be between 40 and 120 kg.");
+            return;
+          }
+          updateData.weight = numericValue;
+          break;
+        case 'height':
+          numericValue = Number(value);
+          if (isNaN(numericValue) || !validateHeight(numericValue)) {
+            Alert.alert("Validation Error", "Height must be between 140 and 188 cm.");
+            return;
+          }
+          updateData.height = numericValue;
+          break;
+      }
+
+      const { error } = await supabase
+        .from("profiles")
+        .update(updateData)
+        .eq("id", user.id);
+
+      if (error) {
+        console.error(`Error updating ${fieldType}:`, error);
+        Alert.alert("Error", `Failed to update ${fieldType}. Please try again.`);
+      } else {
+        setModalVisible(false);
+        fetchUserProfile();
+      }
+    } catch (error) {
+      console.error(`${fieldType} update error:`, error);
+      Alert.alert("Error", `Failed to update ${fieldType}. Please try again.`);
+    }
+  };
+
+  const handleModalCancel = () => {
+    setModalVisible(false);
+  };
+
+  // Handle gender modal submission
+  const handleGenderSelect = async (gender: 'male' | 'female') => {
+    const { user } = useAuthStore.getState();
+    if (!user) return;
+
+    try {
+      const { error } = await supabase
+        .from("profiles")
+        .update({ gender })
+        .eq("id", user.id);
+
+      if (error) {
+        console.error("Error updating gender:", error);
+        Alert.alert("Error", "Failed to update gender. Please try again.");
+      } else {
+        setGenderModalVisible(false);
+        fetchUserProfile();
+      }
+    } catch (error) {
+      console.error("Gender update error:", error);
+      Alert.alert("Error", "Failed to update gender. Please try again.");
+    }
+  };
+
+  const handleGenderModalCancel = () => {
+    setGenderModalVisible(false);
+  };
+
+  const handleEditName = () => {
+    setModalConfig({
+      title: 'Edit Name',
+      placeholder: 'Enter your name',
+      keyboardType: 'default',
+      initialValue: userProfile.name || '',
+      fieldType: 'name',
     });
-    // Alert.alert("Edit Name", "Name editing functionality not implemented yet.");
+    setModalVisible(true);
   };
 
   const handleEditAge = () => {
-    Alert.prompt("Edit Age", "Enter new age.", async (text: string) => {
-      await supabase
-        .from("profiles")
-        .update({
-          age: Number(text),
-        })
-        .eq("email", userProfile.email)
-        .select("*");
-
-      fetchUserProfile();
+    setModalConfig({
+      title: 'Edit Age',
+      placeholder: 'Enter your age',
+      keyboardType: 'numeric',
+      initialValue: userProfile.age?.toString() || '',
+      fieldType: 'age',
     });
-    // Alert.alert("Edit Age", "Age editing functionality not implemented yet.");
+    setModalVisible(true);
   };
 
   const handleEditWeight = () => {
-    Alert.prompt("Edit Weight", "Enter new weight.", async (text: string) => {
-      await supabase
-        .from("profiles")
-        .update({
-          weight: Number(text),
-        })
-        .eq("email", userProfile.email)
-        .select("*");
-
-      fetchUserProfile();
+    setModalConfig({
+      title: 'Edit Weight',
+      placeholder: 'Enter your weight (kg)',
+      keyboardType: 'numeric',
+      initialValue: userProfile.weight?.toString() || '',
+      fieldType: 'weight',
     });
-
-    // Alert.alert(
-    //   "Edit Weight",
-    //   "Weight editing functionality not implemented yet."
-    // );
+    setModalVisible(true);
   };
 
   const handleEditHeight = () => {
-    Alert.prompt("Edit Height", "Enter new height.", async (text: string) => {
-      await supabase
-        .from("profiles")
-        .update({
-          height: Number(text),
-        })
-        .eq("email", userProfile.email)
-        .select("*");
-
-      fetchUserProfile();
+    setModalConfig({
+      title: 'Edit Height',
+      placeholder: 'Enter your height (cm)',
+      keyboardType: 'numeric',
+      initialValue: userProfile.height?.toString() || '',
+      fieldType: 'height',
     });
-
-    // Alert.alert(
-    //   "Edit Height",
-    //   "Height editing functionality not implemented yet."
-    // );
+    setModalVisible(true);
   };
 
   const handleEditGender = () => {
-    Alert.alert(
-      "Edit Gender",
-      "Select your gender:",
-      [
-        {
-          text: "Male",
-          onPress: async () => {
-            try {
-              const { user } = useAuthStore.getState();
-              if (!user) return;
-              
-              const { data, error } = await supabase
-                .from("profiles")
-                .update({ gender: "male" })
-                .eq("id", user.id)
-                .select("*");
-              
-              if (error) {
-                console.error("Error updating gender:", error);
-                Alert.alert("Error", "Failed to update gender. Please try again.");
-              } else {
-                console.log("Gender updated successfully:", data);
-                fetchUserProfile();
-              }
-            } catch (error) {
-              console.error("Gender update error:", error);
-              Alert.alert("Error", "Failed to update gender. Please try again.");
-            }
-          },
-        },
-        {
-          text: "Female", 
-          onPress: async () => {
-            try {
-              const { user } = useAuthStore.getState();
-              if (!user) return;
-              
-              const { data, error } = await supabase
-                .from("profiles")
-                .update({ gender: "female" })
-                .eq("id", user.id)
-                .select("*");
-              
-              if (error) {
-                console.error("Error updating gender:", error);
-                Alert.alert("Error", "Failed to update gender. Please try again.");
-              } else {
-                console.log("Gender updated successfully:", data);
-                fetchUserProfile();
-              }
-            } catch (error) {
-              console.error("Gender update error:", error);
-              Alert.alert("Error", "Failed to update gender. Please try again.");
-            }
-          },
-        },
-
-        {
-          text: "Cancel",
-          style: "cancel",
-        },
-      ]
-    );
+    setGenderModalVisible(true);
   };
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView style={SafeViewAndroid.AndroidSafeArea}>
       <AppLogo />
 
       <View style={styles.mainContainer}>
@@ -333,6 +369,23 @@ export default function Profile() {
         activeTab="profile"
         onTabPress={handleTabPress}
         onCameraPress={() => navigation.navigate("camera")}
+      />
+
+      <TextInputModal
+        visible={modalVisible}
+        title={modalConfig.title}
+        placeholder={modalConfig.placeholder}
+        initialValue={modalConfig.initialValue}
+        keyboardType={modalConfig.keyboardType}
+        onSubmit={handleModalSubmit}
+        onCancel={handleModalCancel}
+      />
+
+      <GenderSelectionModal
+        visible={genderModalVisible}
+        title="Select Gender"
+        onSelect={handleGenderSelect}
+        onCancel={handleGenderModalCancel}
       />
     </SafeAreaView>
   );

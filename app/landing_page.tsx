@@ -21,6 +21,7 @@ import { ThemedText } from "@/components/ThemedText";
 import Carousel from "react-native-reanimated-carousel";
 import { RootStackParamList } from "@/types/types"; // adjust path as needed
 import { SafeAreaView } from "react-native-safe-area-context";
+import SafeViewAndroid from "@/components/SafeViewAndroid";
 import axios from "axios"; // Add this import
 import { useRecommStore } from "@/hooks/store";
 
@@ -189,7 +190,7 @@ export default function HomeScreen() {
   };
 
   return (
-    <SafeAreaView style={{ flex: 1 }}>
+    <SafeAreaView style={SafeViewAndroid.AndroidSafeArea}>
       <KeyboardAvoidingView
         style={{ flex: 1 }}
         behavior={Platform.OS === "ios" ? "padding" : "height"}
