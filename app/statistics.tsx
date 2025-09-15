@@ -570,8 +570,8 @@ export default function Statistics() {
             data={weeklyChartData}
             title="Weekly Intake Ratio"
             subtitle={`${startStr} - ${endStr}`}
-            maxValue={200} // Increased to show ratios above 1.0 (100%)
-            stepValue={50} // Steps of 50% (0.5 ratio)
+            maxValue={150} // Maximum value on Y-axis
+            stepValue={25} // Steps of 25 (0.25 ratio increments)
             height={160}
             barWidth={8}
             spacing={2}
