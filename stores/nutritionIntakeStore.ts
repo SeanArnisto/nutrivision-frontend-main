@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { supabase } from '@/config/supabase';
 import { useAuthStore } from '@/stores/authStore';
+import { getNutritionalHistory } from '@/hooks/store'; // Import your existing utility
 
 interface NutritionIntakeData {
   avg_carbs: number;
@@ -15,6 +16,21 @@ interface AverageIntakeData {
   maxSodium: number,
   minProtein: number,
   maxProtein: number,
+}
+
+// Add interface for nutritional record (from your store file)
+interface NutritionalRecord {
+  id: string;
+  user_id: string;
+  calories?: number;
+  carbohydrates?: number;
+  protein?: number;
+  sodium?: number;
+  created_at: string;
+  nutritional_images?: Array<{
+    image_url: string;
+    image_order: number;
+  }>;
 }
 
 interface NutritionApiResponse {
@@ -37,15 +53,20 @@ interface UserProfile {
 
 interface NutritionIntakeState {
   nutritionData: NutritionIntakeData | null;
+  nutritionalHistory: NutritionalRecord[]; // Add nutritional history
   isLoading: boolean;
+  isHistoryLoading: boolean; // Separate loading state for history
   error: string | null;
+  historyError: string | null; // Separate error state for history
   
   // Actions
   fetchNutritionIntake: () => Promise<void>;
+  fetchNutritionalHistory: (days?: number) => Promise<void>; // Add history fetching
   clearNutritionData: () => void;
+  clearNutritionalHistory: () => void; // Add history clearing
 }
 
-// Fixed interface with actions
+// Keep existing AverageIntakeState interface unchanged
 interface AverageIntakeState {
   nutritionDataAve: AverageIntakeData | null;
   isLoading: boolean;
@@ -140,8 +161,11 @@ export const fetchNutritionAverage = create<AverageIntakeState>((set, get) => ({
 
 export const useNutritionIntakeStore = create<NutritionIntakeState>((set, get) => ({
   nutritionData: null,
+  nutritionalHistory: [], // Initialize as empty array
   isLoading: false,
+  isHistoryLoading: false,
   error: null,
+  historyError: null,
 
   fetchNutritionIntake: async () => {
     try {
@@ -251,10 +275,47 @@ export const useNutritionIntakeStore = create<NutritionIntakeState>((set, get) =
     }
   },
 
+  // Add new function to fetch nutritional history using your existing utility
+  fetchNutritionalHistory: async (days = 30) => {
+    try {
+      set({ isHistoryLoading: true, historyError: null });
+
+      console.log(`Fetching ${days} days of nutritional history...`);
+      const result = await getNutritionalHistory(days);
+
+      if (result.success) {
+        console.log(`History loaded: ${result.data?.length || 0} records`);
+        set({
+          nutritionalHistory: result.data || [],
+          isHistoryLoading: false,
+        });
+      } else {
+        console.error('History fetch failed:', result.error);
+        set({
+          historyError: result.error || "Failed to load nutritional data",
+          isHistoryLoading: false,
+        });
+      }
+    } catch (error: any) {
+      console.error('Nutritional history fetch error:', error);
+      set({
+        historyError: error.message || 'Failed to fetch nutritional history',
+        isHistoryLoading: false,
+      });
+    }
+  },
+
   clearNutritionData: () => {
     set({
       nutritionData: null,
       error: null,
+    });
+  },
+
+  clearNutritionalHistory: () => {
+    set({
+      nutritionalHistory: [],
+      historyError: null,
     });
   },
 }));
@@ -266,6 +327,7 @@ export const useNutritionIntake = () => {
   return {
     ...store,
     hasNutritionData: !!store.nutritionData,
+    hasNutritionalHistory: store.nutritionalHistory.length > 0,
   };
 };
 

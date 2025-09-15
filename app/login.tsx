@@ -1,28 +1,35 @@
-import React, { useState, useEffect } from 'react';
-import { 
-  View, 
-  Text, 
-  StyleSheet, 
-  Image, 
-  KeyboardAvoidingView, 
-  Platform, 
+import React, { useState, useEffect } from "react";
+import {
+  View,
+  Text,
+  StyleSheet,
+  Image,
+  KeyboardAvoidingView,
+  Platform,
   ScrollView,
-  Dimensions 
-} from 'react-native';
-import { useNavigation } from '@react-navigation/native';
-import { StackNavigationProp } from '@react-navigation/stack';
-import { RootStackParamList } from '@/types/types';
+  Dimensions,
+} from "react-native";
+import { useNavigation } from "@react-navigation/native";
+import { StackNavigationProp } from "@react-navigation/stack";
+import { RootStackParamList } from "@/types/types";
 
-import ScreenContainer from '@/components/ScreenContainer';
-import CustomTextInput from '@/components/CustomTextInput';
-import AuthButton from '@/components/AuthButton';
-import SocialButton from '@/components/SocialButton';
-import LinkButton from '@/components/LinkButton';
+import ScreenContainer from "@/components/ScreenContainer";
+import CustomTextInput from "@/components/CustomTextInput";
+import AuthButton from "@/components/AuthButton";
+import SocialButton from "@/components/SocialButton";
+import LinkButton from "@/components/LinkButton";
 
-import { useAuthStore } from '@/stores/authStore';
-import { Alert } from 'react-native';
+import { useAuthStore } from "@/stores/authStore";
+import {
+  useNutritionIntakeStore,
+  fetchNutritionAverage,
+} from "@/stores/nutritionIntakeStore";
+import { Alert } from "react-native";
 
-type LoginScreenNavigationProp = StackNavigationProp<RootStackParamList, 'login'>;
+type LoginScreenNavigationProp = StackNavigationProp<
+  RootStackParamList,
+  "login"
+>;
 
 interface LoginFormData {
   email: string;
@@ -35,14 +42,78 @@ interface LoginErrors {
   general?: string;
 }
 
-const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
+const { width: screenWidth, height: screenHeight } = Dimensions.get("window");
+
+const preloadNutritionData = async () => {
+  try {
+    console.log("🚀 Starting complete nutrition data preload...");
+
+    // Get store instances
+    const nutritionIntakeStore = useNutritionIntakeStore.getState();
+    const nutritionAverageStore = fetchNutritionAverage.getState();
+
+    console.log("📊 Initial store state:", {
+      hasNutritionData: !!nutritionIntakeStore.nutritionData,
+      historyLength: nutritionIntakeStore.nutritionalHistory?.length || 0,
+      hasAverageData: !!nutritionAverageStore.nutritionDataAve,
+    });
+
+    // Create array of promises for parallel loading
+    const preloadPromises = [];
+
+    // Fetch nutrition intake data (used in both Statistics and Page2)
+    if (!nutritionIntakeStore.nutritionData) {
+      console.log("📈 Adding nutrition intake to preload queue...");
+      preloadPromises.push(nutritionIntakeStore.fetchNutritionIntake());
+    }
+
+    // Fetch nutrition average data (used in Statistics)
+    if (!nutritionAverageStore.nutritionDataAve) {
+      console.log("📊 Adding nutrition average to preload queue...");
+      preloadPromises.push(nutritionAverageStore.fetchNutritionIntakeAve());
+    }
+
+    // Fetch 30-day nutritional history (used in Statistics)
+    if (nutritionIntakeStore.nutritionalHistory.length === 0) {
+      console.log("📅 Adding nutritional history to preload queue...");
+      preloadPromises.push(nutritionIntakeStore.fetchNutritionalHistory(30));
+    }
+
+    // Wait for ALL data to load
+    console.log(
+      `⏳ Waiting for ${preloadPromises.length} data sources to load...`
+    );
+    await Promise.all(preloadPromises);
+
+    // Verify final state
+    const finalIntakeStore = useNutritionIntakeStore.getState();
+    const finalAverageStore = fetchNutritionAverage.getState();
+
+    console.log("🎯 Final store state:", {
+      hasNutritionData: !!finalIntakeStore.nutritionData,
+      historyLength: finalIntakeStore.nutritionalHistory?.length || 0,
+      hasAverageData: !!finalAverageStore.nutritionDataAve,
+      errors: {
+        intake: finalIntakeStore.error,
+        history: finalIntakeStore.historyError,
+        average: finalAverageStore.error,
+      },
+    });
+
+    console.log("✅ All nutrition data preloaded successfully");
+    return true;
+  } catch (error) {
+    console.error("❌ Error preloading nutrition data:", error);
+    throw error; // Re-throw to handle in login function
+  }
+};
 
 // Responsive scaling functions
 const scale = (size: number) => (screenWidth / 375) * size; // Base on iPhone X width
-const verticalScale = (size: number) => (screenHeight / 812) * size; // Base on iPhone X height
+const verticalScale = (size: number) => (screenHeight / 812) * size; // Base on iPhone X
 
 // Moderate scaling for elements that shouldn't scale as much
-const moderateScale = (size: number, factor = 0.5) => 
+const moderateScale = (size: number, factor = 0.5) =>
   size + (scale(size) - size) * factor;
 
 export default function LoginScreen() {
@@ -53,15 +124,15 @@ export default function LoginScreen() {
   // Redirect authenticated users to the main app
   useEffect(() => {
     if (isAuthenticated) {
-      navigation.replace('page-2');
+      navigation.replace("page-2");
     }
   }, [isAuthenticated, navigation]);
-  
+
   const [formData, setFormData] = useState<LoginFormData>({
-    email: '',
-    password: '',
+    email: "",
+    password: "",
   });
-  
+
   const [errors, setErrors] = useState<LoginErrors>({});
   const [isLoading, setIsLoading] = useState(false);
 
@@ -74,15 +145,15 @@ export default function LoginScreen() {
     const newErrors: LoginErrors = {};
 
     if (!formData.email) {
-      newErrors.email = 'Email is required';
+      newErrors.email = "Email is required";
     } else if (!validateEmail(formData.email)) {
-      newErrors.email = 'Please enter a valid email address';
+      newErrors.email = "Please enter a valid email address";
     }
 
     if (!formData.password) {
-      newErrors.password = 'Password is required';
+      newErrors.password = "Password is required";
     } else if (formData.password.length < 6) {
-      newErrors.password = 'Password must be at least 6 characters';
+      newErrors.password = "Password must be at least 6 characters";
     }
 
     setErrors(newErrors);
@@ -90,66 +161,102 @@ export default function LoginScreen() {
   };
 
   const handleLogin = async () => {
-  if (!validateForm()) return;
+    if (!validateForm()) return;
 
-  setIsLoading(true);
-  setErrors({});
+    setIsLoading(true);
+    setErrors({});
 
-  try {
-    const { data, error } = await signIn(formData.email, formData.password);
+    try {
+      const { data, error } = await signIn(formData.email, formData.password);
 
-    if (error) {
-      // Handle Supabase login errors
-      let errorMessage = 'Login failed. Please check your credentials.';
-      
-      const errorMsg = error.message || error;
-      
-      if (errorMsg.includes && errorMsg.includes('Invalid login credentials')) {
-        errorMessage = 'Invalid email or password. Please check your credentials.';
-      } else if (errorMsg.includes && errorMsg.includes('Email not confirmed')) {
-        errorMessage = 'Please check your email and confirm your account before logging in.';
-      } else if (errorMsg.includes && errorMsg.includes('Too many requests')) {
-        errorMessage = 'Too many login attempts. Please try again later.';
+      if (error) {
+        // Handle Supabase login errors (keep existing error handling)
+        let errorMessage = "Login failed. Please check your credentials.";
+
+        const errorMsg = error.message || error;
+
+        if (
+          errorMsg.includes &&
+          errorMsg.includes("Invalid login credentials")
+        ) {
+          errorMessage =
+            "Invalid email or password. Please check your credentials.";
+        } else if (
+          errorMsg.includes &&
+          errorMsg.includes("Email not confirmed")
+        ) {
+          errorMessage =
+            "Please check your email and confirm your account before logging in.";
+        } else if (
+          errorMsg.includes &&
+          errorMsg.includes("Too many requests")
+        ) {
+          errorMessage = "Too many login attempts. Please try again later.";
+        }
+
+        setErrors({ general: errorMessage });
+      } else if (data?.user) {
+        // Login successful - now preload ALL data before navigation
+        console.log("Login successful:", data.user.email);
+
+        try {
+          // WAIT for all nutrition data to be preloaded
+          await preloadNutritionData();
+
+          // Only navigate after all data is ready
+          const isProfileComplete = useAuthStore.getState().profileComplete;
+
+          if (isProfileComplete === false) {
+            console.log(
+              "User has no existing metadata - navigating to onboarding"
+            );
+            navigation.navigate("onboarding");
+          } else {
+            console.log(
+              "User has existing metadata - navigating to main app with preloaded data"
+            );
+            navigation.navigate("page-2");
+          }
+        } catch (preloadError) {
+          console.error("Failed to preload data:", preloadError);
+          // Still navigate but show a warning
+          setErrors({
+            general:
+              "Login successful but some data failed to load. You may experience slower page loads.",
+          });
+
+          // Navigate anyway after a short delay
+          setTimeout(() => {
+            const isProfileComplete = useAuthStore.getState().profileComplete;
+            if (isProfileComplete === false) {
+              navigation.navigate("onboarding");
+            } else {
+              navigation.navigate("page-2");
+            }
+          }, 1000);
+        }
       }
-      
-      setErrors({ general: errorMessage });
-    } else if (data?.user) {
-      // Login successful - check if profile is complete
-      console.log('Login successful:', data.user.email);
-      
-      // Get the profile completion status from the store
-      const isProfileComplete = useAuthStore.getState().profileComplete;
-      
-      if (isProfileComplete === false) {
-        // Profile incomplete - go to onboarding
-        console.log("User has no existing metadata")
-        navigation.navigate('onboarding'); // PAPALITAN TO PAG GUUMANA YUNG CHECK
-      } else {
-        // Profile complete - go to main app
-        navigation.navigate('page-2');
-        console.log("User has existing metadata.")
-      }
+    } catch (error: any) {
+      console.error("Login error:", error);
+      setErrors({
+        general:
+          error.message || "An unexpected error occurred. Please try again.",
+      });
+    } finally {
+      setIsLoading(false);
     }
-  } catch (error: any) {
-    console.error('Login error:', error);
-    setErrors({ 
-      general: error.message || 'An unexpected error occurred. Please try again.' 
-    });
-  } finally {
-    setIsLoading(false);
-  }
-};
+  };
 
   const handleGoogleLogin = () => {
-    console.log('Google login pressed');
+    console.log("Google login pressed");
   };
 
   const handleFacebookLogin = () => {
-    console.log('Facebook login pressed');
+    console.log("Facebook login pressed");
   };
 
   const handleForgotPassword = () => {
-    navigation.navigate('forgot-email');
+    navigation.navigate("forgot-email");
   };
 
   const handleCreateAccount = () => {
@@ -160,7 +267,7 @@ export default function LoginScreen() {
     <ScreenContainer>
       <KeyboardAvoidingView
         style={styles.container}
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
       >
         <ScrollView
           contentContainerStyle={styles.scrollContent}
@@ -170,7 +277,7 @@ export default function LoginScreen() {
           {/* Logo Container - Responsive with maintained proportions */}
           <View style={styles.logoContainer}>
             <Image
-              source={require('@/assets/images/nutrixtract_headstarted.png')}
+              source={require("@/assets/images/nutrixtract_headstarted.png")}
               style={styles.logo}
               resizeMode="contain"
             />
@@ -186,7 +293,9 @@ export default function LoginScreen() {
             <CustomTextInput
               label="Email"
               value={formData.email}
-              onChangeText={(email) => setFormData(prev => ({ ...prev, email }))}
+              onChangeText={(email) =>
+                setFormData((prev) => ({ ...prev, email }))
+              }
               placeholder="Enter your email"
               keyboardType="email-address"
               autoComplete="email"
@@ -196,7 +305,9 @@ export default function LoginScreen() {
             <CustomTextInput
               label="Password"
               value={formData.password}
-              onChangeText={(password) => setFormData(prev => ({ ...prev, password }))}
+              onChangeText={(password) =>
+                setFormData((prev) => ({ ...prev, password }))
+              }
               placeholder="Enter your password"
               secureTextEntry
               autoComplete="password"
@@ -207,8 +318,13 @@ export default function LoginScreen() {
 
             {/* General Error Container - Reserved responsive space */}
             <View style={styles.generalErrorContainer}>
-              <Text style={[styles.generalError, !errors.general && styles.generalErrorHidden]}>
-                {errors.general || ' '}
+              <Text
+                style={[
+                  styles.generalError,
+                  !errors.general && styles.generalErrorHidden,
+                ]}
+              >
+                {errors.general || " "}
               </Text>
             </View>
 
@@ -237,7 +353,7 @@ export default function LoginScreen() {
               onPress={handleGoogleLogin}
               disabled={isLoading}
             />
-            
+
             <SocialButton
               provider="facebook"
               onPress={handleFacebookLogin}
@@ -278,9 +394,9 @@ const styles = StyleSheet.create({
     paddingBottom: verticalScale(5), // Reduced from 10
   },
   logoContainer: {
-    alignItems: 'center',
+    alignItems: "center",
     minHeight: verticalScale(50), // Reduced from 80
-    justifyContent: 'center',
+    justifyContent: "center",
     marginBottom: verticalScale(5), // Reduced from 10
     paddingVertical: verticalScale(2), // Reduced padding
   },
@@ -292,15 +408,15 @@ const styles = StyleSheet.create({
   },
   titleContainer: {
     minHeight: verticalScale(30), // Reduced from 40
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     marginBottom: verticalScale(10), // Reduced from 20
     paddingVertical: verticalScale(2), // Reduced padding
   },
   title: {
     fontSize: moderateScale(24), // Moderate scaling for better readability
-    fontWeight: 'bold',
-    color: '#333',
+    fontWeight: "bold",
+    color: "#333",
     lineHeight: moderateScale(30),
   },
   formContainer: {
@@ -308,24 +424,24 @@ const styles = StyleSheet.create({
   },
   forgotPasswordContainer: {
     minHeight: verticalScale(24), // Reduced from 32
-    alignItems: 'flex-end',
-    justifyContent: 'center',
+    alignItems: "flex-end",
+    justifyContent: "center",
     marginBottom: verticalScale(5), // Reduced from 10
     paddingVertical: verticalScale(2), // Reduced padding
   },
   generalErrorContainer: {
     minHeight: verticalScale(18),
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     marginBottom: verticalScale(12), // Increased slightly since we removed forgot password container
     paddingHorizontal: scale(10),
   },
   generalError: {
     fontSize: scale(14),
-    color: '#F44336',
-    textAlign: 'center',
+    color: "#F44336",
+    textAlign: "center",
     lineHeight: scale(18),
-    flexWrap: 'wrap', // Allow wrapping on smaller screens
+    flexWrap: "wrap", // Allow wrapping on smaller screens
   },
   generalErrorHidden: {
     opacity: 0, // Hide but maintain space
@@ -336,8 +452,8 @@ const styles = StyleSheet.create({
     paddingVertical: verticalScale(1), // Reduced padding
   },
   dividerContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     minHeight: verticalScale(30), // Reduced from 40
     marginVertical: verticalScale(5), // Reduced from 10
     paddingVertical: verticalScale(2), // Reduced padding
@@ -345,32 +461,32 @@ const styles = StyleSheet.create({
   dividerLine: {
     flex: 1,
     height: 1,
-    backgroundColor: '#E0E0E0',
+    backgroundColor: "#E0E0E0",
     marginHorizontal: scale(5),
   },
   dividerText: {
     fontSize: scale(16),
-    fontWeight: 'normal',
-    color: '#666',
+    fontWeight: "normal",
+    color: "#666",
     marginHorizontal: scale(16),
     lineHeight: scale(20),
   },
   socialContainer: {
     minHeight: verticalScale(90), // Reduced from 120
-    justifyContent: 'space-between',
+    justifyContent: "space-between",
     marginBottom: verticalScale(5), // Reduced from 10
     paddingVertical: verticalScale(2), // Reduced padding
   },
   bottomDividerContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     minHeight: verticalScale(15), // Reduced from 20
     marginVertical: verticalScale(5), // Reduced from 10
   },
   createAccountContainer: {
     minHeight: verticalScale(24), // Reduced from 32
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     marginTop: verticalScale(5), // Reduced from 10
     paddingVertical: verticalScale(2), // Reduced padding
   },
