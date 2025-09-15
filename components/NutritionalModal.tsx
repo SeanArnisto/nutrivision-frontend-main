@@ -14,7 +14,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
-const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
+
 
 // Spoon images mapping
 const SPOON_IMAGES = {
@@ -182,94 +182,51 @@ const NutritionalModal: React.FC<NutritionalModalProps> = ({
   return (
     <Modal
       visible={visible}
-      animationType="slide"
+      animationType="fade"
       transparent={true}
       statusBarTranslucent={true}
     >
       <View style={modalStyles.overlay}>
         <SafeAreaView style={modalStyles.safeArea}>
           <View style={modalStyles.modalContainer}>
-            {/* Header */}
+            {/* Header with close button */}
             <View style={modalStyles.header}>
-              <View style={modalStyles.logoContainer}>
-                <Text style={modalStyles.logoText}>NutriXtract</Text>
-                <Ionicons name="leaf" size={20} color="#9AB206" />
-              </View>
               <TouchableOpacity onPress={onClose} style={modalStyles.closeButton}>
                 <Ionicons name="close" size={24} color="#666" />
               </TouchableOpacity>
             </View>
 
             {/* Content */}
-            <ScrollView 
-              style={modalStyles.content}
-              showsVerticalScrollIndicator={false}
-            >
-              {/* Legend */}
-              <View style={modalStyles.legendContainer}>
-                <Image
-                  source={require("@/assets/images/spoon.png")}
-                  style={modalStyles.legendSpoon}
-                  resizeMode="contain"
-                />
-                <Text style={modalStyles.legendText}>= 15 grams</Text>
+            <View style={modalStyles.content}>
+              <Text style={modalStyles.title}>Saved Session</Text>
+              
+              <Text style={modalStyles.message}>
+                All data have been successfully added to the session. Would you like to proceed to the home screen?
+              </Text>
+
+              {/* Action Buttons */}
+              <View style={modalStyles.buttonContainer}>
+                <TouchableOpacity
+                  style={[modalStyles.yesButton, loading && modalStyles.buttonDisabled]}
+                  onPress={onSave}
+                  disabled={loading}
+                  activeOpacity={0.8}
+                >
+                  {loading ? (
+                    <ActivityIndicator color="#fff" size="small" />
+                  ) : (
+                    <Text style={modalStyles.yesButtonText}>Yes</Text>
+                  )}
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={modalStyles.noButton}
+                  onPress={onClose}
+                  activeOpacity={0.8}
+                >
+                  <Text style={modalStyles.noButtonText}>No</Text>
+                </TouchableOpacity>
               </View>
-
-              {/* Nutrition Items */}
-              <View style={modalStyles.nutritionSection}>
-                <NutrientItem
-                  label="Carbs"
-                  value={nutritionData.carbs}
-                  unit="g"
-                  minIntake={recommendations.carbsMin}
-                  maxIntake={recommendations.carbsMax}
-                  nutrientType="carbs"
-                />
-
-                <NutrientItem
-                  label="Sodium"
-                  value={nutritionData.sodium}
-                  unit="g"
-                  minIntake={recommendations.sodiumMin}
-                  maxIntake={recommendations.sodiumMax}
-                  nutrientType="sodium"
-                />
-
-                <NutrientItem
-                  label="Protein"
-                  value={nutritionData.protein}
-                  unit="g"
-                  minIntake={recommendations.proteinMin}
-                  maxIntake={recommendations.proteinMax}
-                  nutrientType="protein"
-                />
-              </View>
-
-              {/* Health Information */}
-              <View style={modalStyles.healthInfo}>
-                <Text style={modalStyles.healthInfoText}>
-                  Proper intake of sodium, salt, and carbs is essential for heart health, blood pressure regulation, and overall well-being. For most adults, daily sodium intake should ideally not exceed 2.3g. with a lower limit of 1.5g being beneficial for those with high blood pressure or specific health concerns. Cholesterol intake should also be monitored closely, especially for those at risk of cardiovascular disease.
-                </Text>
-              </View>
-            </ScrollView>
-
-            {/* Footer Button */}
-            <View style={modalStyles.footer}>
-              <TouchableOpacity
-                style={[modalStyles.saveButton, loading && modalStyles.saveButtonDisabled]}
-                onPress={onSave}
-                disabled={loading}
-                activeOpacity={0.8}
-              >
-                {loading ? (
-                  <ActivityIndicator color="#fff" size="small" />
-                ) : (
-                  <>
-                    <Ionicons name="home" size={20} color="#fff" />
-                    <Text style={modalStyles.saveButtonText}>Save & Go Home</Text>
-                  </>
-                )}
-              </TouchableOpacity>
             </View>
           </View>
         </SafeAreaView>
@@ -277,6 +234,8 @@ const NutritionalModal: React.FC<NutritionalModalProps> = ({
     </Modal>
   );
 };
+
+export default NutritionalModal;
 
 // Styles
 const modalStyles = StyleSheet.create({
@@ -295,66 +254,105 @@ const modalStyles = StyleSheet.create({
   },
   modalContainer: {
     width: '100%',
-    maxWidth: 400,
-    maxHeight: SCREEN_HEIGHT * 0.85,
-    backgroundColor: '#F5F7FA',
-    borderRadius: 20,
-    overflow: 'hidden',
+    maxWidth: 320,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    elevation: 8,
   },
   header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 15,
-    backgroundColor: '#F5F7FA',
-    borderBottomWidth: 1,
-    borderBottomColor: '#E5E7EB',
-  },
-  logoContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  logoText: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#9AB206',
-    marginRight: 5,
+    alignItems: 'flex-end',
+    paddingHorizontal: 16,
+    paddingTop: 16,
+    paddingBottom: 8,
   },
   closeButton: {
-    padding: 5,
+    padding: 4,
   },
   content: {
-    flex: 1,
-    paddingHorizontal: 20,
+    paddingHorizontal: 24,
+    paddingBottom: 24,
+    alignItems: 'center',
   },
-  legendContainer: {
+  title: {
+    fontSize: 20,
+    fontWeight: '600',
+    color: '#333333',
+    marginBottom: 16,
+    textAlign: 'center',
+  },
+  message: {
+    fontSize: 14,
+    color: '#666666',
+    textAlign: 'center',
+    lineHeight: 20,
+    marginBottom: 24,
+    paddingHorizontal: 8,
+  },
+  buttonContainer: {
+    width: '100%',
+    gap: 12,
+  },
+  yesButton: {
+    backgroundColor: '#9AB206',
+    borderRadius: 8,
+    paddingVertical: 14,
+    paddingHorizontal: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: 48,
+  },
+  noButton: {
+    backgroundColor: 'transparent',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    paddingVertical: 14,
+    paddingHorizontal: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: 48,
+  },
+  buttonDisabled: {
+    opacity: 0.7,
+  },
+  yesButtonText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  noButtonText: {
+    color: '#666666',
+    fontSize: 16,
+    fontWeight: '500',
+  },
+  // Legacy styles kept for backward compatibility but not used in new design
+  spoonContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'white',
-    borderRadius: 12,
-    paddingVertical: 10,
-    paddingHorizontal: 15,
-    marginVertical: 15,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 3,
-    elevation: 2,
   },
-  legendSpoon: {
-    width: 25,
-    height: 25,
-    marginRight: 8,
+  individualSpoon: {
+    width: 32,
+    height: 24,
+    marginLeft: -14,
   },
-  legendText: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: '#4D4444',
+  plusSign: {
+    fontSize: 20,
+    marginTop: 15,
+    textAlign: 'center',
+    marginLeft: -8,
+    fontWeight: 'bold',
   },
-  nutritionSection: {
-    marginBottom: 20,
+  lessThanSign: {
+    fontSize: 20,
+    marginTop: 15,
+    marginLeft: -8,
+    textAlign: 'center',
+    fontWeight: 'bold',
   },
   nutrientItem: {
     flexDirection: 'row',
@@ -385,78 +383,4 @@ const modalStyles = StyleSheet.create({
   nutrientRight: {
     marginLeft: 15,
   },
-  spoonContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  individualSpoon: {
-    width: 32,
-    height: 24,
-    marginLeft: -14,
-  },
-  plusSign: {
-    fontSize: 20,
-    marginTop: 15,
-    textAlign: 'center',
-    marginLeft: -8,
-    fontWeight: 'bold',
-  },
-  lessThanSign: {
-    fontSize: 20,
-    marginTop: 15,
-    marginLeft: -8,
-    textAlign: 'center',
-    fontWeight: 'bold',
-  },
-  healthInfo: {
-    backgroundColor: 'white',
-    borderRadius: 12,
-    padding: 15,
-    marginBottom: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 3,
-    elevation: 2,
-  },
-  healthInfoText: {
-    fontSize: 13,
-    lineHeight: 18,
-    color: '#4D4444',
-    textAlign: 'justify',
-  },
-  footer: {
-    paddingHorizontal: 20,
-    paddingVertical: 15,
-    backgroundColor: '#F5F7FA',
-    borderTopWidth: 1,
-    borderTopColor: '#E5E7EB',
-  },
-  saveButton: {
-    backgroundColor: '#7ca844',
-    borderRadius: 25,
-    paddingVertical: 12,
-    paddingHorizontal: 20,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  saveButtonDisabled: {
-    backgroundColor: '#c0b4b4',
-    opacity: 0.7,
-  },
-  saveButtonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
-    marginLeft: 8,
-  },
 });
-
-export default NutritionalModal;
