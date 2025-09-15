@@ -38,13 +38,13 @@ export default function AvgIntakeCard({
         </View>
         {/* Circular Progress with Image */}
 
-        <View style={styles.textRow}>
+        <View style={styles.circleRow}>
           <View style={styles.progressRow}>
-            <View style={{ alignItems: "flex-start", marginTop: 10 }}>
+            <View style={{ alignItems: "center", marginTop: 10 }}>
               <AnimatedCircularProgress
                 style={{ transform: [{ rotate: "90deg" }, { scaleX: -1 }] }}
-                size={95}
-                width={10}
+                size={85}
+                width={8}
                 fill={fill} // Percentage fill
                 tintColor={tintColor}
                 backgroundColor="#dddddd"
@@ -86,7 +86,12 @@ const styles = StyleSheet.create({
   textRow: {
     alignItems: "flex-start",
   },
-  progressRow: {},
+  circleRow: {
+    alignItems: "center",
+  },
+  progressRow: {
+    alignItems: "center",
+  },
   title: {
     fontSize: 24,
     fontWeight: "bold",

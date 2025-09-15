@@ -538,7 +538,7 @@ export default function Page6() {
               { color: "#F4D03F", label: "Carbohydrates" },
               { color: "#8B4513", label: "Sodium" },
               { color: "#9AB106", label: "Protein" },
-              { color: "#000000", label: "Target Ratio (1.0)" },
+              { color: "#000000", label: "Target" },
             ]}
           />
         </View>

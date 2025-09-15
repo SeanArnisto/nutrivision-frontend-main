@@ -8,6 +8,7 @@ import {
   TouchableOpacity,
   Text,
 } from "react-native";
+import SafeViewAndroid from "@/components/SafeViewAndroid";
 import { useNavigation } from "@react-navigation/native";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { RootStackParamList } from "@/types/types";
@@ -50,7 +51,7 @@ const Page2: React.FC = () => {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={SafeViewAndroid.AndroidSafeArea}>
       {/* Top: App logo */}
       <View style={styles.topContainer}>
         <Image

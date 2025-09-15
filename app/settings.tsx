@@ -8,6 +8,7 @@ import {
   Alert,
   TouchableOpacity,
 } from 'react-native';
+import SafeViewAndroid from '@/components/SafeViewAndroid';
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '@/types/types';
@@ -109,7 +110,7 @@ export default function Settings() {
   };
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView style={SafeViewAndroid.AndroidSafeArea}>
       <AppLogo />
       <ScrollView 
           style={styles.container} 

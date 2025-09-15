@@ -8,6 +8,7 @@ import {
   Alert,
   Image,
 } from "react-native";
+import SafeViewAndroid from "@/components/SafeViewAndroid";
 import { useNavigation } from "@react-navigation/native";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { RootStackParamList } from "@/types/types";
@@ -297,7 +298,7 @@ export default function Profile() {
   };
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView style={SafeViewAndroid.AndroidSafeArea}>
       <AppLogo />
 
       <View style={styles.mainContainer}>

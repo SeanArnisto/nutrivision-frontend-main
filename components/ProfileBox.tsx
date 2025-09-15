@@ -1,6 +1,15 @@
 import React from "react";
-import { StyleSheet, View } from "react-native";
+import { StyleSheet, View, Dimensions } from "react-native";
 import { ThemedText } from "@/components/ThemedText";
+
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
+
+// Responsive font size based on screen width
+const getResponsiveFontSize = () => {
+  if (SCREEN_WIDTH < 350) return 10; // Very small screens
+  if (SCREEN_WIDTH < 400) return 11; // Small screens
+  return 12; // Normal screens
+};
 
 type ProfileBoxProps = {
   primaryText?: string;
@@ -21,7 +30,11 @@ export default function ProfileBox({
 }: ProfileBoxProps) {
   return (
     <View style={[styles.profileBox, style]}>
-      <ThemedText style={[styles.profileBoxText, textStyle]}>
+      <ThemedText 
+        style={[styles.profileBoxText, textStyle]}
+        numberOfLines={1}
+        ellipsizeMode="tail"
+      >
         {primaryText} <ThemedText style={[styles.profileText, highlightStyle]}>{highlightedText}</ThemedText>{" "}
         {secondaryText}
       </ThemedText>
@@ -42,14 +55,17 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 6,
     elevation: 4,
+    paddingHorizontal: 8,
   },
   profileBoxText: {
-    fontSize: 12,
+    fontSize: getResponsiveFontSize(),
     fontWeight: "bold",
     color: "#333",
+    textAlign: "center",
+    includeFontPadding: false,
   },
   profileText: {
-    fontSize: 12,
+    fontSize: getResponsiveFontSize(),
     color: "#9AB206",
   },
 });

@@ -6,6 +6,7 @@ import {
   Text,
   TouchableOpacity,
 } from "react-native";
+import SafeViewAndroid from "@/components/SafeViewAndroid";
 import { ThemedView } from "@/components/ThemedView";
 import "react-circular-progressbar/dist/styles.css";
 import { useNavigation } from "@react-navigation/native";
@@ -188,7 +189,7 @@ export default function Page2() {
   };
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView style={SafeViewAndroid.AndroidSafeArea}>
       <AppLogo />
       <ThemedView style={styles.container}>
         <ProfileBox

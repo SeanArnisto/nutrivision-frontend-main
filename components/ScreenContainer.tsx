@@ -1,5 +1,6 @@
 import React from 'react';
 import { SafeAreaView, View, StyleSheet } from 'react-native';
+import SafeViewAndroid from './SafeViewAndroid';
 
 interface ScreenContainerProps {
   children: React.ReactNode;
@@ -15,7 +16,7 @@ export default function ScreenContainer({
   headerProps,
 }: ScreenContainerProps) {
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor }]}>
+    <SafeAreaView style={[SafeViewAndroid.AndroidSafeArea, { backgroundColor }]}>
       <View style={styles.content}>
         {children}
       </View>

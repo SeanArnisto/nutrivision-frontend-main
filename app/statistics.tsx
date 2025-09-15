@@ -8,6 +8,7 @@ import {
   Image,
   Dimensions,
 } from "react-native";
+import SafeViewAndroid from "@/components/SafeViewAndroid";
 import { useNavigation } from "@react-navigation/native";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { RootStackParamList } from "@/types/types";
@@ -462,7 +463,7 @@ export default function Statistics() {
         chartData.push({
           value: proteinRatio,
           frontColor: "#9AB106", // Protein - Green
-          spacing: i < 6 ? 8 : 0, // No spacing after the last day
+          spacing: i < 6 ? 12 : 0, // Increased spacing between days
         });
       }
 
@@ -490,7 +491,7 @@ export default function Statistics() {
   // Show error state if there's an error
   if (averageError || error) {
     return (
-      <SafeAreaView style={styles.safeArea}>
+      <SafeAreaView style={SafeViewAndroid.AndroidSafeArea}>
         <View style={styles.errorContainer}>
           <Text>Error: {averageError || error}</Text>
         </View>
@@ -499,7 +500,7 @@ export default function Statistics() {
   }
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView style={SafeViewAndroid.AndroidSafeArea}>
       <ScrollView
         style={styles.container}
         showsVerticalScrollIndicator={false}
@@ -572,7 +573,7 @@ export default function Statistics() {
             maxValue={200} // Increased to show ratios above 1.0 (100%)
             stepValue={50} // Steps of 50% (0.5 ratio)
             height={160}
-            barWidth={10}
+            barWidth={8}
             spacing={2}
             showLegend={true}
             referenceLine={100} // Add constant reference line at 100%
@@ -581,7 +582,7 @@ export default function Statistics() {
               { color: "#F4D03F", label: "Carbohydrates" },
               { color: "#8B4513", label: "Sodium" },
               { color: "#9AB106", label: "Protein" },
-              { color: "#000000", label: "Target Ratio (1.0)" },
+              { color: "#000000", label: "Target" },
             ]}
           />
         </View>
@@ -610,7 +611,7 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   customProfileBox: {
-    width: 175, // Wider than default 150px to accommodate longer text
+    width: 185, // Wider to accommodate "Your Statistics Overview" text
   },
   container: {
     flex: 1,

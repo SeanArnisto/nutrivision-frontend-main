@@ -79,14 +79,15 @@ const BarChart: React.FC<BarChartProps> = ({
           height={height}
           barWidth={barWidth}
           spacing={spacing}
-          initialSpacing={5}
+          initialSpacing={8}
           yAxisThickness={0}
           xAxisThickness={0}
           yAxisTextStyle={{ color: '#666', fontSize: 12 }}
           xAxisLabelTextStyle={{
             color: '#666',
-            fontSize: 12,
+            fontSize: 10,
             textAlign: 'center',
+            width: 20,
           }}
           noOfSections={Math.floor(maxValue / stepValue)}
           maxValue={maxValue}
@@ -94,7 +95,7 @@ const BarChart: React.FC<BarChartProps> = ({
           yAxisLabelTexts={yAxisLabelTexts}
           rulesType={'solid'}
           rulesColor={'#E5E5E5'}
-          rulesLength={SCREEN_WIDTH - 150}
+          rulesLength={SCREEN_WIDTH - 110}
           showReferenceLine1={!!referenceLine}
           referenceLine1Position={referenceLine || maxValue * 0.67} // Use custom reference line or default to 2/3
           referenceLine1Config={{
@@ -138,15 +139,15 @@ const styles = StyleSheet.create({
   },
   chartLegend: {
     flexDirection: 'row',
-    justifyContent: 'flex-start',
+    justifyContent: 'space-between',
     marginBottom: 20,
-    gap: 26,
+    flexWrap: 'wrap',
+    paddingHorizontal: 5,
   },
   legendItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    flex: 1,
-    minWidth: 100,
+    marginVertical: 2,
   },
   legendDot: {
     width: 8,
