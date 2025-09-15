@@ -125,7 +125,10 @@ export default function LoginScreen() {
   // Redirect authenticated users to the main app
   useEffect(() => {
     if (isAuthenticated) {
-      navigation.replace("page-2");
+      navigation.reset({
+        index: 0,
+        routes: [{ name: 'page-2' }],
+      });
     }
   }, [isAuthenticated, navigation]);
 
@@ -209,15 +212,17 @@ export default function LoginScreen() {
           const isProfileComplete = useAuthStore.getState().profileComplete;
 
           if (isProfileComplete === false) {
-            console.log(
-              "User has no existing metadata - navigating to onboarding"
-            );
-            navigation.navigate("onboarding");
+            console.log("User has no existing metadata - navigating to onboarding");
+            navigation.reset({
+              index: 0,
+              routes: [{ name: 'onboarding' }],
+            });
           } else {
-            console.log(
-              "User has existing metadata - navigating to main app with preloaded data"
-            );
-            navigation.navigate("page-2");
+            console.log("User has existing metadata - navigating to main app with preloaded data");
+            navigation.reset({
+              index: 0,
+              routes: [{ name: 'page-2' }],
+            });
           }
         } catch (preloadError) {
           console.error("Failed to preload data:", preloadError);
@@ -231,9 +236,15 @@ export default function LoginScreen() {
           setTimeout(() => {
             const isProfileComplete = useAuthStore.getState().profileComplete;
             if (isProfileComplete === false) {
-              navigation.navigate("onboarding");
+              navigation.reset({
+                index: 0,
+                routes: [{ name: 'onboarding' }],
+              });
             } else {
-              navigation.navigate("page-2");
+              navigation.reset({
+                index: 0,
+                routes: [{ name: 'page-2' }],
+              });
             }
           }, 1000);
         }
