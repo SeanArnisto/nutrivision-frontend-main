@@ -8,20 +8,6 @@ import {
   Alert,
   TouchableOpacity,
 } from "react-native";
-import { useNavigation } from "@react-navigation/native";
-import { StackNavigationProp } from "@react-navigation/stack";
-import { RootStackParamList } from "@/types/types";
-import { Ionicons } from "@expo/vector-icons";
-import AppLogo from "@/components/appLogo";
-import BottomNavBar from "@/components/BottomNavBar";
-import SettingsSection from "@/components/SettingsSection";
-import SettingsItem from "@/components/SettingsItem";
-import ToggleSwitch from "@/components/ToggleSwitch";
-import ProfileBox from "@/components/ProfileBox";
-import FullTextModal from "@/components/FullTextModal";
-import { useAuthStore } from "@/stores/authStore";
-import ResetPasswordModal from "@/components/ResetPasswordModal";
-} from 'react-native';
 import SafeViewAndroid from '@/components/SafeViewAndroid';
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
@@ -35,6 +21,7 @@ import ToggleSwitch from '@/components/ToggleSwitch';
 import ProfileBox from '@/components/ProfileBox';
 import FullTextModal from '@/components/FullTextModal';
 import { useAuthStore } from '@/stores/authStore';
+import ResetPasswordModal from "@/components/ResetPasswordModal";
 
 type SettingsScreenNavigationProp = StackNavigationProp<
   RootStackParamList,
