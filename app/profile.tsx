@@ -16,6 +16,7 @@ import AppLogo from "@/components/appLogo";
 import BottomNavBar from "@/components/BottomNavBar";
 import ProfileField from "@/components/ProfileField";
 import ProfileBox from "@/components/ProfileBox";
+import TextInputModal from "@/components/TextInputModal";
 
 import { useAuthStore } from "@/stores/authStore";
 import { supabase } from "@/config/supabase";
@@ -49,6 +50,16 @@ export default function Profile() {
 
   const [userProfile, setUserProfile] = useState<UserProfile>({});
   const [isLoading, setIsLoading] = useState(true);
+  
+  // Modal state
+  const [modalVisible, setModalVisible] = useState(false);
+  const [modalConfig, setModalConfig] = useState({
+    title: '',
+    placeholder: '',
+    keyboardType: 'default' as 'default' | 'numeric' | 'email-address',
+    initialValue: '',
+    fieldType: '' as 'name' | 'age' | 'weight' | 'height',
+  });
 
   // Redirect unauthenticated users to login
   useEffect(() => {
@@ -128,72 +139,95 @@ export default function Profile() {
     fetchUserProfile();
   }, []);
 
-  const handleEditName = async () => {
-    Alert.prompt("Edit Name", "Enter new name.", async (text: string) => {
-      await supabase
-        .from("profiles")
-        .update({
-          name: text,
-        })
-        .eq("email", userProfile.email)
-        .select("*");
+  // Handle modal submission
+  const handleModalSubmit = async (value: string) => {
+    const { fieldType } = modalConfig;
+    const { user } = useAuthStore.getState();
+    
+    if (!user) return;
 
-      fetchUserProfile();
+    try {
+      let updateData: any = {};
+      
+      switch (fieldType) {
+        case 'name':
+          updateData.name = value;
+          break;
+        case 'age':
+          updateData.age = Number(value);
+          break;
+        case 'weight':
+          updateData.weight = Number(value);
+          break;
+        case 'height':
+          updateData.height = Number(value);
+          break;
+      }
+
+      const { error } = await supabase
+        .from("profiles")
+        .update(updateData)
+        .eq("id", user.id);
+
+      if (error) {
+        console.error(`Error updating ${fieldType}:`, error);
+        Alert.alert("Error", `Failed to update ${fieldType}. Please try again.`);
+      } else {
+        setModalVisible(false);
+        fetchUserProfile();
+      }
+    } catch (error) {
+      console.error(`${fieldType} update error:`, error);
+      Alert.alert("Error", `Failed to update ${fieldType}. Please try again.`);
+    }
+  };
+
+  const handleModalCancel = () => {
+    setModalVisible(false);
+  };
+
+  const handleEditName = () => {
+    setModalConfig({
+      title: 'Edit Name',
+      placeholder: 'Enter your name',
+      keyboardType: 'default',
+      initialValue: userProfile.name || '',
+      fieldType: 'name',
     });
-    // Alert.alert("Edit Name", "Name editing functionality not implemented yet.");
+    setModalVisible(true);
   };
 
   const handleEditAge = () => {
-    Alert.prompt("Edit Age", "Enter new age.", async (text: string) => {
-      await supabase
-        .from("profiles")
-        .update({
-          age: Number(text),
-        })
-        .eq("email", userProfile.email)
-        .select("*");
-
-      fetchUserProfile();
+    setModalConfig({
+      title: 'Edit Age',
+      placeholder: 'Enter your age',
+      keyboardType: 'numeric',
+      initialValue: userProfile.age?.toString() || '',
+      fieldType: 'age',
     });
-    // Alert.alert("Edit Age", "Age editing functionality not implemented yet.");
+    setModalVisible(true);
   };
 
   const handleEditWeight = () => {
-    Alert.prompt("Edit Weight", "Enter new weight.", async (text: string) => {
-      await supabase
-        .from("profiles")
-        .update({
-          weight: Number(text),
-        })
-        .eq("email", userProfile.email)
-        .select("*");
-
-      fetchUserProfile();
+    setModalConfig({
+      title: 'Edit Weight',
+      placeholder: 'Enter your weight (kg)',
+      keyboardType: 'numeric',
+      initialValue: userProfile.weight?.toString() || '',
+      fieldType: 'weight',
     });
-
-    // Alert.alert(
-    //   "Edit Weight",
-    //   "Weight editing functionality not implemented yet."
-    // );
+    setModalVisible(true);
   };
 
   const handleEditHeight = () => {
-    Alert.prompt("Edit Height", "Enter new height.", async (text: string) => {
-      await supabase
-        .from("profiles")
-        .update({
-          height: Number(text),
-        })
-        .eq("email", userProfile.email)
-        .select("*");
-
-      fetchUserProfile();
+    setModalConfig({
+      title: 'Edit Height',
+      placeholder: 'Enter your height (cm)',
+      keyboardType: 'numeric',
+      initialValue: userProfile.height?.toString() || '',
+      fieldType: 'height',
     });
-
-    // Alert.alert(
-    //   "Edit Height",
-    //   "Height editing functionality not implemented yet."
-    // );
+    setModalVisible(true);
   };
 
   const handleEditGender = () => {
@@ -333,6 +367,16 @@ export default function Profile() {
         activeTab="profile"
         onTabPress={handleTabPress}
         onCameraPress={() => navigation.navigate("camera")}
+      />
+
+      <TextInputModal
+        visible={modalVisible}
+        title={modalConfig.title}
+        placeholder={modalConfig.placeholder}
+        initialValue={modalConfig.initialValue}
+        keyboardType={modalConfig.keyboardType}
+        onSubmit={handleModalSubmit}
+        onCancel={handleModalCancel}
       />
     </SafeAreaView>
   );
