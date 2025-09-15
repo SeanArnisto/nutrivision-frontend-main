@@ -175,13 +175,13 @@ export default function SignUpScreen() {
         const isProfileComplete = useAuthStore.getState().profileComplete;
 
         if (isProfileComplete === false) {
-          console.log("New Google user - navigating to onboarding");
+          console.log("🆕 New Google user from signup - navigating to onboarding");
           navigation.reset({
             index: 0,
             routes: [{ name: 'onboarding' }],
           });
         } else {
-          console.log("Existing Google user - navigating to main app");
+          console.log("👤 Existing Google user from signup - navigating to main app");
           navigation.reset({
             index: 0,
             routes: [{ name: 'page-2' }],

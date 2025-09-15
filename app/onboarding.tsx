@@ -37,6 +37,7 @@ export default function OnboardingScreen() {
   const [currentStep, setCurrentStep] = useState(1);
   const [progressAnimation] = useState(new Animated.Value(1));
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isInitializing, setIsInitializing] = useState(true);
 
   // Redirect unauthenticated users to login
   useEffect(() => {
@@ -44,6 +45,16 @@ export default function OnboardingScreen() {
       navigation.replace('login');
     }
   }, [isAuthenticated, navigation]);
+
+  // Add initialization delay to prevent premature validation from Google OAuth
+  useEffect(() => {
+    const initTimer = setTimeout(() => {
+      setIsInitializing(false);
+      console.log('🎯 Onboarding screen initialized for new user setup');
+    }, 500); // Small delay to ensure smooth transition
+
+    return () => clearTimeout(initTimer);
+  }, []);
 
   const [formData, setFormData] = useState<OnboardingData>({
     fullName: "",
@@ -68,6 +79,11 @@ export default function OnboardingScreen() {
   const totalSteps = 6; // Full Name, Gender, Age, Height, Weight, Thank You
 
   const showToast = (type: ToastType, title: string, message: string) => {
+    // Don't show validation toasts during initialization (prevents Google OAuth validation issues)
+    if (isInitializing && type === "error") {
+      console.log('🚫 Preventing validation toast during initialization:', message);
+      return;
+    }
     setToast({ visible: true, type, title, message });
   };
 

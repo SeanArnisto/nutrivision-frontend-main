@@ -281,20 +281,20 @@ export default function LoginScreen() {
         console.log("Google login successful:", data.session.user.email);
         
         try {
-          // Preload nutrition data just like regular login
-          await preloadNutritionData();
-
-          // Check profile completion and navigate accordingly
+          // Check profile completion first
           const isProfileComplete = useAuthStore.getState().profileComplete;
 
           if (isProfileComplete === false) {
-            console.log("New Google user - navigating to onboarding");
+            console.log("🆕 New Google user - navigating to onboarding");
+            // For new users, go directly to onboarding without preloading nutrition data
             navigation.reset({
               index: 0,
               routes: [{ name: 'onboarding' }],
             });
           } else {
-            console.log("Existing Google user - navigating to main app");
+            console.log("👤 Existing Google user - preloading data and navigating to main app");
+            // For existing users, preload nutrition data before going to main app
+            await preloadNutritionData();
             navigation.reset({
               index: 0,
               routes: [{ name: 'page-2' }],
