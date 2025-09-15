@@ -266,33 +266,6 @@ const SegmentedControl = ({
       </View>
     </View>
   );
-
-  return (
-    <View style={[segmentedStyles.container, { backgroundColor }, containerStyle]}>
-      <View style={[segmentedStyles.highlight]} />
-      <View style={segmentedStyles.optionsContainer}>
-        {options.map((option, index) => (
-          <TouchableOpacity
-            key={option.key}
-            style={segmentedStyles.option}
-            onPress={() => handlePress(index)}
-            activeOpacity={0.8}
-          >
-            <View style={[segmentedStyles.optionContent]}>
-              <Ionicons
-                name={option.icon}
-                size={18}
-                color={selectedIndex === index ? textActiveColor : textInactiveColor}
-              />
-              <Text style={[segmentedStyles.optionText]}> 
-                {option.label}
-              </Text>
-            </View>
-          </TouchableOpacity>
-        ))}
-      </View>
-    </View>
-  );
 };
 
 // Main Camera Component
