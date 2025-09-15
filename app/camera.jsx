@@ -213,7 +213,7 @@ const SegmentedControl = ({
   inactiveColor = '#999',
   backgroundColor = 'rgba(0,0,0,0.6)',
   textActiveColor = 'white',
-  textInactiveColor = '#999',
+  textInactiveColor = '#4e4242ff',
 }) => {
   const options = [
     {
@@ -228,48 +228,44 @@ const SegmentedControl = ({
     },
   ];
 
-  // const animatedStyle = useAnimatedStyle(() => {
-  //   return {
-  //     transform: [
-  //       {
-  //         translateX: withSpring(selectedIndex * SEGMENT_WIDTH, {
-  //           damping: 15,
-  //           stiffness: 150,
-  //         }),
-  //       },
-  //     ],
-  //     backgroundColor: withSpring(activeColor),
-  //     width: SEGMENT_WIDTH - 8,
-  //   };
-  // });
-
-  // const getItemAnimatedStyle = (index) => {
-  //   return useAnimatedStyle(() => {
-  //     const isSelected = selectedIndex === index;
-  //     return {
-  //       opacity: withSpring(isSelected ? 1 : 0.7),
-  //     };
-  //   });
-  // };
-
-  // const getTextAnimatedStyle = (index) => {
-  //   return useAnimatedStyle(() => {
-  //     const isSelected = selectedIndex === index;
-  //     return {
-  //       color: interpolateColor(
-  //         isSelected ? 1 : 0,
-  //         [0, 1],
-  //         [textInactiveColor, textActiveColor]
-  //       ),
-  //     };
-  //   });
-  // };
-
   const handlePress = (index) => {
     if (onSelectionChange) {
       onSelectionChange(index, options[index].key);
     }
   };
+
+  return (
+    <View style={[segmentedStyles.container, { backgroundColor }, containerStyle]}>
+      <View style={[segmentedStyles.highlight, { 
+        backgroundColor: activeColor,
+        transform: [{ translateX: selectedIndex * SEGMENT_WIDTH }],
+        width: SEGMENT_WIDTH - 8 
+      }]} />
+      <View style={segmentedStyles.optionsContainer}>
+        {options.map((option, index) => (
+          <TouchableOpacity
+            key={option.key}
+            style={segmentedStyles.option}
+            onPress={() => handlePress(index)}
+            activeOpacity={0.8}
+          >
+            <View style={segmentedStyles.optionContent}>
+              <Ionicons
+                name={option.icon}
+                size={18}
+                color={selectedIndex === index ? textActiveColor : textInactiveColor}
+              />
+              <Text style={[segmentedStyles.optionText, {
+                color: selectedIndex === index ? textActiveColor : textInactiveColor
+              }]}>
+                {option.label}
+              </Text>
+            </View>
+          </TouchableOpacity>
+        ))}
+      </View>
+    </View>
+  );
 
   return (
     <View style={[segmentedStyles.container, { backgroundColor }, containerStyle]}>
