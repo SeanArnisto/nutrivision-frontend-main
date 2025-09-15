@@ -7,6 +7,7 @@ import {
   ScrollView,
   Image,
   Dimensions,
+  Platform,
 } from "react-native";
 import SafeViewAndroid from "@/components/SafeViewAndroid";
 import { useNavigation } from "@react-navigation/native";
@@ -14,7 +15,7 @@ import { StackNavigationProp } from "@react-navigation/stack";
 import { RootStackParamList } from "@/types/types";
 import AppLogo from "@/components/appLogo";
 import BottomNavBar from "@/components/BottomNavBar";
-import { CircularProgress } from "react-native-circular-progress";
+import { AnimatedCircularProgress } from "react-native-circular-progress";
 import ProfileBox from "@/components/ProfileBox";
 import { format, addDays } from "date-and-time";
 import BarChart from "@/components/Barchart";
@@ -24,6 +25,7 @@ import {
 } from "@/stores/nutritionIntakeStore";
 import { useAuthStore } from "@/stores/authStore";
 import { getNutritionalHistory } from "@/hooks/store";
+import Loading from "./loading";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 
@@ -39,6 +41,7 @@ interface NutrientCardProps {
   unit: string;
   iconSource: any;
   status: "low" | "recommended" | "high";
+  index?: number;
 }
 
 function NutrientCard({
@@ -48,7 +51,14 @@ function NutrientCard({
   unit,
   iconSource,
   status,
+  index = 0,
 }: NutrientCardProps) {
+  // Calculate staggered delay for animations
+  const animationDelay = 200 + (index * 150);
+  
+  // Shorter duration on Android for better performance
+  const animationDuration = Platform.OS === 'android' ? 600 : 800;
+  
   const getStatusColor = () => {
     switch (status) {
       case "low":
@@ -91,18 +101,21 @@ function NutrientCard({
       </Text>
       <Text style={styles.nutrientLabel}>{label}</Text>
 
-      <View style={styles.circularProgressContainer}>
-        <CircularProgress
-          size={80}
-          width={6}
-          fill={percentage}
-          tintColor={getStatusColor()}
-          backgroundColor="#DDDDDD"
-          lineCap="round"
-        >
-          {() => <Image source={iconSource} style={styles.nutrientIcon} />}
-        </CircularProgress>
-      </View>
+       <View style={styles.circularProgressContainer}>
+         <AnimatedCircularProgress
+           size={80}
+           width={6}
+           fill={percentage}
+           tintColor={getStatusColor()}
+           backgroundColor="#DDDDDD"
+           lineCap="round"
+           duration={animationDuration}
+           delay={animationDelay}
+           prefill={0}
+         >
+           {() => <Image source={iconSource} style={styles.nutrientIcon} />}
+         </AnimatedCircularProgress>
+       </View>
     </View>
   );
 }
@@ -124,12 +137,6 @@ interface NutritionalRecord {
 export default function Statistics() {
   const navigation = useNavigation<StatisticsScreenNavigationProp>();
 
-  const [nutritionalData, setNutritionalData] = useState<NutritionalRecord[]>(
-    []
-  );
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
   const handleTabPress = (tabName: string) => {
     switch (tabName) {
       case "home":
@@ -149,113 +156,74 @@ export default function Statistics() {
 
   const { user, isAuthenticated } = useAuthStore();
 
-  // Fix: Use the helper hook instead of the store directly
+  // Get ALL data from stores (should be preloaded)
   const {
     nutritionDataAve,
     isLoading: averageLoading,
     error: averageError,
-    fetchNutritionIntakeAve,
-    hasNutritionData: hasAverageData,
   } = useNutritionAverage();
 
-  // Fix: Proper useEffect for fetching average data
-  useEffect(() => {
-    if (!hasAverageData && !averageLoading && isAuthenticated && user) {
-      fetchNutritionIntakeAve();
-    }
-  }, [
-    fetchNutritionIntakeAve,
-    hasAverageData,
-    averageLoading,
-    isAuthenticated,
-    user,
-  ]);
-
   const {
-    // nutrition fetching constant
     nutritionData,
+    nutritionalHistory, // This is now preloaded!
+    isHistoryLoading,
+    historyError,
     error: intakeError,
-    fetchNutritionIntake,
   } = useNutritionIntakeStore();
 
-  // Redirect unauthenticated users to login
+  // Only keep authentication check - NO data fetching useEffects
   useEffect(() => {
     if (!isAuthenticated) {
       navigation.replace("login");
     }
   }, [isAuthenticated, navigation]);
 
+  // Debug logging to verify preloaded data
+  useEffect(() => {
+    console.log('Statistics - Data state:', {
+      hasNutritionData: !!nutritionData,
+      historyLength: nutritionalHistory?.length || 0,
+      hasAverageData: !!nutritionDataAve,
+      isLoading: { average: averageLoading, history: isHistoryLoading },
+      errors: { average: averageError, history: historyError, intake: intakeError }
+    });
+  }, [nutritionData, nutritionalHistory, nutritionDataAve, averageLoading, isHistoryLoading, averageError, historyError, intakeError]);
+
   // Don't render anything if not authenticated
   if (!isAuthenticated || !user) {
     return null;
   }
 
-  // Fetch nutrition intake data on component mount
-  useEffect(() => {
-    if (isAuthenticated && user) {
-      fetchNutritionIntake();
-    }
-  }, [isAuthenticated, user, fetchNutritionIntake]);
+  // Calculate averages from preloaded nutrition intake data
+  const carbAvg = nutritionData?.avg_carbs ? Math.round(nutritionData.avg_carbs) : 0;
+  const proteinAvg = nutritionData?.avg_protein ? Math.round(nutritionData.avg_protein) : 0;
+  const sodiumAvg = nutritionData?.avg_sodium ? nutritionData.avg_sodium / 1000 : 0;
 
-  const carbAvg = nutritionData?.avg_carbs
-    ? Math.round(nutritionData.avg_carbs)
-    : 0;
-  const proteinAvg = nutritionData?.avg_protein
-    ? Math.round(nutritionData.avg_protein)
-    : 0;
-  const sodiumAvg = nutritionData?.avg_sodium
-    ? nutritionData.avg_sodium / 1000
-    : 0; // No division by 1000 if already in correct units
-
-  // Fetch user nutrition input (30 days)
-  useEffect(() => {
-    const fetchNutritionHistory = async () => {
-      setLoading(true);
-      setError(null);
-
-      try {
-        const result = await getNutritionalHistory(30);
-
-        if (result.success) {
-          setNutritionalData(result.data || []);
-        } else {
-          setError(result.error || "Failed to load nutritional data");
-        }
-      } catch (err) {
-        setError(err instanceof Error ? err.message : "Unknown error occurred");
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    // Actually call the function
-    fetchNutritionHistory();
-  }, []);
-
+  // Use preloaded nutritional history (with safety checks)
   const getTodaysRecords = () => {
-    // filter to only get the data from the date the app is currently used
+    if (!Array.isArray(nutritionalHistory)) return [];
+    
     const today = new Date().toDateString();
-
-    return nutritionalData.filter(
-      (record) => new Date(record.created_at).toDateString() === today
+    return nutritionalHistory.filter(
+      (record) => record && record.created_at && new Date(record.created_at).toDateString() === today
     );
   };
 
   const getWeeklyRecords = () => {
-    // Convert startOfWeek and endOfWeek to timestamps for comparison
+    if (!Array.isArray(nutritionalHistory)) return [];
+    
     const startTimestamp = startOfWeek.getTime();
-    const endTimestamp = endOfWeek.getTime() + (24 * 60 * 60 * 1000 - 1); // Include the entire last day
+    const endTimestamp = endOfWeek.getTime() + (24 * 60 * 60 * 1000 - 1);
 
-    return nutritionalData.filter((record) => {
+    return nutritionalHistory.filter((record) => {
+      if (!record || !record.created_at) return false;
       const recordDate = new Date(record.created_at).getTime();
       return recordDate >= startTimestamp && recordDate <= endTimestamp;
     });
   };
 
   const weeklyNutritionTotal = () => {
-    // total util to get total of 3 nutrients from weekly inputs
     const weeklyRecords = getWeeklyRecords();
-
     return weeklyRecords.reduce(
       (totals, record) => ({
         carbohydrates: totals.carbohydrates + (record.carbohydrates || 0),
@@ -267,9 +235,7 @@ export default function Statistics() {
   };
 
   const todaysNutritionTotal = () => {
-    // total util to get total of 3 nutrients from todays inputs
     const todaysRecord = getTodaysRecords();
-
     return todaysRecord.reduce(
       (totals, record) => ({
         carbohydrates: totals.carbohydrates + (record.carbohydrates || 0),
@@ -280,11 +246,11 @@ export default function Statistics() {
     );
   };
 
-  // Initialize date constants first
+  // Initialize date constants
   const today = new Date();
-  const dayOfWeek = today.getDay(); // 0 = Sunday, 1 = Monday, etc.
-  const startOfWeek = new Date(today); // Create a new date object
-  startOfWeek.setDate(today.getDate() - dayOfWeek); // Set to start of week
+  const dayOfWeek = today.getDay();
+  const startOfWeek = new Date(today);
+  startOfWeek.setDate(today.getDate() - dayOfWeek);
   const endOfWeek = new Date(startOfWeek);
   endOfWeek.setDate(startOfWeek.getDate() + 6);
 
@@ -297,7 +263,7 @@ export default function Statistics() {
 
   const todaysNutrition = todaysNutritionTotal();
 
-  // Fix: Complete status determination functions
+  // Status determination functions
   const getNutrientStatus = (
     value: number,
     min: number,
@@ -308,7 +274,7 @@ export default function Statistics() {
     return "recommended";
   };
 
-  // Fix: Use average data for status determination
+  // Use preloaded average data for status determination
   const carbsStatus = nutritionDataAve
     ? getNutrientStatus(
         todaysNutrition.carbohydrates,
@@ -333,34 +299,6 @@ export default function Statistics() {
       )
     : "low";
 
-  // Sample data matching the design
-  const nutrientData = [
-    {
-      value: todaysNutrition.carbohydrates,
-      target: carbAvg,
-      label: "Carbs",
-      unit: "g",
-      iconSource: require("@/assets/images/Carbohydrate Icon.png"),
-      status: carbsStatus,
-    },
-    {
-      value: todaysNutrition.sodium,
-      target: sodiumAvg,
-      label: "Sodium",
-      unit: "g",
-      iconSource: require("@/assets/images/Sodium Icon.png"),
-      status: sodiumStatus,
-    },
-    {
-      value: todaysNutrition.protein,
-      target: proteinAvg,
-      label: "Protein",
-      unit: "g",
-      iconSource: require("@/assets/images/Protein Icon.png"),
-      status: proteinStatus,
-    },
-  ];
-
   // Function to get nutrition totals for a specific date
   const getDailyNutritionTotals = (date: Date | null) => {
     try {
@@ -371,12 +309,12 @@ export default function Statistics() {
 
       const targetDate = new Date(date).toDateString();
 
-      if (!nutritionalData || !Array.isArray(nutritionalData)) {
+      if (!nutritionalHistory || !Array.isArray(nutritionalHistory)) {
         console.warn("No nutritional data available");
         return { carbohydrates: 0, protein: 0, sodium: 0 };
       }
 
-      const dayRecords = nutritionalData.filter((record) => {
+      const dayRecords = nutritionalHistory.filter((record) => {
         try {
           return (
             record &&
@@ -404,7 +342,7 @@ export default function Statistics() {
     }
   };
 
-  // Generate data for each day of the week
+  // Generate data for each day of the week using preloaded data
   const generateWeeklyChartData = () => {
     try {
       const days = ["S", "M", "T", "W", "TH", "F", "S"];
@@ -415,7 +353,7 @@ export default function Statistics() {
         return [];
       }
 
-      // Get recommended values from nutrition store
+      // Get recommended values from preloaded nutrition store
       const recommendedCarbs = carbAvg || 0;
       const recommendedProtein = proteinAvg || 0;
       const recommendedSodium = sodiumAvg || 0;
@@ -431,7 +369,6 @@ export default function Statistics() {
 
         const dailyTotals = getDailyNutritionTotals(currentDate);
 
-        // Ensure values are numbers and non-negative
         const safeValue = (val: number) => Math.max(0, Number(val) || 0);
 
         // Calculate ratios (multiply by 100 to match the 100 = ratio of 1 scale)
@@ -448,7 +385,7 @@ export default function Statistics() {
         // Add carbohydrates bar
         chartData.push({
           value: carbsRatio,
-          frontColor: "#F4D03F", // Carbs - Yellow
+          frontColor: "#F4D03F",
           spacing: 2,
           label: days[i] || "",
         });
@@ -456,14 +393,14 @@ export default function Statistics() {
         // Add sodium bar
         chartData.push({
           value: sodiumRatio,
-          frontColor: "#8B4513", // Sodium - Brown
+          frontColor: "#8B4513",
         });
 
         // Add protein bar
         chartData.push({
           value: proteinRatio,
-          frontColor: "#9AB106", // Protein - Green
-          spacing: i < 6 ? 12 : 0, // Increased spacing between days
+          frontColor: "#9AB106",
+          spacing: i < 6 ? 12 : 0,
         });
       }
 
@@ -474,31 +411,58 @@ export default function Statistics() {
     }
   };
 
-  // Weekly data for the bar chart using actual values
+  // Sample data using preloaded values
+  const nutrientData = [
+    {
+      value: todaysNutrition.carbohydrates,
+      target: carbAvg,
+      label: "Carbs",
+      unit: "g",
+      iconSource: require("@/assets/images/Carbohydrate Icon.png"),
+      status: carbsStatus,
+    },
+    {
+      value: todaysNutrition.sodium,
+      target: sodiumAvg,
+      label: "Sodium",
+      unit: "g",
+      iconSource: require("@/assets/images/Sodium Icon.png"),
+      status: sodiumStatus,
+    },
+    {
+      value: todaysNutrition.protein,
+      target: proteinAvg,
+      label: "Protein",
+      unit: "g",
+      iconSource: require("@/assets/images/Protein Icon.png"),
+      status: proteinStatus,
+    },
+  ];
+
+  // Weekly data for the bar chart using preloaded values
   const weeklyChartData = generateWeeklyChartData();
 
-  // Show loading state if either average or intake data is loading
-  // if (averageLoading || loading) {
-  //   return (
-  //     <SafeAreaView style={styles.safeArea}>
-  //       <View style={styles.loadingContainer}>
-  //         <Text>Loading nutrition data...</Text>
-  //       </View>
-  //     </SafeAreaView>
-  //   );
-  // }
+  // Show loading state only if data is actually loading (shouldn't happen with preloading)
+  if (averageLoading || isHistoryLoading) {
+    return (
+      <SafeAreaView style={SafeViewAndroid.AndroidSafeArea}>
+        <Loading />
+      </SafeAreaView>
+    );
+  }
 
   // Show error state if there's an error
-  if (averageError || error) {
+  if (averageError || historyError || intakeError) {
     return (
       <SafeAreaView style={SafeViewAndroid.AndroidSafeArea}>
         <View style={styles.errorContainer}>
-          <Text>Error: {averageError || error}</Text>
+          <Text>Error: {averageError || historyError || intakeError}</Text>
         </View>
       </SafeAreaView>
     );
   }
 
+  // IMPORTANT: No data fetching here - everything uses preloaded data!
   return (
     <SafeAreaView style={SafeViewAndroid.AndroidSafeArea}>
       <ScrollView
@@ -538,7 +502,7 @@ export default function Statistics() {
                   <View
                     style={[styles.legendDot, { backgroundColor: "#9AB106" }]}
                   />
-                  <Text style={styles.legendText}>Guidline Intake</Text>
+                  <Text style={styles.legendText}>Guideline Intake</Text>
                 </View>
                 <View style={styles.legendItem}>
                   <View
@@ -561,23 +525,25 @@ export default function Statistics() {
                 unit={nutrient.unit}
                 iconSource={nutrient.iconSource}
                 status={nutrient.status}
+                index={index}
               />
             ))}
           </View>
 
-          {/* Weekly Chart using the new BarChart component */}
+          {/* Weekly Chart using preloaded data */}
           <BarChart
+            key={`chart-${startStr}-${endStr}`}
             data={weeklyChartData}
             title="Weekly Intake Ratio"
             subtitle={`${startStr} - ${endStr}`}
-            maxValue={150} // Maximum value on Y-axis
-            stepValue={25} // Steps of 25 (0.25 ratio increments)
+            maxValue={150}
+            stepValue={25}
             height={160}
             barWidth={8}
             spacing={2}
             showLegend={true}
-            referenceLine={100} // Add constant reference line at 100%
-            referenceLineColor="#000000" // Black line for reference
+            referenceLine={100}
+            referenceLineColor="#000000"
             legendData={[
               { color: "#F4D03F", label: "Carbohydrates" },
               { color: "#8B4513", label: "Sodium" },
@@ -596,7 +562,6 @@ export default function Statistics() {
     </SafeAreaView>
   );
 }
-
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,

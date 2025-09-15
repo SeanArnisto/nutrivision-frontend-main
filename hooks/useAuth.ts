@@ -17,7 +17,7 @@ export const useAuth = () => {
         if (event === 'SIGNED_IN' && session) {
           store.setSession(session);
         } else if (event === 'SIGNED_OUT') {
-          store.clearAuth();
+          console.log('error')
         }
       }
     );

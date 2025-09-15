@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet, Dimensions } from 'react-native';
+import { View, Text, StyleSheet, Dimensions, Platform } from 'react-native';
 import { BarChart as GiftedBarChart } from 'react-native-gifted-charts';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -51,6 +51,10 @@ const BarChart: React.FC<BarChartProps> = ({
     { length: Math.floor(maxValue / stepValue) + 1 },
     (_, i) => (i * stepValue).toString()
   );
+
+  // Optimize animation duration for Android
+  const optimizedAnimationDuration = Platform.OS === 'android' ? 600 : 800;
+  const shouldAnimate = Platform.OS === 'android' ? true : true; // Force animation on both platforms
 
   return (
     <View style={styles.chartCard}>
@@ -106,8 +110,12 @@ const BarChart: React.FC<BarChartProps> = ({
             type: 'dashed',
           }}
           isAnimated
-          animationDuration={1000}
+          animationDuration={optimizedAnimationDuration}
           barBorderRadius={4}
+          {...(Platform.OS === 'android' && {
+            animationEasing: 'ease',
+            animateOnDataChange: true,
+          })}
         />
       </View>
     </View>
