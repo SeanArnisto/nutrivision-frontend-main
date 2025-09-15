@@ -136,11 +136,18 @@ interface NutritionalRecord {
 export default function Statistics() {
   const navigation = useNavigation<StatisticsScreenNavigationProp>();
 
-  const [nutritionalData, setNutritionalData] = useState<NutritionalRecord[]>(
-    []
-  );
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  // const [nutritionalData, setNutritionalData] = useState<NutritionalRecord[]>(
+  //   []
+  // );
+  // const [loading, setLoading] = useState(true);
+  // const [error, setError] = useState<string | null>(null);
+
+  const {
+  nutritionalHistory = [],
+  isHistoryLoading = false,
+  historyError = null,
+  fetchNutritionalHistory,
+} = useNutritionIntakeStore();
 
   const handleTabPress = (tabName: string) => {
     switch (tabName) {
@@ -171,17 +178,17 @@ export default function Statistics() {
   } = useNutritionAverage();
 
   // Fix: Proper useEffect for fetching average data
-  useEffect(() => {
-    if (!hasAverageData && !averageLoading && isAuthenticated && user) {
-      fetchNutritionIntakeAve();
-    }
-  }, [
-    fetchNutritionIntakeAve,
-    hasAverageData,
-    averageLoading,
-    isAuthenticated,
-    user,
-  ]);
+  // useEffect(() => {
+  //   if (!hasAverageData && !averageLoading && isAuthenticated && user) {
+  //     fetchNutritionIntakeAve();
+  //   }
+  // }, [
+  //   fetchNutritionIntakeAve,
+  //   hasAverageData,
+  //   averageLoading,
+  //   isAuthenticated,
+  //   user,
+  // ]);
 
   const {
     // nutrition fetching constant
@@ -203,11 +210,11 @@ export default function Statistics() {
   }
 
   // Fetch nutrition intake data on component mount
-  useEffect(() => {
-    if (isAuthenticated && user) {
-      fetchNutritionIntake();
-    }
-  }, [isAuthenticated, user, fetchNutritionIntake]);
+  // useEffect(() => {
+  //   if (isAuthenticated && user) {
+  //     fetchNutritionIntake();
+  //   }
+  // }, [isAuthenticated, user, fetchNutritionIntake]);
 
   const carbAvg = nutritionData?.avg_carbs
     ? Math.round(nutritionData.avg_carbs)
@@ -219,50 +226,70 @@ export default function Statistics() {
     ? nutritionData.avg_sodium / 1000
     : 0; // No division by 1000 if already in correct units
 
+    useEffect(() => {
+  // Only fetch if we don't have data and we're authenticated
+  if (
+    nutritionalHistory.length === 0 && 
+    !isHistoryLoading && 
+    !historyError &&
+    isAuthenticated && 
+    user &&
+    fetchNutritionalHistory
+  ) {
+    console.log('Fetching nutritional history as fallback...');
+    fetchNutritionalHistory(30);
+  }
+}, [nutritionalHistory.length, isHistoryLoading, historyError, isAuthenticated, user, fetchNutritionalHistory]);
   // Fetch user nutrition input (30 days)
-  useEffect(() => {
-    const fetchNutritionHistory = async () => {
-      setLoading(true);
-      setError(null);
+  // useEffect(() => {
+  //   const fetchNutritionHistory = async () => {
+  //     setLoading(true);
+  //     setError(null);
 
-      try {
-        const result = await getNutritionalHistory(30);
+  //     try {
+  //       const result = await getNutritionalHistory(30);
 
-        if (result.success) {
-          setNutritionalData(result.data || []);
-        } else {
-          setError(result.error || "Failed to load nutritional data");
-        }
-      } catch (err) {
-        setError(err instanceof Error ? err.message : "Unknown error occurred");
-      } finally {
-        setLoading(false);
-      }
-    };
+  //       if (result.success) {
+  //         setNutritionalData(result.data || []);
+  //       } else {
+  //         setError(result.error || "Failed to load nutritional data");
+  //       }
+  //     } catch (err) {
+  //       setError(err instanceof Error ? err.message : "Unknown error occurred");
+  //     } finally {
+  //       setLoading(false);
+  //     }
+  //   };
 
-    // Actually call the function
-    fetchNutritionHistory();
-  }, []);
+  //   // Actually call the function
+  //   fetchNutritionHistory();
+  // }, []);
 
   const getTodaysRecords = () => {
-    // filter to only get the data from the date the app is currently used
-    const today = new Date().toDateString();
-
-    return nutritionalData.filter(
-      (record) => new Date(record.created_at).toDateString() === today
-    );
-  };
+  if (!nutritionalHistory || !Array.isArray(nutritionalHistory)) {
+    return [];
+  }
+  
+  const today = new Date().toDateString();
+  return nutritionalHistory.filter(
+    (record) => record && record.created_at && new Date(record.created_at).toDateString() === today
+  );
+};
 
   const getWeeklyRecords = () => {
-    // Convert startOfWeek and endOfWeek to timestamps for comparison
-    const startTimestamp = startOfWeek.getTime();
-    const endTimestamp = endOfWeek.getTime() + (24 * 60 * 60 * 1000 - 1); // Include the entire last day
+  if (!nutritionalHistory || !Array.isArray(nutritionalHistory)) {
+    return [];
+  }
+  
+  const startTimestamp = startOfWeek.getTime();
+  const endTimestamp = endOfWeek.getTime() + (24 * 60 * 60 * 1000 - 1);
 
-    return nutritionalData.filter((record) => {
-      const recordDate = new Date(record.created_at).getTime();
-      return recordDate >= startTimestamp && recordDate <= endTimestamp;
-    });
-  };
+  return nutritionalHistory.filter((record) => {
+    if (!record || !record.created_at) return false;
+    const recordDate = new Date(record.created_at).getTime();
+    return recordDate >= startTimestamp && recordDate <= endTimestamp;
+  });
+};
 
   const weeklyNutritionTotal = () => {
     // total util to get total of 3 nutrients from weekly inputs
@@ -375,47 +402,46 @@ export default function Statistics() {
 
   // Function to get nutrition totals for a specific date
   const getDailyNutritionTotals = (date: Date | null) => {
-    try {
-      if (!date) {
-        console.warn("Invalid date provided to getDailyNutritionTotals");
-        return { carbohydrates: 0, protein: 0, sodium: 0 };
-      }
-
-      const targetDate = new Date(date).toDateString();
-
-      if (!nutritionalData || !Array.isArray(nutritionalData)) {
-        console.warn("No nutritional data available");
-        return { carbohydrates: 0, protein: 0, sodium: 0 };
-      }
-
-      const dayRecords = nutritionalData.filter((record) => {
-        try {
-          return (
-            record &&
-            record.created_at &&
-            new Date(record.created_at).toDateString() === targetDate
-          );
-        } catch (e) {
-          console.warn("Invalid record date:", record?.created_at);
-          return false;
-        }
-      });
-
-      return dayRecords.reduce(
-        (totals, record) => ({
-          carbohydrates:
-            totals.carbohydrates + (Number(record?.carbohydrates) || 0),
-          protein: totals.protein + (Number(record?.protein) || 0),
-          sodium: totals.sodium + (Number(record?.sodium) || 0),
-        }),
-        { carbohydrates: 0, protein: 0, sodium: 0 }
-      );
-    } catch (error) {
-      console.error("Error in getDailyNutritionTotals:", error);
+  try {
+    if (!date) {
+      console.warn("Invalid date provided to getDailyNutritionTotals");
       return { carbohydrates: 0, protein: 0, sodium: 0 };
     }
-  };
 
+    const targetDate = new Date(date).toDateString();
+
+    if (!nutritionalHistory || !Array.isArray(nutritionalHistory)) {
+      console.warn("No nutritional data available");
+      return { carbohydrates: 0, protein: 0, sodium: 0 };
+    }
+
+    const dayRecords = nutritionalHistory.filter((record) => {
+      try {
+        return (
+          record &&
+          record.created_at &&
+          new Date(record.created_at).toDateString() === targetDate
+        );
+      } catch (e) {
+        console.warn("Invalid record date:", record?.created_at);
+        return false;
+      }
+    });
+
+    return dayRecords.reduce(
+      (totals, record) => ({
+        carbohydrates:
+          totals.carbohydrates + (Number(record?.carbohydrates) || 0),
+        protein: totals.protein + (Number(record?.protein) || 0),
+        sodium: totals.sodium + (Number(record?.sodium) || 0),
+      }),
+      { carbohydrates: 0, protein: 0, sodium: 0 }
+    );
+  } catch (error) {
+    console.error("Error in getDailyNutritionTotals:", error);
+    return { carbohydrates: 0, protein: 0, sodium: 0 };
+  }
+};
   // Generate data for each day of the week
   const generateWeeklyChartData = () => {
     try {
@@ -501,11 +527,11 @@ export default function Statistics() {
   // }
 
   // Show error state if there's an error
-  if (averageError || error) {
+  if (averageError || historyError) {
     return (
       <SafeAreaView style={SafeViewAndroid.AndroidSafeArea}>
         <View style={styles.errorContainer}>
-          <Text>Error: {averageError || error}</Text>
+          <Text>Error: {averageError || historyError}</Text>
         </View>
       </SafeAreaView>
     );
