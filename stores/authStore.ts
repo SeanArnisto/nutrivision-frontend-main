@@ -2,6 +2,7 @@ import { create } from "zustand";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { supabase } from "@/config/supabase";
 import { reset } from "@/navigation/navigationRef";
+import { Alert } from "react-native";
 
 interface User {
   id: string;
@@ -28,6 +29,7 @@ interface AuthState {
   checkProfileComplete: () => Promise<boolean>; // Add this
   setUser: (user: User | null) => void;
   setSession: (session: any) => void;
+  resetPasswordInApp: (newPassword: string) => Promise<{ error: any | null }>;
 }
 
 export const useAuthStore = create<AuthState>((set, get) => ({
@@ -77,6 +79,26 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       console.error("Profile check error:", error);
       set({ profileComplete: false });
       return false;
+    }
+  },
+
+  resetPasswordInApp: async (newPassword: string) => {
+    try {
+      // You might want to set loading state here if you have it
+      const { data, error } = await supabase.auth.updateUser({
+        password: newPassword,
+      });
+
+      if (error) throw error;
+
+      // Sign out the user after successful password change
+      await get().signOut();
+      
+      Alert.alert('Success', 'Password updated successfully! You have been logged out for security.');
+      return { error: null };
+    } catch (error: any) {
+      console.error('Reset password error:', error);
+      return { error: { message: error.message } };
     }
   },
 

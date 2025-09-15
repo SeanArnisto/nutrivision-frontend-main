@@ -169,4 +169,5 @@ export interface AuthContextType {
   signOut: () => Promise<{ error: AuthError | null }>;
   resetPassword: (email: string) => Promise<AuthResponse>;
   updateProfile: (updates: any) => Promise<AuthResponse>;
+  resetPasswordInApp: (newPassword: string) => Promise<{ error: AuthError | null }>
 }

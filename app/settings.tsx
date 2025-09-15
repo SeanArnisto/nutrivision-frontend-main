@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState } from "react";
 import {
   View,
   Text,
@@ -7,23 +7,24 @@ import {
   ScrollView,
   Alert,
   TouchableOpacity,
-} from 'react-native';
-import { useNavigation } from '@react-navigation/native';
-import { StackNavigationProp } from '@react-navigation/stack';
-import { RootStackParamList } from '@/types/types';
-import { Ionicons } from '@expo/vector-icons';
-import AppLogo from '@/components/appLogo';
-import BottomNavBar from '@/components/BottomNavBar';
-import SettingsSection from '@/components/SettingsSection';
-import SettingsItem from '@/components/SettingsItem';
-import ToggleSwitch from '@/components/ToggleSwitch';
-import ProfileBox from '@/components/ProfileBox';
-import FullTextModal from '@/components/FullTextModal';
-import { useAuthStore } from '@/stores/authStore';
+} from "react-native";
+import { useNavigation } from "@react-navigation/native";
+import { StackNavigationProp } from "@react-navigation/stack";
+import { RootStackParamList } from "@/types/types";
+import { Ionicons } from "@expo/vector-icons";
+import AppLogo from "@/components/appLogo";
+import BottomNavBar from "@/components/BottomNavBar";
+import SettingsSection from "@/components/SettingsSection";
+import SettingsItem from "@/components/SettingsItem";
+import ToggleSwitch from "@/components/ToggleSwitch";
+import ProfileBox from "@/components/ProfileBox";
+import FullTextModal from "@/components/FullTextModal";
+import { useAuthStore } from "@/stores/authStore";
+import ResetPasswordModal from "@/components/ResetPasswordModal";
 
 type SettingsScreenNavigationProp = StackNavigationProp<
   RootStackParamList,
-  'settings'
+  "settings"
 >;
 
 export default function Settings() {
@@ -33,61 +34,60 @@ export default function Settings() {
   const [showTermsModal, setShowTermsModal] = useState(false);
   const [showPrivacyModal, setShowPrivacyModal] = useState(false);
   const [showDisclaimerModal, setShowDisclaimerModal] = useState(false);
-
-
+  const [showResetPasswordModal, setShowResetPasswordModal] = useState(false); 
 
   const handleTabPress = (tabName: string) => {
     switch (tabName) {
-      case 'home':
-        navigation.navigate('page-2');
+      case "home":
+        navigation.navigate("page-2");
         break;
-      case 'stats':
-        navigation.navigate('statistics');
+      case "stats":
+        navigation.navigate("statistics");
         break;
-      case 'settings':
+      case "settings":
         // Already on settings page
         break;
-      case 'profile':
-        navigation.navigate('profile');
+      case "profile":
+        navigation.navigate("profile");
         break;
     }
   };
 
   const handleChangePassword = () => {
-    Alert.alert('Change Password', 'Password change functionality not implemented yet.');
+    setShowResetPasswordModal(true);
   };
 
   const handleAppVersion = () => {
-    Alert.alert('App Version', 'NutriVision v1.0.0');
+    Alert.alert("App Version", "NutriVision v1.0.0");
   };
 
   const handleContactSupport = () => {
     Alert.alert(
-      'Contact Support', 
-      'Please contact support via email: nutrixtract@gmail.com',
-      [{ text: 'OK', style: 'default' }]
+      "Contact Support",
+      "Please contact support via email: nutrixtract@gmail.com",
+      [{ text: "OK", style: "default" }]
     );
   };
 
   const handleLogout = () => {
     Alert.alert(
-      'Logout',
-      'Are you sure you want to logout?',
+      "Logout",
+      "Are you sure you want to logout?",
       [
         {
-          text: 'Cancel',
-          style: 'cancel',
+          text: "Cancel",
+          style: "cancel",
         },
         {
-          text: 'Logout',
-          style: 'destructive',
+          text: "Logout",
+          style: "destructive",
           onPress: async () => {
             try {
               await signOut();
               // Navigation will be handled automatically by the auth store
             } catch (error) {
-              console.error('Logout error:', error);
-              Alert.alert('Error', 'Failed to logout. Please try again.');
+              console.error("Logout error:", error);
+              Alert.alert("Error", "Failed to logout. Please try again.");
             }
           },
         },
@@ -95,6 +95,8 @@ export default function Settings() {
       { cancelable: false }
     );
   };
+
+  
 
   const handleTermsAndConditions = () => {
     setShowTermsModal(true);
@@ -111,22 +113,21 @@ export default function Settings() {
   return (
     <SafeAreaView style={styles.safeArea}>
       <AppLogo />
-      <ScrollView 
-          style={styles.container} 
-          contentContainerStyle={styles.scrollContent}
-          showsVerticalScrollIndicator={false}
-        >
-      <View style={styles.mainContainer}>
-        <View style={styles.profileBoxContainer}>
-          <ProfileBox 
-            primaryText="Settings" 
-            highlightedText="&" 
-            secondaryText="Preferences"
-            style={styles.customProfileBox}
-          />
-        </View>
+      <ScrollView
+        style={styles.container}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
+        <View style={styles.mainContainer}>
+          <View style={styles.profileBoxContainer}>
+            <ProfileBox
+              primaryText="Settings"
+              highlightedText="&"
+              secondaryText="Preferences"
+              style={styles.customProfileBox}
+            />
+          </View>
 
-        
           <SettingsSection title="Privacy and Security">
             <SettingsItem
               title="Change Password"
@@ -154,10 +155,7 @@ export default function Settings() {
           </SettingsSection>
 
           <SettingsSection title="Support">
-            <SettingsItem
-              title="App Version"
-              onPress={handleAppVersion}
-            />
+            <SettingsItem title="App Version" onPress={handleAppVersion} />
             <SettingsItem
               title="Contact Support"
               onPress={handleContactSupport}
@@ -179,14 +177,13 @@ export default function Settings() {
               style={styles.lastItem}
             />
           </SettingsSection>
-           </View>
-        </ScrollView>
-      
+        </View>
+      </ScrollView>
 
-      <BottomNavBar 
-        activeTab="settings" 
+      <BottomNavBar
+        activeTab="settings"
         onTabPress={handleTabPress}
-        onCameraPress={() => navigation.navigate('camera')}
+        onCameraPress={() => navigation.navigate("camera")}
       />
 
       {/* Modals */}
@@ -195,21 +192,23 @@ export default function Settings() {
         type="terms"
         onClose={() => setShowTermsModal(false)}
       />
-      
+
       <FullTextModal
         visible={showPrivacyModal}
         type="privacy"
         onClose={() => setShowPrivacyModal(false)}
       />
-      
+
       <FullTextModal
         visible={showDisclaimerModal}
         type="disclaimer"
         onClose={() => setShowDisclaimerModal(false)}
       />
-      
-     
-      
+
+      <ResetPasswordModal
+        visible={showResetPasswordModal}
+        onClose={() => setShowResetPasswordModal(false)}
+      />
     </SafeAreaView>
   );
 }
@@ -217,7 +216,7 @@ export default function Settings() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: '#eff1f6',
+    backgroundColor: "#eff1f6",
   },
   mainContainer: {
     flex: 1,
@@ -241,23 +240,23 @@ const styles = StyleSheet.create({
   },
   logoutText: {
     fontSize: 16,
-    color: '#E74C3C', // Red color for logout
-    fontFamily: 'AlbertSans-Medium',
+    color: "#E74C3C", // Red color for logout
+    fontFamily: "AlbertSans-Medium",
     flex: 1,
   },
   logoutItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     paddingHorizontal: 24,
     paddingVertical: 16,
-    backgroundColor: '#fff',
+    backgroundColor: "#fff",
     borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
+    borderBottomColor: "#f0f0f0",
   },
   rightSection: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 8,
   },
 });
