@@ -19,11 +19,11 @@ import {
   Dimensions,
   Linking,
 } from "react-native";
-import Animated, {
-  useAnimatedStyle,
-  withSpring,
-  interpolateColor,
-} from 'react-native-reanimated';
+// import Animated, {
+//   useAnimatedStyle,
+//   withSpring,
+//   interpolateColor,
+// } from 'react-native-reanimated';
 import { CameraView, useCameraPermissions } from "expo-camera";
 import * as MediaLibrary from "expo-media-library";
 import * as ImageManipulator from "expo-image-manipulator";
@@ -228,42 +228,42 @@ const SegmentedControl = ({
     },
   ];
 
-  const animatedStyle = useAnimatedStyle(() => {
-    return {
-      transform: [
-        {
-          translateX: withSpring(selectedIndex * SEGMENT_WIDTH, {
-            damping: 15,
-            stiffness: 150,
-          }),
-        },
-      ],
-      backgroundColor: withSpring(activeColor),
-      width: SEGMENT_WIDTH - 8,
-    };
-  });
+  // const animatedStyle = useAnimatedStyle(() => {
+  //   return {
+  //     transform: [
+  //       {
+  //         translateX: withSpring(selectedIndex * SEGMENT_WIDTH, {
+  //           damping: 15,
+  //           stiffness: 150,
+  //         }),
+  //       },
+  //     ],
+  //     backgroundColor: withSpring(activeColor),
+  //     width: SEGMENT_WIDTH - 8,
+  //   };
+  // });
 
-  const getItemAnimatedStyle = (index) => {
-    return useAnimatedStyle(() => {
-      const isSelected = selectedIndex === index;
-      return {
-        opacity: withSpring(isSelected ? 1 : 0.7),
-      };
-    });
-  };
+  // const getItemAnimatedStyle = (index) => {
+  //   return useAnimatedStyle(() => {
+  //     const isSelected = selectedIndex === index;
+  //     return {
+  //       opacity: withSpring(isSelected ? 1 : 0.7),
+  //     };
+  //   });
+  // };
 
-  const getTextAnimatedStyle = (index) => {
-    return useAnimatedStyle(() => {
-      const isSelected = selectedIndex === index;
-      return {
-        color: interpolateColor(
-          isSelected ? 1 : 0,
-          [0, 1],
-          [textInactiveColor, textActiveColor]
-        ),
-      };
-    });
-  };
+  // const getTextAnimatedStyle = (index) => {
+  //   return useAnimatedStyle(() => {
+  //     const isSelected = selectedIndex === index;
+  //     return {
+  //       color: interpolateColor(
+  //         isSelected ? 1 : 0,
+  //         [0, 1],
+  //         [textInactiveColor, textActiveColor]
+  //       ),
+  //     };
+  //   });
+  // };
 
   const handlePress = (index) => {
     if (onSelectionChange) {
@@ -273,7 +273,7 @@ const SegmentedControl = ({
 
   return (
     <View style={[segmentedStyles.container, { backgroundColor }, containerStyle]}>
-      <Animated.View style={[segmentedStyles.highlight, animatedStyle]} />
+      <View style={[segmentedStyles.highlight]} />
       <View style={segmentedStyles.optionsContainer}>
         {options.map((option, index) => (
           <TouchableOpacity
@@ -282,16 +282,16 @@ const SegmentedControl = ({
             onPress={() => handlePress(index)}
             activeOpacity={0.8}
           >
-            <Animated.View style={[segmentedStyles.optionContent, getItemAnimatedStyle(index)]}>
+            <View style={[segmentedStyles.optionContent]}>
               <Ionicons
                 name={option.icon}
                 size={18}
                 color={selectedIndex === index ? textActiveColor : textInactiveColor}
               />
-              <Animated.Text style={[segmentedStyles.optionText, getTextAnimatedStyle(index)]}>
+              <Text style={[segmentedStyles.optionText]}> 
                 {option.label}
-              </Animated.Text>
-            </Animated.View>
+              </Text>
+            </View>
           </TouchableOpacity>
         ))}
       </View>
