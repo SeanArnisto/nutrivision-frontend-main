@@ -18,6 +18,7 @@ import CustomTextInput from "@/components/CustomTextInput";
 import AuthButton from "@/components/AuthButton";
 import SocialButton from "@/components/SocialButton";
 import LinkButton from "@/components/LinkButton";
+import DisclaimerModal from "@/components/DisclaimerModal";
 
 import { useAuthStore } from "@/stores/authStore";
 import {
@@ -135,6 +136,7 @@ export default function LoginScreen() {
 
   const [errors, setErrors] = useState<LoginErrors>({});
   const [isLoading, setIsLoading] = useState(false);
+  const [isDisclaimerModalVisible, setIsDisclaimerModalVisible] = useState(false);
 
   const validateEmail = (email: string): boolean => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -260,6 +262,15 @@ export default function LoginScreen() {
   };
 
   const handleCreateAccount = () => {
+    setIsDisclaimerModalVisible(true);
+  };
+
+  const handleDisclaimerClose = () => {
+    setIsDisclaimerModalVisible(false);
+  };
+
+  const handleDisclaimerAgree = () => {
+    setIsDisclaimerModalVisible(false);
     navigation.navigate("signup");
   };
 
@@ -379,6 +390,13 @@ export default function LoginScreen() {
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
+
+      {/* Disclaimer Modal - Always rendered but controlled by state */}
+      <DisclaimerModal
+        visible={isDisclaimerModalVisible}
+        onClose={handleDisclaimerClose}
+        onAgree={handleDisclaimerAgree}
+      />
     </ScreenContainer>
   );
 }
