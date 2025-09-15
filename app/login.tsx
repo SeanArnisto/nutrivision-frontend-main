@@ -25,6 +25,7 @@ import {
   useNutritionIntakeStore,
   fetchNutritionAverage,
 } from "@/stores/nutritionIntakeStore";
+import { GoogleAuthService } from "@/services/GoogleAuthService";
 import { Alert } from "react-native";
 
 type LoginScreenNavigationProp = StackNavigationProp<
@@ -260,8 +261,77 @@ export default function LoginScreen() {
     }
   };
 
-  const handleGoogleLogin = () => {
-    console.log("Google login pressed");
+  const handleGoogleLogin = async () => {
+    if (isLoading) return;
+    
+    setIsLoading(true);
+    setErrors({});
+
+    try {
+      console.log("Starting Google OAuth login...");
+      const { data, error } = await GoogleAuthService.signInWithGoogle();
+
+      if (error) {
+        console.error("Google login error:", error);
+        setErrors({ general: error.message || "Google sign-in failed. Please try again." });
+        return;
+      }
+
+      if (data?.session?.user) {
+        console.log("Google login successful:", data.session.user.email);
+        
+        try {
+          // Preload nutrition data just like regular login
+          await preloadNutritionData();
+
+          // Check profile completion and navigate accordingly
+          const isProfileComplete = useAuthStore.getState().profileComplete;
+
+          if (isProfileComplete === false) {
+            console.log("New Google user - navigating to onboarding");
+            navigation.reset({
+              index: 0,
+              routes: [{ name: 'onboarding' }],
+            });
+          } else {
+            console.log("Existing Google user - navigating to main app");
+            navigation.reset({
+              index: 0,
+              routes: [{ name: 'page-2' }],
+            });
+          }
+        } catch (preloadError) {
+          console.error("Failed to preload data after Google login:", preloadError);
+          // Still navigate but show a warning
+          setErrors({
+            general: "Login successful but some data failed to load. You may experience slower page loads.",
+          });
+
+          // Navigate anyway after a short delay
+          setTimeout(() => {
+            const isProfileComplete = useAuthStore.getState().profileComplete;
+            if (isProfileComplete === false) {
+              navigation.reset({
+                index: 0,
+                routes: [{ name: 'onboarding' }],
+              });
+            } else {
+              navigation.reset({
+                index: 0,
+                routes: [{ name: 'page-2' }],
+              });
+            }
+          }, 1000);
+        }
+      }
+    } catch (error: any) {
+      console.error("Unexpected Google login error:", error);
+      setErrors({
+        general: error.message || "An unexpected error occurred during Google sign-in. Please try again.",
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleFacebookLogin = () => {

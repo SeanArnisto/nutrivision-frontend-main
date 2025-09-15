@@ -21,6 +21,7 @@ import SocialButton from "@/components/SocialButton";
 import LinkButton from "@/components/LinkButton";
 
 import { useAuthStore } from "@/stores/authStore";
+import { GoogleAuthService } from "@/services/GoogleAuthService";
 import { Alert } from "react-native";
 
 type SignUpScreenNavigationProp = StackNavigationProp<
@@ -150,8 +151,51 @@ export default function SignUpScreen() {
     }
   };
 
-  const handleGoogleSignUp = () => {
-    console.log("Google sign up pressed");
+  const handleGoogleSignUp = async () => {
+    if (isLoading) return;
+    
+    setIsLoading(true);
+    setErrors({});
+
+    try {
+      console.log("Starting Google OAuth sign up...");
+      const { data, error } = await GoogleAuthService.signUpWithGoogle();
+
+      if (error) {
+        console.error("Google sign up error:", error);
+        setErrors({ general: error.message || "Google sign-up failed. Please try again." });
+        return;
+      }
+
+      if (data?.session?.user) {
+        console.log("Google sign up successful:", data.session.user.email);
+        
+        // For Google OAuth, the user is immediately signed in
+        // Navigate to onboarding for new users or main app for existing users
+        const isProfileComplete = useAuthStore.getState().profileComplete;
+
+        if (isProfileComplete === false) {
+          console.log("New Google user - navigating to onboarding");
+          navigation.reset({
+            index: 0,
+            routes: [{ name: 'onboarding' }],
+          });
+        } else {
+          console.log("Existing Google user - navigating to main app");
+          navigation.reset({
+            index: 0,
+            routes: [{ name: 'page-2' }],
+          });
+        }
+      }
+    } catch (error: any) {
+      console.error("Unexpected Google sign up error:", error);
+      setErrors({
+        general: error.message || "An unexpected error occurred during Google sign-up. Please try again.",
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleFacebookSignUp = () => {

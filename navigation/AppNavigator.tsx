@@ -1,6 +1,7 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { NavigationContainer } from "@react-navigation/native";
 import { createStackNavigator } from "@react-navigation/stack";
+import * as Linking from "expo-linking";
 import index from "@/app/index"; // adjust the path if needed
 import Page6 from "@/app/page-6"; // adjust the path if needed
 import Page2 from "@/app/page-2";
@@ -27,8 +28,61 @@ import { navigationRef } from "./navigationRef";
 const Stack = createStackNavigator<RootStackParamList>();
 
 export default function AppNavigator() {
+  useEffect(() => {
+    // Handle initial URL when app launches
+    const handleInitialURL = async () => {
+      const initialUrl = await Linking.getInitialURL();
+      if (initialUrl) {
+        console.log('Initial URL:', initialUrl);
+        // OAuth callback URLs are handled by expo-web-browser automatically
+        // This is just for logging and debugging purposes
+      }
+    };
+
+    // Handle URL when app is already open
+    const handleUrlChange = (url: string) => {
+      console.log('🔗 URL changed:', url);
+      
+      // Check if this is an OAuth callback
+      if (url.includes('login-callback')) {
+        console.log('🔄 OAuth callback detected, letting expo-web-browser handle it');
+        // Don't navigate - let expo-web-browser handle OAuth callbacks
+        return;
+      }
+      
+      // For other URLs, let normal navigation handle them
+      console.log('📱 Normal deep link, allowing navigation');
+    };
+
+    handleInitialURL();
+
+    // Listen for URL changes
+    const subscription = Linking.addEventListener('url', ({ url }) => {
+      handleUrlChange(url);
+    });
+
+    return () => {
+      subscription?.remove();
+    };
+  }, []);
+
+  const linking = {
+    prefixes: ['com.jamescarillo.nutrivision://'],
+    config: {
+      screens: {
+        // OAuth callbacks should not be handled by React Navigation
+        // They are automatically handled by expo-web-browser
+        login: 'login',
+        signup: 'signup',
+        'page-2': 'page-2',
+        onboarding: 'onboarding',
+        index: '',
+      },
+    },
+  };
+
   return (
-     <NavigationContainer ref={navigationRef}>
+     <NavigationContainer ref={navigationRef} linking={linking}>
         <Stack.Navigator initialRouteName="index">
           <Stack.Screen name="index" component={index} />
           <Stack.Screen name="page-6" component={Page6} />
