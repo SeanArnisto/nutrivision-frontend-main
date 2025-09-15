@@ -1,3 +1,4 @@
+// Feedback.tsx - UPDATED VERSION WITH MODAL
 import React, { useCallback, useEffect, useState, useMemo } from "react";
 import { useFocusEffect } from "@react-navigation/native";
 import {
@@ -25,6 +26,7 @@ import {
 } from "@/stores/nutritionIntakeStore";
 import { Ionicons } from "@expo/vector-icons";
 import AppLogo from "@/components/appLogo";
+import NutritionalModal from "@/components/NutritionalModal"; // ADD THIS IMPORT
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 
@@ -190,6 +192,9 @@ function Feedback() {
   const [capturedPhotos, setCapturedPhotos] = useState<
     { uri: string; type: string; orientation: string; id: string }[]
   >([]);
+
+  // ADD THIS STATE FOR THE MODAL
+  const [modalVisible, setModalVisible] = useState(false);
 
   const navigation = useNavigation() as HomeScreenNavigationProp;
 
@@ -467,9 +472,9 @@ function Feedback() {
         console.log("⚠️ Cleared UI state despite cleanup errors");
       }
     }, []);
-  
 
-  const handleSaveToDatabase = async () => {
+  // UPDATED: Show modal instead of directly saving
+  const handleSaveToDatabase = () => {
     // Validate that we have nutrition data
     if (carbohydrate === 0 && protein === 0 && sodium === 0) {
       Alert.alert("No Data", "Please enter nutritional values before saving.", [
@@ -478,10 +483,18 @@ function Feedback() {
       return;
     }
 
+    // Show the modal instead of directly saving
+    setModalVisible(true);
+  };
+
+  // NEW: Handle the actual save from modal
+  const handleModalSave = async () => {
     try {
+      setLoading(true);
       const result = await saveWithPhotos(capturedPhotos);
 
       if (result.success) {
+        setModalVisible(false);
         Alert.alert(
           "Success",
           "Nutritional data and photos saved successfully!",
@@ -491,19 +504,26 @@ function Feedback() {
               onPress: () => {                
                 reset();
                 setCapturedPhotos([]);
+                navigation.navigate("page-2"); // Navigate to home
               },
             },
           ]
         );
-        await deleteAllCapturedPhotos(capturedPhotos)
-        navigation.navigate("page-2")
+        await deleteAllCapturedPhotos(capturedPhotos);
       } else {
         Alert.alert("Error", result.error || "Failed to save data");
       }
     } catch (error) {
       Alert.alert("Error", "An unexpected error occurred");
       console.error("Save error:", error);
+    } finally {
+      setLoading(false);
     }
+  };
+
+  // NEW: Handle modal close
+  const handleModalClose = () => {
+    setModalVisible(false);
   };
 
   // Fetch feedback when nutrient values change
@@ -739,13 +759,8 @@ function Feedback() {
         <Ionicons name="arrow-undo-outline" size={28} color="#9AB206" />
       </TouchableOpacity>
 
-      {/* <TouchableOpacity style={styles.checkButton} onPress={() => navigation.navigate("page-2")}>
-        <Image
-          source={require("@/assets/images/Home.png")}
-          style={styles.homeIcon}
-        />
-      </TouchableOpacity> */}
-       <TouchableOpacity 
+      {/* Save Button - Opens Modal */}
+      <TouchableOpacity 
         style={[styles.saveButton, loading && styles.saveButtonDisabled]} 
         onPress={handleSaveToDatabase}
         disabled={loading}
@@ -756,7 +771,28 @@ function Feedback() {
         ) : (
           <Text style={styles.saveButtonText}>Save to Database</Text>
         )}
-      </TouchableOpacity> 
+      </TouchableOpacity>
+
+      {/* NUTRITIONAL MODAL */}
+      <NutritionalModal
+        visible={modalVisible}
+        onClose={handleModalClose}
+        onSave={handleModalSave}
+        nutritionData={{
+          carbs: carbohydrate,
+          sodium: sodium,
+          protein: protein,
+        }}
+        recommendations={{
+          carbsMin: recommendationValues.carbsMin,
+          carbsMax: recommendationValues.carbsMax,
+          sodiumMin: recommendationValues.sodiumMin,
+          sodiumMax: recommendationValues.sodiumMax,
+          proteinMin: recommendationValues.proteinMin,
+          proteinMax: recommendationValues.proteinMax,
+        }}
+        loading={loading}
+      />
     </SafeAreaView>
   );
 }
