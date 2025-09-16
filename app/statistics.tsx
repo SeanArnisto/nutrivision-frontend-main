@@ -137,22 +137,7 @@ interface NutritionalRecord {
 export default function Statistics() {
   const navigation = useNavigation<StatisticsScreenNavigationProp>();
 
-  const handleTabPress = (tabName: string) => {
-    switch (tabName) {
-      case "home":
-        navigation.navigate("page-2");
-        break;
-      case "stats":
-        // Already on statistics page
-        break;
-      case "settings":
-        navigation.navigate("settings");
-        break;
-      case "profile":
-        navigation.navigate("profile");
-        break;
-    }
-  };
+  
 
   const { user, isAuthenticated } = useAuthStore();
 
@@ -573,9 +558,13 @@ export default function Statistics() {
       </ScrollView>
 
       <BottomNavBar
-        activeTab="stats"
-        onTabPress={handleTabPress}
         onCameraPress={() => navigation.navigate("camera")}
+        routeMapping={{
+          home: "page-2",
+          stats: "statistics", 
+          settings: "settings",
+          profile: "profile"
+        }}
       />
     </SafeAreaView>
   );

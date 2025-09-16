@@ -117,27 +117,7 @@ useEffect(() => {
 }, [intakeError, navigation, shouldRedirect]);
 
 
-  const handleTabPress = (tabName: string) => {
-    if (tabName === activeTab) {
-      navigation.replace("page-2");
-    } else {
-      setActiveTab(tabName);
-      switch (tabName) {
-        case "home":
-          navigation.navigate("page-2");
-          break;
-        case "stats":
-          navigation.navigate("statistics");
-          break;
-        case "settings":
-          navigation.navigate("settings");
-          break;
-        case "profile":
-          navigation.navigate("profile");
-          break;
-      }
-    }
-  };
+  
 
   const handleDateSelect = (date: Date) => {
     setSelectedDate(date);
@@ -314,9 +294,13 @@ useEffect(() => {
       </ThemedView>
 
       <BottomNavBar
-        activeTab={activeTab}
-        onTabPress={handleTabPress}
         onCameraPress={() => navigation.navigate("camera")}
+        routeMapping={{
+          home: "page-2",
+          stats: "statistics", 
+          settings: "settings",
+          profile: "profile"
+        }}
       />
     </SafeAreaView>
   );

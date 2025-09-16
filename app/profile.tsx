@@ -71,22 +71,7 @@ export default function Profile() {
     }
   }, [isAuthenticated, navigation]);
 
-  const handleTabPress = (tabName: string) => {
-    switch (tabName) {
-      case "home":
-        navigation.navigate("page-2");
-        break;
-      case "stats":
-        navigation.navigate("statistics");
-        break;
-      case "settings":
-        navigation.navigate("settings");
-        break;
-      case "profile":
-        // Already on profile page
-        break;
-    }
-  };
+
 
   const fetchUserProfile = async () => {
     try {
@@ -366,9 +351,13 @@ export default function Profile() {
       </View>
 
       <BottomNavBar
-        activeTab="profile"
-        onTabPress={handleTabPress}
         onCameraPress={() => navigation.navigate("camera")}
+        routeMapping={{
+          home: "page-2",
+          stats: "statistics", 
+          settings: "settings",
+          profile: "profile"
+        }}
       />
 
       <TextInputModal
