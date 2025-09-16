@@ -48,7 +48,7 @@ export default function Page2() {
   const [shouldRedirect, setShouldRedirect] = useState(false);
 
   // Use the auth store to get user info
-  const { user, isAuthenticated } = useAuthStore();
+  const { user, isAuthenticated, profileComplete } = useAuthStore();
 
   // Use the nutrition calendar hook
   const {
@@ -78,46 +78,52 @@ export default function Page2() {
 
   // Fetch nutrition intake data on component mount
   useEffect(() => {
-    if (isAuthenticated && user) {
+    if (isAuthenticated && user && profileComplete === true) {
       fetchNutritionIntake();
     }
-  }, [isAuthenticated, user, fetchNutritionIntake]);
+  }, [isAuthenticated, user, profileComplete, fetchNutritionIntake]);
 
   // Redirect unauthenticated users to login
   useEffect(() => {
     if (!isAuthenticated) {
-      navigation.replace('login');
+      navigation.replace("login");
     }
   }, [isAuthenticated, navigation]);
+
+  useEffect(() => {
+    if (isAuthenticated && profileComplete === false) {
+      navigation.replace("onboarding");
+    }
+  }, [isAuthenticated, profileComplete, navigation]);
 
   // Don't render anything if not authenticated
   if (!isAuthenticated || !user) {
     return null;
   }
 
-    // Check if any of the errors are network-related
-useEffect(() => {
-  const hasNetworkError = (error: string | null) => {
-    return error && (
-      error.toLowerCase().includes('network request failed') ||
-      error.toLowerCase().includes('network error') ||
-      error.toLowerCase().includes('connection failed') ||
-      error.toLowerCase().includes('fetch failed')
-    );
-  };
+  // Check if any of the errors are network-related
+  useEffect(() => {
+    const hasNetworkError = (error: string | null) => {
+      return (
+        error &&
+        (error.toLowerCase().includes("network request failed") ||
+          error.toLowerCase().includes("network error") ||
+          error.toLowerCase().includes("connection failed") ||
+          error.toLowerCase().includes("fetch failed"))
+      );
+    };
 
-  // Only check the error variable you actually have
-  if (hasNetworkError(intakeError) && !shouldRedirect) {
-    console.log('Network error detected in Statistics, redirecting to Page2...');
-    setShouldRedirect(true);
-    setTimeout(() => {
-      navigation.navigate("page-2");
-    }, 1000);
-  }
-}, [intakeError, navigation, shouldRedirect]);
-
-
-  
+    // Only check the error variable you actually have
+    if (hasNetworkError(intakeError) && !shouldRedirect) {
+      console.log(
+        "Network error detected in Statistics, redirecting to Page2..."
+      );
+      setShouldRedirect(true);
+      setTimeout(() => {
+        navigation.navigate("page-2");
+      }, 1000);
+    }
+  }, [intakeError, navigation, shouldRedirect]);
 
   const handleDateSelect = (date: Date) => {
     setSelectedDate(date);
@@ -176,7 +182,7 @@ useEffect(() => {
     ? Math.round(nutritionData.avg_protein)
     : 0;
   const sodiumAvg = nutritionData?.avg_sodium
-    ? (nutritionData.avg_sodium / 1000)
+    ? nutritionData.avg_sodium / 1000
     : 0; // No division by 1000 if already in correct units
 
   // Handle retry for different errors
@@ -297,9 +303,9 @@ useEffect(() => {
         onCameraPress={() => navigation.navigate("camera")}
         routeMapping={{
           home: "page-2",
-          stats: "statistics", 
+          stats: "statistics",
           settings: "settings",
-          profile: "profile"
+          profile: "profile",
         }}
       />
     </SafeAreaView>
