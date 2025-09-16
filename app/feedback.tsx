@@ -6,14 +6,14 @@ import {
   Image,
   Text,
   StyleSheet,
-  Dimensions, 
+  Dimensions,
   TouchableOpacity,
   Platform,
   ScrollView,
   SafeAreaView,
   KeyboardAvoidingView,
   Alert,
-  ActivityIndicator
+  ActivityIndicator,
 } from "react-native";
 import { useNavigation } from "expo-router";
 import { StackNavigationProp } from "@react-navigation/stack";
@@ -27,6 +27,7 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import AppLogo from "@/components/appLogo";
 import NutritionalModal from "@/components/NutritionalModal"; // ADD THIS IMPORT
+import { useNutritionIntakeStore } from "@/stores/nutritionIntakeStore";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 
@@ -172,6 +173,8 @@ function Feedback() {
   const loadUserRecommendations = useRecommStore(
     (state) => state.loadUserRecommendations
   );
+
+  const { fetchNutritionalHistory } = useNutritionIntakeStore();
 
   // Nutrition average store for better recommendation ranges
   const {
@@ -429,49 +432,59 @@ function Feedback() {
   const saveWithPhotos = useNutrientsStore((state) => state.saveWithPhotos);
   const reset = useNutrientsStore((state) => state.reset);
 
-  const deleteAllCapturedPhotos = useCallback(async (photos: { uri: string; type: string; orientation: string; id: string }[]) => {
+  const deleteAllCapturedPhotos = useCallback(
+    async (
+      photos: { uri: string; type: string; orientation: string; id: string }[]
+    ) => {
       console.log("🗑️ Starting cleanup of captured photos...");
-      
+
       if (!photos || photos.length === 0) {
         console.log("No photos to delete");
         return;
       }
-  
+
       try {
         const { status } = await MediaLibrary.requestPermissionsAsync();
         if (status !== "granted") {
-          console.warn("Media library permission not granted, skipping photo cleanup");
+          console.warn(
+            "Media library permission not granted, skipping photo cleanup"
+          );
           // Still clear the state even if we can't delete from storage
           setCapturedPhotos([]);
           return;
         }
-  
+
         // Extract asset IDs from photos (now guaranteed to have ID since we store them)
-        const assetIds = photos.map(photo => photo.id);
-        
+        const assetIds = photos.map((photo) => photo.id);
+
         // Delete the assets from device storage using the asset IDs directly
         if (assetIds.length > 0) {
-          console.log(`Deleting ${assetIds.length} photos from device storage using asset IDs`);
+          console.log(
+            `Deleting ${assetIds.length} photos from device storage using asset IDs`
+          );
           const deleteSuccess = await MediaLibrary.deleteAssetsAsync(assetIds);
-          
+
           if (deleteSuccess) {
             console.log("✅ Successfully deleted photos from device storage");
           } else {
-            console.warn("⚠️ Some photos may not have been deleted from storage");
+            console.warn(
+              "⚠️ Some photos may not have been deleted from storage"
+            );
           }
         }
-  
+
         // Clear the state regardless of deletion success
         setCapturedPhotos([]);
         console.log("✅ Cleared captured photos from UI");
-  
       } catch (error) {
         console.error("❌ Error during photo cleanup:", error);
         // Even if deletion fails, clear the UI state
         setCapturedPhotos([]);
         console.log("⚠️ Cleared UI state despite cleanup errors");
       }
-    }, []);
+    },
+    []
+  );
 
   // UPDATED: Show modal instead of directly saving
   const handleSaveToDatabase = () => {
@@ -494,6 +507,11 @@ function Feedback() {
       const result = await saveWithPhotos(capturedPhotos);
 
       if (result.success) {
+        // IMPORTANT: Refresh the nutritional history in the store after saving
+        console.log("📊 Refreshing nutritional history after save...");
+        await fetchNutritionalHistory(30);
+        console.log("✅ Nutritional history refreshed");
+
         setModalVisible(false);
         Alert.alert(
           "Success",
@@ -501,7 +519,7 @@ function Feedback() {
           [
             {
               text: "OK",
-              onPress: () => {                
+              onPress: () => {
                 reset();
                 setCapturedPhotos([]);
                 navigation.navigate("page-2"); // Navigate to home
@@ -760,8 +778,8 @@ function Feedback() {
       </TouchableOpacity>
 
       {/* Save Button - Opens Modal */}
-      <TouchableOpacity 
-        style={[styles.saveButton, loading && styles.saveButtonDisabled]} 
+      <TouchableOpacity
+        style={[styles.saveButton, loading && styles.saveButtonDisabled]}
         onPress={handleSaveToDatabase}
         disabled={loading}
         activeOpacity={0.8}
@@ -803,17 +821,17 @@ const styles = StyleSheet.create({
     backgroundColor: "#eff1f6",
   },
   saveButton: {
-    position: 'absolute',
+    position: "absolute",
     bottom: 40,
     right: 20,
-    backgroundColor: '#7ca844',
+    backgroundColor: "#7ca844",
     paddingVertical: 12,
     paddingHorizontal: 24,
     borderRadius: 25,
     minWidth: 150,
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#000',
+    alignItems: "center",
+    justifyContent: "center",
+    shadowColor: "#000",
     shadowOffset: {
       width: 0,
       height: 2,
@@ -869,14 +887,14 @@ const styles = StyleSheet.create({
     overflow: "hidden",
   },
   saveButtonDisabled: {
-    backgroundColor: '#c0b4b4',
+    backgroundColor: "#c0b4b4",
     opacity: 0.7,
   },
   saveButtonText: {
-    color: '#fff',
+    color: "#fff",
     fontSize: 16,
-    fontWeight: '600',
-    fontFamily: 'SpaceMono-Regular',
+    fontWeight: "600",
+    fontFamily: "SpaceMono-Regular",
   },
   thumbnail: {
     width: "100%",
