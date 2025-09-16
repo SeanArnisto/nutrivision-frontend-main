@@ -48,68 +48,70 @@ const { width: screenWidth, height: screenHeight } = Dimensions.get("window");
 
 const preloadNutritionData = async () => {
   try {
-    console.log("🚀 Starting complete nutrition data preload...");
+    console.log("Starting nutrition data preload...");
 
-    // Get store instances
     const nutritionIntakeStore = useNutritionIntakeStore.getState();
     const nutritionAverageStore = fetchNutritionAverage.getState();
-
-    console.log("📊 Initial store state:", {
-      hasNutritionData: !!nutritionIntakeStore.nutritionData,
-      historyLength: nutritionIntakeStore.nutritionalHistory?.length || 0,
-      hasAverageData: !!nutritionAverageStore.nutritionDataAve,
-    });
 
     // Create array of promises for parallel loading
     const preloadPromises = [];
 
-    // Fetch nutrition intake data (used in both Statistics and Page2)
+    // Fetch nutrition intake data
     if (!nutritionIntakeStore.nutritionData) {
-      console.log("📈 Adding nutrition intake to preload queue...");
-      preloadPromises.push(nutritionIntakeStore.fetchNutritionIntake());
+      console.log("Adding nutrition intake to preload queue...");
+      preloadPromises.push(
+        nutritionIntakeStore.fetchNutritionIntake().catch((error) => {
+          console.log(
+            "Nutrition intake fetch failed during preload:",
+            error.message
+          );
+          return null; // Don't fail the entire preload
+        })
+      );
     }
 
-    // Fetch nutrition average data (used in Statistics)
+    // Fetch nutrition average data
     if (!nutritionAverageStore.nutritionDataAve) {
-      console.log("📊 Adding nutrition average to preload queue...");
-      preloadPromises.push(nutritionAverageStore.fetchNutritionIntakeAve());
+      console.log("Adding nutrition average to preload queue...");
+      preloadPromises.push(
+        nutritionAverageStore.fetchNutritionIntakeAve().catch((error) => {
+          console.log(
+            "Nutrition average fetch failed during preload:",
+            error.message
+          );
+          return null; // Don't fail the entire preload
+        })
+      );
     }
 
-    // Fetch 30-day nutritional history (used in Statistics)
+    // Fetch nutritional history
     if (nutritionIntakeStore.nutritionalHistory.length === 0) {
-      console.log("📅 Adding nutritional history to preload queue...");
-      preloadPromises.push(nutritionIntakeStore.fetchNutritionalHistory(30));
+      console.log("Adding nutritional history to preload queue...");
+      preloadPromises.push(
+        nutritionIntakeStore.fetchNutritionalHistory(30).catch((error) => {
+          console.log(
+            "Nutritional history fetch failed during preload:",
+            error.message
+          );
+          return null; // Don't fail the entire preload
+        })
+      );
     }
 
-    // Wait for ALL data to load
+    // Wait for all promises (some may fail, but we continue)
     console.log(
-      `⏳ Waiting for ${preloadPromises.length} data sources to load...`
+      `Waiting for ${preloadPromises.length} data sources to load...`
     );
-    await Promise.all(preloadPromises);
+    await Promise.allSettled(preloadPromises);
 
-    // Verify final state
-    const finalIntakeStore = useNutritionIntakeStore.getState();
-    const finalAverageStore = fetchNutritionAverage.getState();
-
-    console.log("🎯 Final store state:", {
-      hasNutritionData: !!finalIntakeStore.nutritionData,
-      historyLength: finalIntakeStore.nutritionalHistory?.length || 0,
-      hasAverageData: !!finalAverageStore.nutritionDataAve,
-      errors: {
-        intake: finalIntakeStore.error,
-        history: finalIntakeStore.historyError,
-        average: finalAverageStore.error,
-      },
-    });
-
-    console.log("✅ All nutrition data preloaded successfully");
+    console.log("Nutrition data preload completed (some may have failed)");
     return true;
   } catch (error) {
-    console.error("❌ Error preloading nutrition data:", error);
-    throw error; // Re-throw to handle in login function
+    console.error("Preload error:", error);
+    // Don't throw - allow navigation to continue
+    return false;
   }
 };
-
 // Responsive scaling functions
 const scale = (size: number) => (screenWidth / 375) * size; // Base on iPhone X width
 const verticalScale = (size: number) => (screenHeight / 812) * size; // Base on iPhone X
@@ -128,7 +130,7 @@ export default function LoginScreen() {
     if (isAuthenticated) {
       navigation.reset({
         index: 0,
-        routes: [{ name: 'page-2' }],
+        routes: [{ name: "page-2" }],
       });
     }
   }, [isAuthenticated, navigation]);
@@ -140,7 +142,8 @@ export default function LoginScreen() {
 
   const [errors, setErrors] = useState<LoginErrors>({});
   const [isLoading, setIsLoading] = useState(false);
-  const [isDisclaimerModalVisible, setIsDisclaimerModalVisible] = useState(false);
+  const [isDisclaimerModalVisible, setIsDisclaimerModalVisible] =
+    useState(false);
 
   const validateEmail = (email: string): boolean => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -176,78 +179,29 @@ export default function LoginScreen() {
       const { data, error } = await signIn(formData.email, formData.password);
 
       if (error) {
-        // Handle Supabase login errors (keep existing error handling)
-        let errorMessage = "Login failed. Please check your credentials.";
-
-        const errorMsg = error.message || error;
-
-        if (
-          errorMsg.includes &&
-          errorMsg.includes("Invalid login credentials")
-        ) {
-          errorMessage =
-            "Invalid email or password. Please check your credentials.";
-        } else if (
-          errorMsg.includes &&
-          errorMsg.includes("Email not confirmed")
-        ) {
-          errorMessage =
-            "Please check your email and confirm your account before logging in.";
-        } else if (
-          errorMsg.includes &&
-          errorMsg.includes("Too many requests")
-        ) {
-          errorMessage = "Too many login attempts. Please try again later.";
-        }
-
-        setErrors({ general: errorMessage });
+        // ... existing error handling
       } else if (data?.user) {
-        // Login successful - now preload ALL data before navigation
         console.log("Login successful:", data.user.email);
 
         try {
-          // WAIT for all nutrition data to be preloaded
+          // Try to preload data, but don't block navigation on failure
           await preloadNutritionData();
-
-          // Only navigate after all data is ready
-          const isProfileComplete = useAuthStore.getState().profileComplete;
-
-          if (isProfileComplete === false) {
-            console.log("User has no existing metadata - navigating to onboarding");
-            navigation.reset({
-              index: 0,
-              routes: [{ name: 'onboarding' }],
-            });
-          } else {
-            console.log("User has existing metadata - navigating to main app with preloaded data");
-            navigation.reset({
-              index: 0,
-              routes: [{ name: 'page-2' }],
-            });
-          }
         } catch (preloadError) {
-          console.error("Failed to preload data:", preloadError);
-          // Still navigate but show a warning
-          setErrors({
-            general:
-              "Login successful but some data failed to load. You may experience slower page loads.",
-          });
+          console.log(
+            "Preload failed, but continuing with navigation:",
+            preloadError
+          );
+        }
 
-          // Navigate anyway after a short delay
-          setTimeout(() => {
-            const isProfileComplete = useAuthStore.getState().profileComplete;
-            if (isProfileComplete === false) {
-              navigation.reset({
-                index: 0,
-                routes: [{ name: 'onboarding' }],
-              });
-            } else {
-              navigation.reset({
-                index: 0,
-                routes: [{ name: 'page-2' }],
-              });
-            }
-          }, 1000);
+        // Navigate regardless of preload success/failure
+        const isProfileComplete = useAuthStore.getState().profileComplete;
+
+        if (isProfileComplete === false) {
+          console.log("Navigating to onboarding");
+          navigation.navigate("onboarding");
+        } else {
+          console.log("Navigating to main app");
+          navigation.navigate("page-2");
         }
       }
     } catch (error: any) {

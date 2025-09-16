@@ -91,7 +91,7 @@ export const fetchNutritionAverage = create<AverageIntakeState>((set, get) => ({
         throw new Error('No authenticated user found');
       }
 
-       const { data: profile, error: profileError } = await supabase
+      const { data: profile, error: profileError } = await supabase
         .from('profiles')
         .select('height, weight, age')
         .eq('id', user.id)
@@ -143,11 +143,27 @@ export const fetchNutritionAverage = create<AverageIntakeState>((set, get) => ({
       });
 
     } catch (error: any) {
-      console.error('Nutrition intake fetch error:', error);
-      set({
-        error: error.message || 'Failed to fetch nutrition intake data',
-        isLoading: false,
-      });
+      console.error('Nutrition average fetch error:', error);
+      
+      // Check if it's a network error
+      const isNetworkError = error.message && (
+        error.message.includes('Network request failed') ||
+        error.message.includes('fetch') ||
+        error.name === 'TypeError'
+      );
+
+      if (isNetworkError) {
+        console.log('Network error detected - setting silent error flag');
+        set({
+          error: 'Network request failed',
+          isLoading: false,
+        });
+      } else {
+        set({
+          error: error.message || 'Failed to fetch nutrition average data',
+          isLoading: false,
+        });
+      }
     }
   },
 
@@ -276,7 +292,7 @@ export const useNutritionIntakeStore = create<NutritionIntakeState>((set, get) =
   },
 
   // Add new function to fetch nutritional history using your existing utility
-  fetchNutritionalHistory: async (days = 30) => {
+   fetchNutritionalHistory: async (days = 30) => {
     try {
       set({ isHistoryLoading: true, historyError: null });
 
@@ -298,13 +314,28 @@ export const useNutritionIntakeStore = create<NutritionIntakeState>((set, get) =
       }
     } catch (error: any) {
       console.error('Nutritional history fetch error:', error);
-      set({
-        historyError: error.message || 'Failed to fetch nutritional history',
-        isHistoryLoading: false,
-      });
+      
+      // Check if it's a network error
+      const isNetworkError = error.message && (
+        error.message.includes('Network request failed') ||
+        error.message.includes('fetch') ||
+        error.name === 'TypeError'
+      );
+
+      if (isNetworkError) {
+        console.log('Network error detected in history fetch - setting silent error flag');
+        set({
+          historyError: 'Network request failed',
+          isHistoryLoading: false,
+        });
+      } else {
+        set({
+          historyError: error.message || 'Failed to fetch nutritional history',
+          isHistoryLoading: false,
+        });
+      }
     }
   },
-
   clearNutritionData: () => {
     set({
       nutritionData: null,

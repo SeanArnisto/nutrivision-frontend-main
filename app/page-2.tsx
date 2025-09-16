@@ -45,6 +45,7 @@ export default function Page2() {
   const [sessionModalVisible, setSessionModalVisible] = useState(false);
   const [selectedSession, setSelectedSession] = useState<Session | null>(null);
   const [sessionFoodEntries, setSessionFoodEntries] = useState<FoodEntry[]>([]);
+  const [shouldRedirect, setShouldRedirect] = useState(false);
 
   // Use the auth store to get user info
   const { user, isAuthenticated } = useAuthStore();
@@ -93,6 +94,28 @@ export default function Page2() {
   if (!isAuthenticated || !user) {
     return null;
   }
+
+    // Check if any of the errors are network-related
+useEffect(() => {
+  const hasNetworkError = (error: string | null) => {
+    return error && (
+      error.toLowerCase().includes('network request failed') ||
+      error.toLowerCase().includes('network error') ||
+      error.toLowerCase().includes('connection failed') ||
+      error.toLowerCase().includes('fetch failed')
+    );
+  };
+
+  // Only check the error variable you actually have
+  if (hasNetworkError(intakeError) && !shouldRedirect) {
+    console.log('Network error detected in Statistics, redirecting to Page2...');
+    setShouldRedirect(true);
+    setTimeout(() => {
+      navigation.navigate("page-2");
+    }, 1000);
+  }
+}, [intakeError, navigation, shouldRedirect]);
+
 
   const handleTabPress = (tabName: string) => {
     if (tabName === activeTab) {

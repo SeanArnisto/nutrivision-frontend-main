@@ -54,11 +54,11 @@ function NutrientCard({
   index = 0,
 }: NutrientCardProps) {
   // Calculate staggered delay for animations
-  const animationDelay = 200 + (index * 150);
-  
+  const animationDelay = 200 + index * 150;
+
   // Shorter duration on Android for better performance
-  const animationDuration = Platform.OS === 'android' ? 600 : 800;
-  
+  const animationDuration = Platform.OS === "android" ? 600 : 800;
+
   const getStatusColor = () => {
     switch (status) {
       case "low":
@@ -101,21 +101,21 @@ function NutrientCard({
       </Text>
       <Text style={styles.nutrientLabel}>{label}</Text>
 
-       <View style={styles.circularProgressContainer}>
-         <AnimatedCircularProgress
-           size={80}
-           width={6}
-           fill={percentage}
-           tintColor={getStatusColor()}
-           backgroundColor="#DDDDDD"
-           lineCap="round"
-           duration={animationDuration}
-           delay={animationDelay}
-           prefill={0}
-         >
-           {() => <Image source={iconSource} style={styles.nutrientIcon} />}
-         </AnimatedCircularProgress>
-       </View>
+      <View style={styles.circularProgressContainer}>
+        <AnimatedCircularProgress
+          size={80}
+          width={6}
+          fill={percentage}
+          tintColor={getStatusColor()}
+          backgroundColor="#DDDDDD"
+          lineCap="round"
+          duration={animationDuration}
+          delay={animationDelay}
+          prefill={0}
+        >
+          {() => <Image source={iconSource} style={styles.nutrientIcon} />}
+        </AnimatedCircularProgress>
+      </View>
     </View>
   );
 }
@@ -180,14 +180,27 @@ export default function Statistics() {
 
   // Debug logging to verify preloaded data
   useEffect(() => {
-    console.log('Statistics - Data state:', {
+    console.log("Statistics - Data state:", {
       hasNutritionData: !!nutritionData,
       historyLength: nutritionalHistory?.length || 0,
       hasAverageData: !!nutritionDataAve,
       isLoading: { average: averageLoading, history: isHistoryLoading },
-      errors: { average: averageError, history: historyError, intake: intakeError }
+      errors: {
+        average: averageError,
+        history: historyError,
+        intake: intakeError,
+      },
     });
-  }, [nutritionData, nutritionalHistory, nutritionDataAve, averageLoading, isHistoryLoading, averageError, historyError, intakeError]);
+  }, [
+    nutritionData,
+    nutritionalHistory,
+    nutritionDataAve,
+    averageLoading,
+    isHistoryLoading,
+    averageError,
+    historyError,
+    intakeError,
+  ]);
 
   // Don't render anything if not authenticated
   if (!isAuthenticated || !user) {
@@ -195,23 +208,32 @@ export default function Statistics() {
   }
 
   // Calculate averages from preloaded nutrition intake data
-  const carbAvg = nutritionData?.avg_carbs ? Math.round(nutritionData.avg_carbs) : 0;
-  const proteinAvg = nutritionData?.avg_protein ? Math.round(nutritionData.avg_protein) : 0;
-  const sodiumAvg = nutritionData?.avg_sodium ? nutritionData.avg_sodium / 1000 : 0;
+  const carbAvg = nutritionData?.avg_carbs
+    ? Math.round(nutritionData.avg_carbs)
+    : 0;
+  const proteinAvg = nutritionData?.avg_protein
+    ? Math.round(nutritionData.avg_protein)
+    : 0;
+  const sodiumAvg = nutritionData?.avg_sodium
+    ? nutritionData.avg_sodium / 1000
+    : 0;
 
   // Use preloaded nutritional history (with safety checks)
   const getTodaysRecords = () => {
     if (!Array.isArray(nutritionalHistory)) return [];
-    
+
     const today = new Date().toDateString();
     return nutritionalHistory.filter(
-      (record) => record && record.created_at && new Date(record.created_at).toDateString() === today
+      (record) =>
+        record &&
+        record.created_at &&
+        new Date(record.created_at).toDateString() === today
     );
   };
 
   const getWeeklyRecords = () => {
     if (!Array.isArray(nutritionalHistory)) return [];
-    
+
     const startTimestamp = startOfWeek.getTime();
     const endTimestamp = endOfWeek.getTime() + (24 * 60 * 60 * 1000 - 1);
 
@@ -444,11 +466,7 @@ export default function Statistics() {
 
   // Show loading state only if data is actually loading (shouldn't happen with preloading)
   if (averageLoading || isHistoryLoading) {
-    return (
-      <SafeAreaView style={SafeViewAndroid.AndroidSafeArea}>
-        <Loading />
-      </SafeAreaView>
-    );
+    return <Loading />;
   }
 
   // Show error state if there's an error
