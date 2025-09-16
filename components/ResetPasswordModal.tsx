@@ -243,7 +243,7 @@ const styles = StyleSheet.create({
     marginTop: 16,
   },
   resetButtonText: {
-    color: '#fff',
+    color: '#9AB106',
     fontSize: 16,
     fontFamily: 'AlbertSans-Bold',
   },
