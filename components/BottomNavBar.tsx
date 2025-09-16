@@ -1,56 +1,123 @@
-import React from 'react';
-import { View, TouchableOpacity, StyleSheet, Platform } from 'react-native';
+// BottomNavBar.tsx
+import React, { useEffect, useState } from 'react';
+import { View, TouchableOpacity, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useNavigation, useNavigationState, useFocusEffect } from '@react-navigation/native';
 
 interface NavItem {
   name: string;
   icon: keyof typeof Ionicons.glyphMap;
-  onPress: () => void;
+  routeName: string;
 }
 
 interface BottomNavBarProps {
-  activeTab: string;
-  onTabPress: (tabName: string) => void;
   onCameraPress?: () => void;
+  // Optional prop to override default route mapping
+  routeMapping?: { [key: string]: string };
 }
 
 export default function BottomNavBar({ 
-  activeTab, 
-  onTabPress,
-  onCameraPress
+  onCameraPress,
+  routeMapping = {}
 }: BottomNavBarProps) {
+  const navigation = useNavigation();
   const insets = useSafeAreaInsets();
+  const [activeTab, setActiveTab] = useState('home');
+
+  // Default route mapping - can be overridden via props
+  const defaultRouteMapping: { [key: string]: string } = {
+    'home': 'home',
+    'stats': 'stats',
+    'settings': 'settings',
+    'profile': 'profile',
+    'camera': 'camera',
+    ...routeMapping
+  };
+
+  // Reverse mapping for route name to tab name
+  const reverseRouteMapping = Object.entries(defaultRouteMapping).reduce((acc, [tab, route]) => {
+    acc[route.toLowerCase()] = tab;
+    return acc;
+  }, {} as { [key: string]: string });
 
   const navItems: NavItem[] = [
     {
       name: 'home',
       icon: 'home',
-      onPress: () => onTabPress('home')
+      routeName: defaultRouteMapping.home
     },
     {
       name: 'stats',
       icon: 'bar-chart',
-      onPress: () => onTabPress('stats')
+      routeName: defaultRouteMapping.stats
     },
     {
       name: 'settings',
       icon: 'settings',
-      onPress: () => onTabPress('settings')
+      routeName: defaultRouteMapping.settings
     },
     {
       name: 'profile',
       icon: 'person',
-      onPress: () => onTabPress('profile')
+      routeName: defaultRouteMapping.profile
     }
   ];
+
+  // Get current route name
+  const currentRouteName = useNavigationState(state => {
+    if (!state || state.routes.length === 0) return null;
+    return state.routes[state.index]?.name?.toLowerCase();
+  });
+
+  // Update active tab when route changes (handles swipe navigation)
+  useEffect(() => {
+    if (currentRouteName) {
+      const tabName = reverseRouteMapping[currentRouteName] || currentRouteName;
+      setActiveTab(tabName);
+    }
+  }, [currentRouteName]);
+
+  // Alternative method using focus effect (more reliable for some navigation setups)
+  useFocusEffect(
+    React.useCallback(() => {
+      if (currentRouteName) {
+        const tabName = reverseRouteMapping[currentRouteName] || currentRouteName;
+        setActiveTab(tabName);
+      }
+    }, [currentRouteName])
+  );
+
+  // Handle tab press
+  const handleTabPress = (tabName: string) => {
+    try {
+      const routeName = defaultRouteMapping[tabName] || tabName;
+      setActiveTab(tabName);
+      
+      // Navigate to the route
+      if (navigation && typeof navigation.navigate === 'function') {
+        navigation.navigate(routeName as never);
+      }
+    } catch (error) {
+      console.warn('Navigation error:', error);
+    }
+  };
+
+  // Handle camera press
+  const handleCameraPress = () => {
+    if (onCameraPress) {
+      onCameraPress();
+    } else {
+      handleTabPress('camera');
+    }
+  };
 
   return (
     <View style={styles.container}>
       {/* Camera button positioned above the navbar */}
       <TouchableOpacity
         style={styles.cameraButtonContainer}
-        onPress={onCameraPress || (() => onTabPress('camera'))}
+        onPress={handleCameraPress}
       >
         <View style={styles.cameraButtonInner}>
           <Ionicons name="camera" size={32} color="#fff" />
@@ -63,7 +130,7 @@ export default function BottomNavBar({
           <TouchableOpacity
             key={item.name}
             style={styles.tabItem}
-            onPress={item.onPress}
+            onPress={() => handleTabPress(item.name)}
           >
             <Ionicons
               name={item.icon}
@@ -81,7 +148,7 @@ export default function BottomNavBar({
           <TouchableOpacity
             key={item.name}
             style={styles.tabItem}
-            onPress={item.onPress}
+            onPress={() => handleTabPress(item.name)}
           >
             <Ionicons
               name={item.icon}
@@ -145,3 +212,25 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
 });
+
+/* 
+Usage Examples:
+
+// Basic usage (no changes needed in parent components):
+<BottomNavBar />
+
+// With custom camera handler:
+<BottomNavBar 
+  onCameraPress={() => console.log('Custom camera action')} 
+/>
+
+// With custom route mapping (if your route names are different):
+<BottomNavBar 
+  routeMapping={{
+    home: 'HomeScreen',
+    stats: 'StatisticsScreen',
+    settings: 'SettingsScreen',
+    profile: 'ProfileScreen'
+  }}
+/>
+*/

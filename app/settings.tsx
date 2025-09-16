@@ -37,22 +37,7 @@ export default function Settings() {
   const [showDisclaimerModal, setShowDisclaimerModal] = useState(false);
   const [showResetPasswordModal, setShowResetPasswordModal] = useState(false); 
 
-  const handleTabPress = (tabName: string) => {
-    switch (tabName) {
-      case "home":
-        navigation.navigate("page-2");
-        break;
-      case "stats":
-        navigation.navigate("statistics");
-        break;
-      case "settings":
-        // Already on settings page
-        break;
-      case "profile":
-        navigation.navigate("profile");
-        break;
-    }
-  };
+  
 
   const handleChangePassword = () => {
     setShowResetPasswordModal(true);
@@ -182,9 +167,13 @@ export default function Settings() {
       </ScrollView>
 
       <BottomNavBar
-        activeTab="settings"
-        onTabPress={handleTabPress}
         onCameraPress={() => navigation.navigate("camera")}
+        routeMapping={{
+          home: "page-2",
+          stats: "statistics", 
+          settings: "settings",
+          profile: "profile"
+        }}
       />
 
       {/* Modals */}
