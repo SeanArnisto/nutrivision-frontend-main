@@ -67,10 +67,14 @@ export default function Settings() {
         {
           text: "Logout",
           style: "destructive",
+          // In Settings screen, replace the logout onPress:
           onPress: async () => {
             try {
               await signOut();
-              // Navigation will be handled automatically by the auth store
+              navigation.reset({
+                index: 0,
+                routes: [{ name: 'login' }],
+              });
             } catch (error) {
               console.error("Logout error:", error);
               Alert.alert("Error", "Failed to logout. Please try again.");
