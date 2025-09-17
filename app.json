@@ -12,7 +12,12 @@
       "supportsTablet": true
     },
     "android": {
-      "permissions": ["INTERNET", "READ_EXTERNAL_STORAGE"],
+      "permissions": [
+        "INTERNET",
+        "READ_EXTERNAL_STORAGE",
+        "android.permission.CAMERA",
+        "android.permission.RECORD_AUDIO"
+      ],
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#ffffff"
@@ -32,6 +37,14 @@
           "image": "./assets/images/nutri-logo.png",
           "resizeMode": "cover",
           "backgroundColor": "#BBCAA0"
+        }
+      ],
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Allow $(PRODUCT_NAME) to access your camera",
+          "microphonePermission": "Allow $(PRODUCT_NAME) to access your microphone for video recording (optional)",
+          "recordAudioAndroid": true
         }
       ]
     ],
