@@ -34,6 +34,7 @@ import PhotoPreviewSection from "@/components/PhotoPreviewSection";
 import { useRoute } from "@react-navigation/native";
 import Loading from "./loading";
 import { useAuthStore } from "@/stores/authStore";
+import { Audio } from 'expo-av';
 
 const { height, width: screenWidth } = Dimensions.get("window");
 
@@ -298,6 +299,23 @@ export default function Camera() {
 
   const facing = "back";
   const cameraRef = useRef(null);
+
+  useEffect(() => {
+  const requestMicrophonePermission = async () => {
+    if (Platform.OS === 'android') {
+      try {
+        const { status } = await Audio.requestPermissionsAsync();
+        if (status !== 'granted') {
+          console.log('Microphone permission not granted');
+        }
+      } catch (error) {
+        console.log('Error requesting microphone permission:', error);
+      }
+    }
+  };
+
+  requestMicrophonePermission();
+}, []);
 
   // Function to delete all captured photos after successful submission
   const deleteAllCapturedPhotos = useCallback(async (photos) => {
