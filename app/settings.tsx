@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -8,19 +8,19 @@ import {
   Alert,
   TouchableOpacity,
 } from "react-native";
-import SafeViewAndroid from '@/components/SafeViewAndroid';
-import { useNavigation } from '@react-navigation/native';
-import { StackNavigationProp } from '@react-navigation/stack';
-import { RootStackParamList } from '@/types/types';
-import { Ionicons } from '@expo/vector-icons';
-import AppLogo from '@/components/appLogo';
-import BottomNavBar from '@/components/BottomNavBar';
-import SettingsSection from '@/components/SettingsSection';
-import SettingsItem from '@/components/SettingsItem';
-import ToggleSwitch from '@/components/ToggleSwitch';
-import ProfileBox from '@/components/ProfileBox';
-import FullTextModal from '@/components/FullTextModal';
-import { useAuthStore } from '@/stores/authStore';
+import SafeViewAndroid from "@/components/SafeViewAndroid";
+import { useNavigation } from "@react-navigation/native";
+import { StackNavigationProp } from "@react-navigation/stack";
+import { RootStackParamList } from "@/types/types";
+import { Ionicons } from "@expo/vector-icons";
+import AppLogo from "@/components/appLogo";
+import BottomNavBar from "@/components/BottomNavBar";
+import SettingsSection from "@/components/SettingsSection";
+import SettingsItem from "@/components/SettingsItem";
+import ToggleSwitch from "@/components/ToggleSwitch";
+import ProfileBox from "@/components/ProfileBox";
+import FullTextModal from "@/components/FullTextModal";
+import { useAuthStore } from "@/stores/authStore";
 import ResetPasswordModal from "@/components/ResetPasswordModal";
 
 type SettingsScreenNavigationProp = StackNavigationProp<
@@ -35,9 +35,16 @@ export default function Settings() {
   const [showTermsModal, setShowTermsModal] = useState(false);
   const [showPrivacyModal, setShowPrivacyModal] = useState(false);
   const [showDisclaimerModal, setShowDisclaimerModal] = useState(false);
-  const [showResetPasswordModal, setShowResetPasswordModal] = useState(false); 
+  const [showResetPasswordModal, setShowResetPasswordModal] = useState(false);
 
-  
+  useEffect(() => {
+    if (!isAuthenticated) {
+      navigation.reset({
+        index: 0,
+        routes: [{ name: "login" }],
+      });
+    }
+  }, [isAuthenticated, navigation]);
 
   const handleChangePassword = () => {
     setShowResetPasswordModal(true);
@@ -81,8 +88,6 @@ export default function Settings() {
       { cancelable: false }
     );
   };
-
-  
 
   const handleTermsAndConditions = () => {
     setShowTermsModal(true);
@@ -170,9 +175,9 @@ export default function Settings() {
         onCameraPress={() => navigation.navigate("camera")}
         routeMapping={{
           home: "page-2",
-          stats: "statistics", 
+          stats: "statistics",
           settings: "settings",
-          profile: "profile"
+          profile: "profile",
         }}
       />
 

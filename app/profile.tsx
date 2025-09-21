@@ -1,4 +1,4 @@
-  import React from "react";
+import React from "react";
 import {
   View,
   Text,
@@ -52,26 +52,33 @@ export default function Profile() {
 
   const [userProfile, setUserProfile] = useState<UserProfile>({});
   const [isLoading, setIsLoading] = useState(true);
-  
+
   // Modal state
   const [modalVisible, setModalVisible] = useState(false);
   const [genderModalVisible, setGenderModalVisible] = useState(false);
   const [modalConfig, setModalConfig] = useState({
-    title: '',
-    placeholder: '',
-    keyboardType: 'default' as 'default' | 'numeric' | 'email-address',
-    initialValue: '',
-    fieldType: '' as 'name' | 'age' | 'weight' | 'height',
+    title: "",
+    placeholder: "",
+    keyboardType: "default" as "default" | "numeric" | "email-address",
+    initialValue: "",
+    fieldType: "" as "name" | "age" | "weight" | "height",
   });
 
   // Redirect unauthenticated users to login
   useEffect(() => {
     if (!isAuthenticated) {
-      navigation.replace('login');
+      navigation.replace("login");
     }
   }, [isAuthenticated, navigation]);
 
-
+  useEffect(() => {
+    if (!isAuthenticated) {
+      navigation.reset({
+        index: 0,
+        routes: [{ name: "login" }],
+      });
+    }
+  }, [isAuthenticated, navigation]);
 
   const fetchUserProfile = async () => {
     try {
@@ -144,41 +151,50 @@ export default function Profile() {
   const handleModalSubmit = async (value: string) => {
     const { fieldType } = modalConfig;
     const { user } = useAuthStore.getState();
-    
+
     if (!user) return;
 
     try {
       let updateData: any = {};
       let numericValue: number;
-      
+
       switch (fieldType) {
-        case 'name':
+        case "name":
           if (!value.trim()) {
             Alert.alert("Validation Error", "Name cannot be empty.");
             return;
           }
           updateData.name = value.trim();
           break;
-        case 'age':
+        case "age":
           numericValue = Number(value);
           if (isNaN(numericValue) || !validateAge(numericValue)) {
-            Alert.alert("Validation Error", "Age must be between 18 and 120 years.");
+            Alert.alert(
+              "Validation Error",
+              "Age must be between 18 and 120 years."
+            );
             return;
           }
           updateData.age = numericValue;
           break;
-        case 'weight':
+        case "weight":
           numericValue = Number(value);
           if (isNaN(numericValue) || !validateWeight(numericValue)) {
-            Alert.alert("Validation Error", "Weight must be between 40 and 120 kg.");
+            Alert.alert(
+              "Validation Error",
+              "Weight must be between 40 and 120 kg."
+            );
             return;
           }
           updateData.weight = numericValue;
           break;
-        case 'height':
+        case "height":
           numericValue = Number(value);
           if (isNaN(numericValue) || !validateHeight(numericValue)) {
-            Alert.alert("Validation Error", "Height must be between 140 and 188 cm.");
+            Alert.alert(
+              "Validation Error",
+              "Height must be between 140 and 188 cm."
+            );
             return;
           }
           updateData.height = numericValue;
@@ -192,7 +208,10 @@ export default function Profile() {
 
       if (error) {
         console.error(`Error updating ${fieldType}:`, error);
-        Alert.alert("Error", `Failed to update ${fieldType}. Please try again.`);
+        Alert.alert(
+          "Error",
+          `Failed to update ${fieldType}. Please try again.`
+        );
       } else {
         setModalVisible(false);
         fetchUserProfile();
@@ -208,7 +227,7 @@ export default function Profile() {
   };
 
   // Handle gender modal submission
-  const handleGenderSelect = async (gender: 'male' | 'female') => {
+  const handleGenderSelect = async (gender: "male" | "female") => {
     const { user } = useAuthStore.getState();
     if (!user) return;
 
@@ -237,44 +256,44 @@ export default function Profile() {
 
   const handleEditName = () => {
     setModalConfig({
-      title: 'Edit Name',
-      placeholder: 'Enter your name',
-      keyboardType: 'default',
-      initialValue: userProfile.name || '',
-      fieldType: 'name',
+      title: "Edit Name",
+      placeholder: "Enter your name",
+      keyboardType: "default",
+      initialValue: userProfile.name || "",
+      fieldType: "name",
     });
     setModalVisible(true);
   };
 
   const handleEditAge = () => {
     setModalConfig({
-      title: 'Edit Age',
-      placeholder: 'Enter your age',
-      keyboardType: 'numeric',
-      initialValue: userProfile.age?.toString() || '',
-      fieldType: 'age',
+      title: "Edit Age",
+      placeholder: "Enter your age",
+      keyboardType: "numeric",
+      initialValue: userProfile.age?.toString() || "",
+      fieldType: "age",
     });
     setModalVisible(true);
   };
 
   const handleEditWeight = () => {
     setModalConfig({
-      title: 'Edit Weight',
-      placeholder: 'Enter your weight (kg)',
-      keyboardType: 'numeric',
-      initialValue: userProfile.weight?.toString() || '',
-      fieldType: 'weight',
+      title: "Edit Weight",
+      placeholder: "Enter your weight (kg)",
+      keyboardType: "numeric",
+      initialValue: userProfile.weight?.toString() || "",
+      fieldType: "weight",
     });
     setModalVisible(true);
   };
 
   const handleEditHeight = () => {
     setModalConfig({
-      title: 'Edit Height',
-      placeholder: 'Enter your height (cm)',
-      keyboardType: 'numeric',
-      initialValue: userProfile.height?.toString() || '',
-      fieldType: 'height',
+      title: "Edit Height",
+      placeholder: "Enter your height (cm)",
+      keyboardType: "numeric",
+      initialValue: userProfile.height?.toString() || "",
+      fieldType: "height",
     });
     setModalVisible(true);
   };
@@ -354,9 +373,9 @@ export default function Profile() {
         onCameraPress={() => navigation.navigate("camera")}
         routeMapping={{
           home: "page-2",
-          stats: "statistics", 
+          stats: "statistics",
           settings: "settings",
-          profile: "profile"
+          profile: "profile",
         }}
       />
 

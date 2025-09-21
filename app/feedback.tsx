@@ -483,7 +483,10 @@ function Feedback() {
               onPress: () => {
                 reset();
                 clearAllPhotos();
-                navigation.navigate("page-2"); // Navigate to home
+                navigation.reset({
+                  index: 0,
+                  routes: [{name: 'page-2'}]
+                });
               },
             },
           ]

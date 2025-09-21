@@ -86,7 +86,10 @@ export default function Page2() {
   // Redirect unauthenticated users to login
   useEffect(() => {
     if (!isAuthenticated) {
-      navigation.replace("login");
+      navigation.reset({
+        index: 0,
+        routes: [{name: 'login'}]
+      });
     }
   }, [isAuthenticated, navigation]);
 
@@ -102,28 +105,28 @@ export default function Page2() {
   }
 
   // Check if any of the errors are network-related
-  useEffect(() => {
-    const hasNetworkError = (error: string | null) => {
-      return (
-        error &&
-        (error.toLowerCase().includes("network request failed") ||
-          error.toLowerCase().includes("network error") ||
-          error.toLowerCase().includes("connection failed") ||
-          error.toLowerCase().includes("fetch failed"))
-      );
-    };
+  // useEffect(() => {
+  //   const hasNetworkError = (error: string | null) => {
+  //     return (
+  //       error &&
+  //       (error.toLowerCase().includes("network request failed") ||
+  //         error.toLowerCase().includes("network error") ||
+  //         error.toLowerCase().includes("connection failed") ||
+  //         error.toLowerCase().includes("fetch failed"))
+  //     );
+  //   };
 
-    // Only check the error variable you actually have
-    if (hasNetworkError(intakeError) && !shouldRedirect) {
-      console.log(
-        "Network error detected in Statistics, redirecting to Page2..."
-      );
-      setShouldRedirect(true);
-      setTimeout(() => {
-        navigation.navigate("page-2");
-      }, 1000);
-    }
-  }, [intakeError, navigation, shouldRedirect]);
+  //   // Only check the error variable you actually have
+  //   if (hasNetworkError(intakeError) && !shouldRedirect) {
+  //     console.log(
+  //       "Network error detected in Statistics, redirecting to Page2..."
+  //     );
+  //     setShouldRedirect(true);
+  //     setTimeout(() => {
+  //       navigation.navigate("page-2");
+  //     }, 1000);
+  //   }
+  // }, [intakeError, navigation, shouldRedirect]);
 
   const handleDateSelect = (date: Date) => {
     setSelectedDate(date);

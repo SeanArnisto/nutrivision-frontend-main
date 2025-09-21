@@ -136,9 +136,6 @@ interface NutritionalRecord {
 
 export default function Statistics() {
   const navigation = useNavigation<StatisticsScreenNavigationProp>();
-
-  
-
   const { user, isAuthenticated } = useAuthStore();
 
   // Get ALL data from stores (should be preloaded)
@@ -159,7 +156,10 @@ export default function Statistics() {
   // Only keep authentication check - NO data fetching useEffects
   useEffect(() => {
     if (!isAuthenticated) {
-      navigation.replace("login");
+      navigation.reset({
+        index: 0,
+        routes: [{ name: "login" }],
+      });
     }
   }, [isAuthenticated, navigation]);
 
@@ -561,9 +561,9 @@ export default function Statistics() {
         onCameraPress={() => navigation.navigate("camera")}
         routeMapping={{
           home: "page-2",
-          stats: "statistics", 
+          stats: "statistics",
           settings: "settings",
-          profile: "profile"
+          profile: "profile",
         }}
       />
     </SafeAreaView>
