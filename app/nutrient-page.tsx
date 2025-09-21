@@ -26,6 +26,7 @@ import ProfileBox from "@/components/ProfileBox";
 import NutritionDonutChart from "@/components/DonuteChart";
 import PhotoThumbnailGallery from "@/components/PhotoThumbnailGallery";
 import GoNext from "@/components/NextButton";
+import { usePhotosStore } from "@/stores/usePhotoStore";
 
 // Helper Function
 const toPercentageText = (value: number): string => `${value}%`;
@@ -47,9 +48,8 @@ export default function UserNutrientPage() {
   const [fontsLoaded] = useFonts({
     "SpaceMono-Regular": require("@/assets/fonts/SpaceMono-Regular.ttf"),
   });
-  const [capturedPhotos, setCapturedPhotos] = useState<
-    { uri: string; type: string; orientation: string }[]
-  >([]);
+
+  const { capturedPhotos } = usePhotosStore();
   const [mediaLibraryPermission, setMediaLibraryPermission] = useState<
     boolean | null
   >(null);
@@ -138,7 +138,7 @@ export default function UserNutrientPage() {
 
     // Parse the value for store update
     let numValue = 0;
-    
+
     // Handle special cases
     if (value === "" || value === "." || value === "0.") {
       numValue = 0;
@@ -157,7 +157,7 @@ export default function UserNutrientPage() {
 
     // Update nutrition data for pie chart
     const updatedNutrients = { ...nutrients, [key]: value };
-    
+
     const total =
       (parseFloat(updatedNutrients.carbohydrate) || 0) +
       (parseFloat(updatedNutrients.protein) || 0) +
@@ -198,53 +198,18 @@ export default function UserNutrientPage() {
     });
   };
 
-  console.log("Store values - carbs:", carbohydrate, "protein:", protein, "sodium:", sodium);
+  console.log(
+    "Store values - carbs:",
+    carbohydrate,
+    "protein:",
+    protein,
+    "sodium:",
+    sodium
+  );
   console.log("Local state - nutrients:", nutrients);
 
   // Handle saving to database
-  const handleSaveToDatabase = async () => {
-    // Validate that we have nutrition data
-    if (carbohydrate === 0 && protein === 0 && sodium === 0) {
-      Alert.alert(
-        "No Data", 
-        "Please enter nutritional values before saving.",
-        [{ text: "OK" }]
-      );
-      return;
-    }
-
-    try {
-      const result = await saveWithPhotos(capturedPhotos);
-      
-      if (result.success) {
-        Alert.alert(
-          "Success", 
-          "Nutritional data and photos saved successfully!",
-          [
-            {
-              text: "OK",
-              onPress: () => {
-                // Optional: Reset the form after successful save
-                // reset();
-                // setNutrients({
-                //   carbohydrate: "0",
-                //   sodium: "0",
-                //   protein: "0",
-                // });
-                // setCapturedPhotos([]);
-              }
-            }
-          ]
-        );
-      } else {
-        Alert.alert("Error", result.error || "Failed to save data");
-      }
-    } catch (error) {
-      Alert.alert("Error", "An unexpected error occurred");
-      console.error("Save error:", error);
-    }
-  };
-
+  
   // Request media library permissions on mount
   useEffect(() => {
     (async () => {
@@ -253,66 +218,7 @@ export default function UserNutrientPage() {
     })();
   }, []);
 
-  useFocusEffect(
-    useCallback(() => {
-      if (mediaLibraryPermission) {
-        loadRecentPhotos();
-      }
-
-      return () => {
-        console.log("Leaving the screen");
-      };
-    }, [mediaLibraryPermission])
-  );
-
-  const loadRecentPhotos = async () => {
-    try {
-      const album = await MediaLibrary.getAlbumAsync("NutriVision");
-
-      if (!album) {
-        console.log("NutriVision album not found");
-        setCapturedPhotos([]);
-        return;
-      }
-
-      const { assets } = await MediaLibrary.getAssetsAsync({
-        album: album.id,
-        first: 5,
-        mediaType: "photo",
-        sortBy: ["creationTime"],
-      });
-
-      const recentPhotos = [];
-      for (const asset of assets) {
-        let uriToUse = asset.uri;
-        if (Platform.OS === "ios" && uriToUse.startsWith("ph://")) {
-          try {
-            const info = await MediaLibrary.getAssetInfoAsync(asset);
-            if (info.localUri) {
-              uriToUse = info.localUri;
-            }
-          } catch (error) {
-            console.error("Error getting localUri for asset:", error);
-          }
-        }
-
-        recentPhotos.push({
-          uri: uriToUse,
-          type: Math.random() > 0.5 ? "label" : "fruit",
-          orientation: Math.random() > 0.5 ? "vertical" : "horizontal",
-        });
-      }
-
-      setCapturedPhotos(
-        recentPhotos.filter(
-          (photo) => photo.uri && typeof photo.uri === "string"
-        )
-      );
-    } catch (error) {
-      console.error("Error loading photos from NutriVision album:", error);
-    }
-  };
-
+  
   if (!fontsLoaded) {
     return <Text>Loading...</Text>;
   }
@@ -327,7 +233,6 @@ export default function UserNutrientPage() {
         <ScrollView contentContainerStyle={styles.scrollContainer}>
           <AppLogo />
           <View style={styles.container}>
-            
             <ProfileBox primaryText="Average" highlightedText="Intake" />
 
             {/* Thumbnail section with added top margin */}
@@ -338,7 +243,7 @@ export default function UserNutrientPage() {
                   carbs: parseFloat(nutrients.carbohydrate) || 0,
                   sodium: parseFloat(nutrients.sodium) || 0,
                   protein: parseFloat(nutrients.protein) || 0,
-                  servings: 1
+                  servings: 1,
                 }}
               />
             </View>
@@ -380,8 +285,8 @@ export default function UserNutrientPage() {
 
       {/* Navigation */}
       <GoBack />
-      <GoNext next="page-6"/>
-      
+      <GoNext next="page-6" />
+
       {/* Optional: Save Button instead of GoNext */}
       {/* <TouchableOpacity 
         style={[styles.saveButton, loading && styles.saveButtonDisabled]} 
@@ -419,20 +324,20 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#eff1f6",
     paddingHorizontal: 16,
-    paddingVertical: 16
+    paddingVertical: 16,
   },
   saveButton: {
-    position: 'absolute',
+    position: "absolute",
     bottom: 40,
     right: 20,
-    backgroundColor: '#7ca844',
+    backgroundColor: "#7ca844",
     paddingVertical: 12,
     paddingHorizontal: 24,
     borderRadius: 25,
     minWidth: 150,
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#000',
+    alignItems: "center",
+    justifyContent: "center",
+    shadowColor: "#000",
     shadowOffset: {
       width: 0,
       height: 2,
@@ -442,26 +347,26 @@ const styles = StyleSheet.create({
     elevation: 5,
   },
   saveButtonDisabled: {
-    backgroundColor: '#c0b4b4',
+    backgroundColor: "#c0b4b4",
     opacity: 0.7,
   },
   saveButtonText: {
-    color: '#fff',
+    color: "#fff",
     fontSize: 16,
-    fontWeight: '600',
-    fontFamily: 'SpaceMono-Regular',
+    fontWeight: "600",
+    fontFamily: "SpaceMono-Regular",
   },
   errorContainer: {
-    backgroundColor: '#ffebee',
+    backgroundColor: "#ffebee",
     padding: 12,
     borderRadius: 8,
     marginTop: 16,
     marginHorizontal: 20,
   },
   errorText: {
-    color: '#c62828',
-    textAlign: 'center',
+    color: "#c62828",
+    textAlign: "center",
     fontSize: 14,
-    fontFamily: 'SpaceMono-Regular',
+    fontFamily: "SpaceMono-Regular",
   },
 });

@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { SafeAreaView, Image, StyleSheet, View, Dimensions, Platform, TouchableOpacity } from 'react-native';
 import { Ionicons } from "@expo/vector-icons";
-import * as FileSystem from 'expo-file-system';
+import * as FileSystem from 'expo-file-system/legacy';
 
 const { width, height } = Dimensions.get('window');
 

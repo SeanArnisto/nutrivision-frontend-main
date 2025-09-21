@@ -1,9 +1,4 @@
-import React, {
-  useRef,
-  useState,
-  useEffect,
-  useCallback,
-} from "react";
+import React, { useRef, useState, useEffect, useCallback } from "react";
 import { AntDesign, Ionicons } from "@expo/vector-icons";
 import {
   Button,
@@ -34,6 +29,7 @@ import PhotoPreviewSection from "@/components/PhotoPreviewSection";
 import { useRoute } from "@react-navigation/native";
 import Loading from "./loading";
 import { useAuthStore } from "@/stores/authStore";
+import { usePhotosStore } from "@/stores/usePhotoStore";
 
 const { height, width: screenWidth } = Dimensions.get("window");
 
@@ -51,7 +47,7 @@ class PhotoSubmissionService {
 
   validatePhotos(photos) {
     const errors = [];
-    
+
     if (!photos || photos.length === 0) {
       errors.push("No photos selected");
       return { isValid: false, errors };
@@ -69,14 +65,14 @@ class PhotoSubmissionService {
 
     return {
       isValid: errors.length === 0,
-      errors
+      errors,
     };
   }
 
   async optimizeImage(photo) {
     try {
       const shouldCompress = photo.width > 1920 || photo.height > 1920;
-      
+
       if (shouldCompress) {
         const optimized = await ImageManipulator.manipulateAsync(
           photo.uri,
@@ -95,30 +91,30 @@ class PhotoSubmissionService {
         );
         return optimized;
       }
-      
+
       return photo;
     } catch (error) {
-      console.warn('Image optimization failed, using original:', error);
+      console.warn("Image optimization failed, using original:", error);
       return photo;
     }
   }
 
   async createFormData(photos) {
     const formData = new FormData();
-    
+
     for (let i = 0; i < photos.length; i++) {
       const photo = photos[i];
-      
+
       // Skip optimization for now to maintain compatibility
       // const optimizedPhoto = await this.optimizeImage(photo);
-      
+
       const uriParts = photo.uri.split(".");
-      const fileType = uriParts[uriParts.length - 1] || 'jpg';
-      
+      const fileType = uriParts[uriParts.length - 1] || "jpg";
+
       const fileObject = {
         uri: photo.uri,
         name: `photo_${i}.${fileType}`,
-        type: `image/${fileType === 'jpg' ? 'jpeg' : fileType}`,
+        type: `image/${fileType === "jpg" ? "jpeg" : fileType}`,
       };
 
       formData.append("files", fileObject);
@@ -127,16 +123,25 @@ class PhotoSubmissionService {
     return formData;
   }
 
-  async submitWithRetry(url, formData, headers, retryCount = 0, onProgress = null) {
+  async submitWithRetry(
+    url,
+    formData,
+    headers,
+    retryCount = 0,
+    onProgress = null
+  ) {
     try {
-      console.log(`🚀 Making request attempt ${retryCount + 1} with progress tracking:`, !!onProgress);
-      
+      console.log(
+        `🚀 Making request attempt ${retryCount + 1} with progress tracking:`,
+        !!onProgress
+      );
+
       const response = await axios.post(url, formData, {
         headers,
         timeout: this.timeout,
         onUploadProgress: (progressEvent) => {
           console.log("📡 Raw progress event:", progressEvent); // Debug log
-          
+
           if (onProgress && progressEvent.total > 0) {
             // Ensure progress never exceeds 100% and handle edge cases
             const loaded = Math.min(progressEvent.loaded, progressEvent.total);
@@ -147,7 +152,10 @@ class PhotoSubmissionService {
             console.log(`🔄 Calling onProgress with ${percentCompleted}%`); // Debug log
             onProgress(percentCompleted);
           } else {
-            console.warn("⚠️ No progress callback or invalid total:", { hasCallback: !!onProgress, total: progressEvent?.total });
+            console.warn("⚠️ No progress callback or invalid total:", {
+              hasCallback: !!onProgress,
+              total: progressEvent?.total,
+            });
           }
         },
       });
@@ -157,48 +165,54 @@ class PhotoSubmissionService {
       if (retryCount < this.maxRetries && this.shouldRetry(error)) {
         console.log(`Retry attempt ${retryCount + 1}/${this.maxRetries}`);
         await this.delay(1000 * (retryCount + 1));
-        return this.submitWithRetry(url, formData, headers, retryCount + 1, onProgress);
+        return this.submitWithRetry(
+          url,
+          formData,
+          headers,
+          retryCount + 1,
+          onProgress
+        );
       }
       throw error;
     }
   }
 
   shouldRetry(error) {
-    if (error.code === 'ECONNABORTED') return true;
+    if (error.code === "ECONNABORTED") return true;
     if (error.response?.status >= 500) return true;
     if (error.response?.status === 429) return true;
     return false;
   }
 
   delay(ms) {
-    return new Promise(resolve => setTimeout(resolve, ms));
+    return new Promise((resolve) => setTimeout(resolve, ms));
   }
 
   getErrorMessage(error) {
-    if (error.code === 'ECONNABORTED') {
-      return 'Request timed out. Please check your connection and try again.';
+    if (error.code === "ECONNABORTED") {
+      return "Request timed out. Please check your connection and try again.";
     }
-    
+
     if (error.response) {
       switch (error.response.status) {
         case 400:
-          return 'Invalid image format. Please try different photos.';
+          return "Invalid image format. Please try different photos.";
         case 413:
-          return 'Images too large. Please use smaller photos.';
+          return "Images too large. Please use smaller photos.";
         case 429:
-          return 'Too many requests. Please wait a moment and try again.';
+          return "Too many requests. Please wait a moment and try again.";
         case 500:
-          return 'Server error. Please try again later.';
+          return "Server error. Please try again later.";
         default:
           return `Server error (${error.response.status}). Please try again.`;
       }
     }
-    
+
     if (error.request) {
-      return 'Network error. Please check your connection.';
+      return "Network error. Please check your connection.";
     }
-    
-    return 'An unexpected error occurred. Please try again.';
+
+    return "An unexpected error occurred. Please try again.";
   }
 }
 
@@ -209,22 +223,22 @@ const SegmentedControl = ({
   selectedIndex = 0,
   onSelectionChange,
   containerStyle,
-  activeColor = '#4CAF50',
-  inactiveColor = '#999',
-  backgroundColor = 'rgba(0,0,0,0.6)',
-  textActiveColor = 'white',
-  textInactiveColor = '#4e4242ff',
+  activeColor = "#4CAF50",
+  inactiveColor = "#999",
+  backgroundColor = "rgba(0,0,0,0.6)",
+  textActiveColor = "white",
+  textInactiveColor = "#4e4242ff",
 }) => {
   const options = [
     {
-      key: 'labels',
-      label: 'Labels',
-      icon: 'document-text-outline',
+      key: "labels",
+      label: "Labels",
+      icon: "document-text-outline",
     },
     {
-      key: 'fruits',
-      label: 'Fruits',
-      icon: 'leaf-outline',
+      key: "fruits",
+      label: "Fruits",
+      icon: "leaf-outline",
     },
   ];
 
@@ -235,12 +249,19 @@ const SegmentedControl = ({
   };
 
   return (
-    <View style={[segmentedStyles.container, { backgroundColor }, containerStyle]}>
-      <View style={[segmentedStyles.highlight, { 
-        backgroundColor: activeColor,
-        transform: [{ translateX: selectedIndex * SEGMENT_WIDTH }],
-        width: SEGMENT_WIDTH - 8 
-      }]} />
+    <View
+      style={[segmentedStyles.container, { backgroundColor }, containerStyle]}
+    >
+      <View
+        style={[
+          segmentedStyles.highlight,
+          {
+            backgroundColor: activeColor,
+            transform: [{ translateX: selectedIndex * SEGMENT_WIDTH }],
+            width: SEGMENT_WIDTH - 8,
+          },
+        ]}
+      />
       <View style={segmentedStyles.optionsContainer}>
         {options.map((option, index) => (
           <TouchableOpacity
@@ -253,11 +274,21 @@ const SegmentedControl = ({
               <Ionicons
                 name={option.icon}
                 size={18}
-                color={selectedIndex === index ? textActiveColor : textInactiveColor}
+                color={
+                  selectedIndex === index ? textActiveColor : textInactiveColor
+                }
               />
-              <Text style={[segmentedStyles.optionText, {
-                color: selectedIndex === index ? textActiveColor : textInactiveColor
-              }]}>
+              <Text
+                style={[
+                  segmentedStyles.optionText,
+                  {
+                    color:
+                      selectedIndex === index
+                        ? textActiveColor
+                        : textInactiveColor,
+                  },
+                ]}
+              >
                 {option.label}
               </Text>
             </View>
@@ -276,22 +307,25 @@ export default function Camera() {
   const [permission, requestPermission] = useCameraPermissions();
   const [photo, setPhoto] = useState(null);
   const [selectedSegmentIndex, setSelectedSegmentIndex] = useState(0);
-  const [capturedPhotos, setCapturedPhotos] = useState([]);
+  //const [capturedPhotos, setCapturedPhotos] = useState([]);
   const [mediaLibraryPermission, setMediaLibraryPermission] = useState(null);
   const [loading, setLoading] = useState(false);
   const [submit, setSubmit] = useState(false);
   const [previewLayout, setPreviewLayout] = useState({ width: 0, height: 0 });
   const [uploadProgress, setUploadProgress] = useState(0);
 
+  const { capturedPhotos, addPhoto, removePhoto, setPhotos, hasMaxPhotos, clearAllPhotos  } =
+    usePhotosStore();
+
   // Redirect unauthenticated users to login
   useEffect(() => {
     if (!isAuthenticated) {
-      navigation.replace('login');
+      navigation.replace("login");
     }
   }, [isAuthenticated, navigation]);
 
   const isLabelMode = selectedSegmentIndex === 0;
-  
+
   const setCarbs = useNutrientsStore((state) => state.setCarbs);
   const setProtein = useNutrientsStore((state) => state.setProtein);
   const setSodium = useNutrientsStore((state) => state.setSodium);
@@ -300,246 +334,294 @@ export default function Camera() {
   const cameraRef = useRef(null);
 
   // Function to delete all captured photos after successful submission
-  const deleteAllCapturedPhotos = useCallback(async (photos) => {
-    console.log("🗑️ Starting cleanup of captured photos...");
-    
-    if (!photos || photos.length === 0) {
-      console.log("No photos to delete");
-      return;
-    }
+  const deleteAllCapturedPhotos = useCallback(
+    async (photos) => {
+      console.log("🗑️ Starting cleanup of captured photos...");
 
-    try {
-      const { status } = await MediaLibrary.requestPermissionsAsync();
-      if (status !== "granted") {
-        console.warn("Media library permission not granted, skipping photo cleanup");
-        // Still clear the state even if we can't delete from storage
-        setCapturedPhotos([]);
+      if (!photos || photos.length === 0) {
+        console.log("No photos to delete");
         return;
       }
 
-      const album = await MediaLibrary.getAlbumAsync("NutriVision");
-      if (!album) {
-        console.log("NutriVision album not found, clearing state only");
-        setCapturedPhotos([]);
-        return;
-      }
-
-      // Get all assets in the album
-      const { assets } = await MediaLibrary.getAssetsAsync({
-        album: album.id,
-        mediaType: ["photo"],
-      });
-
-      const photosToDelete = [];
-      
-      // Find assets that match our captured photos
-      for (const photo of photos) {
-        if (photo.id) {
-          // Try to find by ID first
-          const asset = assets.find(a => a.id === photo.id);
-          if (asset) {
-            photosToDelete.push(asset.id);
-            continue;
+      try {
+        if (Platform.OS === "ios") {
+          // iOS: Delete from MediaLibrary AND clear store
+          const { status } = await MediaLibrary.requestPermissionsAsync(false);
+          if (status !== "granted") {
+            console.warn(
+              "Media library permission not granted, clearing store only"
+            );
+            clearAllPhotos(); // Clear from store
+            return;
           }
-        }
 
-        // Fallback: try to match by URI
-        const cleanPhotoUri = photo.uri
-          .replace("ph://", "")
-          .replace("file://", "")
-          .split("?")[0]
-          .split("#")[0];
+          const album = await MediaLibrary.getAlbumAsync("NutriVision");
+          if (!album) {
+            console.log("NutriVision album not found, clearing store only");
+            clearAllPhotos(); // Clear from store
+            return;
+          }
 
-        const asset = assets.find(a => {
-          const assetUri = a.uri
-            .replace("ph://", "")
-            .replace("file://", "")
-            .split("?")[0]
-            .split("#")[0];
-          return assetUri === cleanPhotoUri;
-        });
+          // Get all assets in the album
+          const { assets } = await MediaLibrary.getAssetsAsync({
+            album: album.id,
+            mediaType: ["photo"],
+          });
 
-        if (asset) {
-          photosToDelete.push(asset.id);
-        }
-      }
+          const photosToDelete = [];
 
-      // Delete the assets from device storage
-      if (photosToDelete.length > 0) {
-        console.log(`Deleting ${photosToDelete.length} photos from device storage`);
-        const deleteSuccess = await MediaLibrary.deleteAssetsAsync(photosToDelete);
-        
-        if (deleteSuccess) {
-          console.log("✅ Successfully deleted photos from device storage");
+          // Find assets that match our captured photos
+          for (const photo of photos) {
+            if (photo.id) {
+              // Try to find by ID first
+              const asset = assets.find((a) => a.id === photo.id);
+              if (asset) {
+                photosToDelete.push(asset.id);
+                continue;
+              }
+            }
+
+            // Fallback: try to match by URI
+            const cleanPhotoUri = photo.uri
+              .replace("ph://", "")
+              .replace("file://", "")
+              .split("?")[0]
+              .split("#")[0];
+
+            const asset = assets.find((a) => {
+              const assetUri = a.uri
+                .replace("ph://", "")
+                .replace("file://", "")
+                .split("?")[0]
+                .split("#")[0];
+              return assetUri === cleanPhotoUri;
+            });
+
+            if (asset) {
+              photosToDelete.push(asset.id);
+            }
+          }
+
+          // Delete the assets from device storage
+          if (photosToDelete.length > 0) {
+            console.log(
+              `Deleting ${photosToDelete.length} photos from device storage`
+            );
+            const deleteSuccess = await MediaLibrary.deleteAssetsAsync(
+              photosToDelete
+            );
+
+            if (deleteSuccess) {
+              console.log("✅ Successfully deleted photos from device storage");
+            } else {
+              console.warn(
+                "⚠️ Some photos may not have been deleted from storage"
+              );
+            }
+          }
+
+          // Clear the store regardless of deletion success
+          clearAllPhotos();
+          console.log("✅ Cleared captured photos from store");
         } else {
-          console.warn("⚠️ Some photos may not have been deleted from storage");
+          // Android: Only clear from store (no MediaLibrary operations)
+          clearAllPhotos();
+          console.log("✅ Cleared captured photos from Android store");
         }
+      } catch (error) {
+        console.error("❌ Error during photo cleanup:", error);
+        // Even if deletion fails, clear the store
+        clearAllPhotos();
+        console.log("⚠️ Cleared store despite cleanup errors");
       }
-
-      // Clear the state regardless of deletion success
-      setCapturedPhotos([]);
-      console.log("✅ Cleared captured photos from UI");
-
-    } catch (error) {
-      console.error("❌ Error during photo cleanup:", error);
-      // Even if deletion fails, clear the UI state
-      setCapturedPhotos([]);
-      console.log("⚠️ Cleared UI state despite cleanup errors");
-    }
-  }, []);
+    },
+    [clearAllPhotos]
+  );
 
   // ENHANCED SUBMISSION FUNCTION (PROPERLY IMPLEMENTED)
-  const handleSubmitPhoto = useCallback(async (photos) => {
-    console.log("Button clicked, starting enhanced image submission...");
-    
-    // Update UI state
-    setSubmit(true);
-    setLoading(true);
-    setUploadProgress(0);
-    
-    try {
-      // Validate photos
-      const validation = submissionService.validatePhotos(photos);
-      if (!validation.isValid) {
-        Alert.alert('Invalid Photos', validation.errors.join('\n'));
-        return;
-      }
+  const handleSubmitPhoto = useCallback(
+    async () => {
+      console.log("Button clicked, starting enhanced image submission...");
 
-      // Set up endpoints
-      const endpoints = {
-        fruits: "https://leidanielaguila-nutrivision.hf.space/detect",
-        labels: "https://dwyght-text-recognition.hf.space/extract/"
-      };
-      
-      const urlToSend = isLabelMode ? endpoints.labels : endpoints.fruits;
+      const photos = capturedPhotos;
 
-      console.log(`Submitting ${photos.length} photos to ${isLabelMode ? 'labels' : 'fruits'} endpoint`);
-
-      // Create FormData
-      const formData = await submissionService.createFormData(photos);
-
-      // Enhanced headers
-      const headers = {
-        'Accept': 'application/json',
-        'Content-Type': 'multipart/form-data',
-      };
-
-      // Progress callback with enhanced safety checks
-      const onProgress = (percentCompleted) => {
-        console.log("📊 Progress callback called with:", percentCompleted); // Debug log
-        
-        // Validate the percentage
-        if (typeof percentCompleted === 'number' && percentCompleted >= 0 && percentCompleted <= 100) {
-          setUploadProgress(percentCompleted);
-          console.log(`📈 UI Updated - Upload progress: ${percentCompleted}%`);
-        } else {
-          console.warn("⚠️ Invalid progress percentage:", percentCompleted);
-        }
-      };
-
-      // Submit with retry logic
-      const response = await submissionService.submitWithRetry(
-        urlToSend, 
-        formData, 
-        headers,
-        0,
-        onProgress
-      );
-
-      console.log("✅ Response from server:", response.data);
-
-      // Process response based on mode with safety checks
-      if (isLabelMode) {
-        const combined = response.data.combined || {};
-        const { carbs_total, protein_total, sodium_total } = combined;
-        
-        if (carbs_total !== undefined) setCarbs(parseFloat(carbs_total));
-        if (protein_total !== undefined) setProtein(parseFloat(protein_total));
-        if (sodium_total !== undefined) setSodium(parseFloat(sodium_total) / 1000);
-      } else {
-        const fruits = response.data.fruits || {};
-        const { total_carbs, total_protein, total_sodium } = fruits;
-        
-        if (total_carbs !== undefined) setCarbs(total_carbs);
-        if (total_protein !== undefined) setProtein(total_protein);
-        if (total_sodium !== undefined) setSodium(total_sodium);
-      }
-
-      // 🗑️ SUCCESS: Delete all captured photos after successful submission
-      // await deleteAllCapturedPhotos(photos);
-
-      // Navigate to results
-      navigation.navigate("nutrient-page");
-      return response.data;
-
-    } catch (error) {
-      console.error("❌ Enhanced photo submission error:", error);
-      
-      const errorMessage = submissionService.getErrorMessage(error);
-      Alert.alert("Submission Failed", errorMessage);
-      
-      // Log detailed error for debugging
-      if (error.response) {
-        console.error("Error details:", error.response.data);
-        console.error("Status code:", error.response.status);
-      }
-      
-      // 🗑️ TEMPORARY: Delete photos even on failure (for testing purposes)
-      console.log("⚠️ TEMPORARY MODE: Deleting photos even though submission failed");
-      await deleteAllCapturedPhotos(photos);
-      
-      throw error;
-    } finally {
-      // Always clean up UI state
-      setLoading(false);
-      setSubmit(false);
+      // Update UI state
+      setSubmit(true);
+      setLoading(true);
       setUploadProgress(0);
-    }
-  }, [isLabelMode, navigation, setCarbs, setProtein, setSodium, deleteAllCapturedPhotos]);
+
+      try {
+        // Validate photos
+        const validation = submissionService.validatePhotos(photos);
+        if (!validation.isValid) {
+          Alert.alert("Invalid Photos", validation.errors.join("\n"));
+          return;
+        }
+
+        // Set up endpoints
+        const endpoints = {
+          fruits: "https://leidanielaguila-nutrivision.hf.space/detect",
+          labels: "https://dwyght-text-recognition.hf.space/extract/",
+        };
+
+        const urlToSend = isLabelMode ? endpoints.labels : endpoints.fruits;
+
+        console.log(
+          `Submitting ${photos.length} photos to ${
+            isLabelMode ? "labels" : "fruits"
+          } endpoint`
+        );
+
+        // Create FormData
+        const formData = await submissionService.createFormData(photos);
+
+        // Enhanced headers
+        const headers = {
+          Accept: "application/json",
+          "Content-Type": "multipart/form-data",
+        };
+
+        // Progress callback with enhanced safety checks
+        const onProgress = (percentCompleted) => {
+          console.log("📊 Progress callback called with:", percentCompleted); // Debug log
+
+          // Validate the percentage
+          if (
+            typeof percentCompleted === "number" &&
+            percentCompleted >= 0 &&
+            percentCompleted <= 100
+          ) {
+            setUploadProgress(percentCompleted);
+            console.log(
+              `📈 UI Updated - Upload progress: ${percentCompleted}%`
+            );
+          } else {
+            console.warn("⚠️ Invalid progress percentage:", percentCompleted);
+          }
+        };
+
+        // Submit with retry logic
+        const response = await submissionService.submitWithRetry(
+          urlToSend,
+          formData,
+          headers,
+          0,
+          onProgress
+        );
+
+        console.log("✅ Response from server:", response.data);
+
+        // Process response based on mode with safety checks
+        if (isLabelMode) {
+          const combined = response.data.combined || {};
+          const { carbs_total, protein_total, sodium_total } = combined;
+
+          if (carbs_total !== undefined) setCarbs(parseFloat(carbs_total));
+          if (protein_total !== undefined)
+            setProtein(parseFloat(protein_total));
+          if (sodium_total !== undefined)
+            setSodium(parseFloat(sodium_total) / 1000);
+        } else {
+          const fruits = response.data.fruits || {};
+          const { total_carbs, total_protein, total_sodium } = fruits;
+
+          if (total_carbs !== undefined) setCarbs(total_carbs);
+          if (total_protein !== undefined) setProtein(total_protein);
+          if (total_sodium !== undefined) setSodium(total_sodium);
+        }
+
+        // 🗑️ SUCCESS: Delete all captured photos after successful submission
+        // await deleteAllCapturedPhotos(photos);
+
+        // Navigate to results
+        navigation.navigate("nutrient-page");
+        return response.data;
+      } catch (error) {
+        console.error("❌ Enhanced photo submission error:", error);
+
+        const errorMessage = submissionService.getErrorMessage(error);
+        Alert.alert("Submission Failed", errorMessage);
+
+        // Log detailed error for debugging
+        if (error.response) {
+          console.error("Error details:", error.response.data);
+          console.error("Status code:", error.response.status);
+        }
+
+        // 🗑️ TEMPORARY: Delete photos even on failure (for testing purposes)
+        console.log(
+          "⚠️ TEMPORARY MODE: Deleting photos even though submission failed"
+        );
+        await deleteAllCapturedPhotos(photos);
+
+        throw error;
+      } finally {
+        // Always clean up UI state
+        setLoading(false);
+        setSubmit(false);
+        setUploadProgress(0);
+      }
+    },
+    [
+      capturedPhotos,
+      isLabelMode,
+      navigation,
+      setCarbs,
+      setProtein,
+      setSodium,
+      deleteAllCapturedPhotos,
+    ]
+  );
 
   // Rest of your existing functions remain the same...
   const loadExistingPhotos = async () => {
     try {
-      const album = await MediaLibrary.getAlbumAsync("NutriVision");
-      if (!album) {
-        console.log("NutriVision album not found");
-        return;
+      if (Platform.OS === "ios") {
+        // iOS: Load from MediaLibrary and sync with store
+        const album = await MediaLibrary.getAlbumAsync("NutriVision");
+        if (!album) {
+          console.log("NutriVision album not found");
+          return;
+        }
+
+        const { assets } = await MediaLibrary.getAssetsAsync({
+          album: album.id,
+          mediaType: ["photo"],
+          first: 5,
+          sortBy: ["creationTime"],
+          reverse: true,
+        });
+
+        const photos = await Promise.all(
+          assets.map(async (asset) => {
+            try {
+              const assetInfo = await MediaLibrary.getAssetInfoAsync(asset);
+              const uri = `file://${
+                assetInfo.localUri?.replace("ph://", "") ||
+                assetInfo.uri.replace("ph://", "")
+              }`;
+
+              return {
+                uri,
+                type: "label",
+                id: asset.id,
+              };
+            } catch (error) {
+              console.error("Error processing asset:", error);
+              return null;
+            }
+          })
+        );
+
+        const validPhotos = photos.filter((photo) => photo !== null);
+
+        // Update store with MediaLibrary photos
+        setPhotos(validPhotos);
+      } else {
+        // Android: Photos are already in store, no need to load from anywhere else
+        // Store is the single source of truth on Android
+        console.log("Android: Using photos from store");
       }
-
-      const { assets } = await MediaLibrary.getAssetsAsync({
-        album: album.id,
-        mediaType: ["photo"],
-        first: 5,
-        sortBy: ["creationTime"],
-        reverse: true,
-      });
-
-      const photos = await Promise.all(
-        assets.map(async (asset) => {
-          try {
-            const assetInfo = await MediaLibrary.getAssetInfoAsync(asset);
-            const uri =
-              Platform.OS === "ios"
-                ? `file://${
-                    assetInfo.localUri?.replace("ph://", "") ||
-                    assetInfo.uri.replace("ph://", "")
-                  }`
-                : asset.uri;
-
-            return {
-              uri,
-              type: "label",
-              id: asset.id,
-            };
-          } catch (error) {
-            console.error("Error processing asset:", error);
-            return null;
-          }
-        })
-      );
-
-      const validPhotos = photos.filter((photo) => photo !== null);
-      setCapturedPhotos(validPhotos);
     } catch (error) {
       console.error("Error loading existing photos:", error);
     }
@@ -594,8 +676,8 @@ export default function Camera() {
         [
           {
             text: "OK",
-            style: "default"
-          }
+            style: "default",
+          },
         ]
       );
       return; // Exit early if limit reached
@@ -609,22 +691,34 @@ export default function Camera() {
         const boxWidthPercent = 0.7;
         const boxHeightPercent = 0.6;
 
-        if (Platform.OS === "android" && previewLayout.width && previewLayout.height) {
+        if (
+          Platform.OS === "android" &&
+          previewLayout.width &&
+          previewLayout.height
+        ) {
           const previewAspect = previewLayout.width / previewLayout.height;
           const photoAspect = takenPhoto.width / takenPhoto.height;
 
-          let scale, offsetX = 0, offsetY = 0, visiblePreviewWidth, visiblePreviewHeight;
+          let scale,
+            offsetX = 0,
+            offsetY = 0,
+            visiblePreviewWidth,
+            visiblePreviewHeight;
 
           if (photoAspect > previewAspect) {
             scale = takenPhoto.height / previewLayout.height;
             visiblePreviewWidth = previewLayout.width;
             visiblePreviewHeight = previewLayout.height;
-            offsetX = Math.round((takenPhoto.width - previewLayout.width * scale) / 2);
+            offsetX = Math.round(
+              (takenPhoto.width - previewLayout.width * scale) / 2
+            );
           } else {
             scale = takenPhoto.width / previewLayout.width;
             visiblePreviewWidth = previewLayout.width;
             visiblePreviewHeight = previewLayout.height;
-            offsetY = Math.round((takenPhoto.height - previewLayout.height * scale) / 2);
+            offsetY = Math.round(
+              (takenPhoto.height - previewLayout.height * scale) / 2
+            );
           }
 
           const guideBoxWidth = visiblePreviewWidth * boxWidthPercent;
@@ -687,61 +781,84 @@ export default function Camera() {
     }
   };
 
+  // Simple fallback for Android - just keep photos in memory/state
   const handleSavePhoto = async (processedUri) => {
     if (!photo) return;
 
-    try {
-      const { status } = await MediaLibrary.requestPermissionsAsync();
-      if (status !== "granted") {
-        Alert.alert(
-          "Permission required",
-          "We need permission to access your photo library to save photos."
-        );
-        return;
-      }
+    if (Platform.OS === "ios") {
+      // iOS: Use MediaLibrary AND update store
+      try {
+        const { status } = await MediaLibrary.requestPermissionsAsync(false);
+        if (status !== "granted") {
+          Alert.alert(
+            "Permission required",
+            "We need permission to access your photo library to save photos."
+          );
+          return;
+        }
 
-      const uriToSave = processedUri || photo.uri;
-      const asset = await MediaLibrary.createAssetAsync(uriToSave);
+        const uriToSave = processedUri || photo.uri;
+        const asset = await MediaLibrary.createAssetAsync(uriToSave);
 
-      let localUri = asset.uri;
-      if (Platform.OS === "ios") {
+        let localUri = asset.uri;
         const assetInfo = await MediaLibrary.getAssetInfoAsync(asset);
         localUri = assetInfo.localUri || assetInfo.uri;
+
+        let album = await MediaLibrary.getAlbumAsync("NutriVision");
+        if (!album) {
+          album = await MediaLibrary.createAlbumAsync(
+            "NutriVision",
+            asset,
+            false
+          );
+        } else {
+          await MediaLibrary.addAssetsToAlbumAsync([asset], album, false);
+        }
+
+        const photoWithId = {
+          uri: `file://${localUri.replace("ph://", "")}`,
+          id: asset.id,
+          type: photo.type || "label",
+          width: photo.width,
+          height: photo.height,
+          orientation: photo.orientation,
+        };
+
+        // Add to store for consistency across app
+        addPhoto(photoWithId);
+
+        // Also load existing photos from MediaLibrary
+        await loadExistingPhotos();
+
+        Alert.alert("Success", "Photo saved to your gallery in NutriVision!");
+        setPhoto(null);
+      } catch (error) {
+        console.error("Error saving photo on iOS:", error);
+        Alert.alert("Error", "Failed to save photo to gallery.");
       }
+    } else {
+      // Android: Only use Zustand store (no MediaLibrary)
+      try {
+        const photoWithId = {
+          uri: processedUri || photo.uri,
+          id: `photo_${Date.now()}`,
+          type: photo.type || "label",
+          width: photo.width,
+          height: photo.height,
+          orientation: photo.orientation,
+        };
 
-      let album = await MediaLibrary.getAlbumAsync("NutriVision");
-      if (!album) {
-        album = await MediaLibrary.createAlbumAsync("NutriVision", asset, false);
-      } else {
-        await MediaLibrary.addAssetsToAlbumAsync([asset], album, false);
+        // Add to store
+        addPhoto(photoWithId);
+
+        Alert.alert("Success", "Photo added to your session!");
+        setPhoto(null);
+      } catch (error) {
+        console.error("Error saving photo on Android:", error);
+        Alert.alert("Error", "Failed to add photo.");
       }
-
-      const photoWithId = {
-        ...photo,
-        uri:
-          Platform.OS === "ios"
-            ? `file://${localUri.replace("ph://", "")}`
-            : localUri,
-        id: asset.id,
-        type: photo.type || "label",
-      };
-
-      setCapturedPhotos((prev) => {
-        const newPhotos = [photoWithId, ...prev].slice(0, 5);
-        console.log("Updated photos:", newPhotos);
-        return newPhotos;
-      });
-
-      await loadExistingPhotos();
-
-      Alert.alert("Success", "Photo saved to your gallery in NutriVision!");
-      setPhoto(null);
-    } catch (error) {
-      console.error("Error saving photo:", error);
-      Alert.alert("Error", "Failed to save photo to gallery.");
     }
   };
-
   const handleDeletePhoto = async (photoToDelete, index) => {
     try {
       console.log("Attempting to delete photo:", {
@@ -750,76 +867,63 @@ export default function Camera() {
         index,
       });
 
-      const { status } = await MediaLibrary.requestPermissionsAsync();
-      if (status !== "granted") {
-        Alert.alert(
-          "Permission required",
-          "We need permission to delete photos from your gallery."
-        );
-        return;
-      }
+      if (Platform.OS === "ios") {
+        // iOS: Delete from MediaLibrary AND store
+        const { status } = await MediaLibrary.requestPermissionsAsync(false);
+        if (status !== "granted") {
+          Alert.alert(
+            "Permission required",
+            "We need permission to delete photos from your gallery."
+          );
+          return;
+        }
 
-      const album = await MediaLibrary.getAlbumAsync("NutriVision");
-      if (!album) {
-        console.log("NutriVision album not found");
-        return;
-      }
+        const album = await MediaLibrary.getAlbumAsync("NutriVision");
+        if (!album) {
+          console.log("NutriVision album not found");
+          // Still remove from store
+          removePhoto(index);
+          return;
+        }
 
-      const { assets } = await MediaLibrary.getAssetsAsync({
-        album: album.id,
-        mediaType: ["photo"],
-      });
-
-      console.log("Found assets in album:", assets.length);
-
-      const cleanUri = (uri) => {
-        if (!uri) return "";
-        return uri
-          .replace("ph://", "")
-          .replace("file://", "")
-          .split("?")[0]
-          .split("#")[0];
-      };
-
-      let assetToDelete;
-
-      if (photoToDelete.id) {
-        assetToDelete = assets.find((asset) => asset.id === photoToDelete.id);
-      }
-
-      if (!assetToDelete) {
-        const targetUri = cleanUri(photoToDelete.uri);
-        console.log("Looking for URI match:", targetUri);
-
-        assetToDelete = assets.find((asset) => {
-          const assetUri = cleanUri(asset.uri);
-          const matches = assetUri === targetUri;
-          if (matches) {
-            console.log("Found matching asset:", asset.id);
-          }
-          return matches;
+        const { assets } = await MediaLibrary.getAssetsAsync({
+          album: album.id,
+          mediaType: ["photo"],
         });
-      }
 
-      if (assetToDelete) {
-        const success = await MediaLibrary.deleteAssetsAsync([assetToDelete.id]);
-        if (success) {
-          setCapturedPhotos((prev) => prev.filter((_, i) => i !== index));
-          console.log("Photo deleted successfully");
-          await loadExistingPhotos();
+        let assetToDelete;
+        if (photoToDelete.id) {
+          assetToDelete = assets.find((asset) => asset.id === photoToDelete.id);
+        }
+
+        if (assetToDelete) {
+          const success = await MediaLibrary.deleteAssetsAsync([
+            assetToDelete.id,
+          ]);
+          if (success) {
+            // Remove from store
+            removePhoto(index);
+            console.log(
+              "Photo deleted successfully from iOS gallery and store"
+            );
+            await loadExistingPhotos(); // Refresh from MediaLibrary
+          } else {
+            throw new Error("Failed to delete asset from iOS gallery");
+          }
         } else {
-          throw new Error("Failed to delete asset");
+          console.log("Asset not found in album, removing from store only");
+          removePhoto(index);
         }
       } else {
-        console.log("Asset not found in album");
-        setCapturedPhotos((prev) => prev.filter((_, i) => i !== index));
+        // Android: Only remove from store
+        removePhoto(index);
+        console.log("Photo removed from Android store");
       }
     } catch (error) {
       console.error("Delete photo error:", error);
       Alert.alert("Error", "Failed to delete photo. Please try again.");
     }
   };
-
   if (photo) {
     return (
       <View style={styles.container}>
@@ -857,8 +961,8 @@ export default function Camera() {
               showsHorizontalScrollIndicator={false}
               contentContainerStyle={{
                 flexGrow: 1,
-                justifyContent: 'center',
-                alignItems: 'center',
+                justifyContent: "center",
+                alignItems: "center",
                 paddingHorizontal: 8,
               }}
             >
@@ -918,11 +1022,11 @@ export default function Camera() {
           />
         </View>
 
-        <CameraView 
-          style={styles.camera} 
-          facing={facing} 
-          ref={cameraRef} 
-          onLayout={e => {
+        <CameraView
+          style={styles.camera}
+          facing={facing}
+          ref={cameraRef}
+          onLayout={(e) => {
             const { width, height } = e.nativeEvent.layout;
             setPreviewLayout({ width, height });
           }}
@@ -940,7 +1044,11 @@ export default function Camera() {
                 onPress={handleGoBack}
                 disabled={false}
               >
-                <Ionicons name="return-down-back-outline" size={28} color="white" />
+                <Ionicons
+                  name="return-down-back-outline"
+                  size={28}
+                  color="white"
+                />
               </TouchableOpacity>
 
               <TouchableOpacity
@@ -952,10 +1060,14 @@ export default function Camera() {
 
               <TouchableOpacity
                 style={[styles.returnButton, { opacity: submit ? 0.5 : 1 }]}
-                onPress={() => handleSubmitPhoto(capturedPhotos)}
+                onPress={() => handleSubmitPhoto()}
                 disabled={submit || capturedPhotos.length === 0}
               >
-                <Ionicons name="return-down-forward-outline" size={28} color="white" />
+                <Ionicons
+                  name="return-down-forward-outline"
+                  size={28}
+                  color="white"
+                />
               </TouchableOpacity>
             </View>
           </View>
@@ -968,16 +1080,16 @@ export default function Camera() {
 // Styles remain the same, with addition of progress styles
 const segmentedStyles = StyleSheet.create({
   container: {
-    flexDirection: 'row',
+    flexDirection: "row",
     borderRadius: 25,
     padding: 4,
-    position: 'relative',
-    alignSelf: 'center',
+    position: "relative",
+    alignSelf: "center",
     minWidth: SEGMENTED_WIDTH,
     width: SEGMENTED_WIDTH,
   },
   highlight: {
-    position: 'absolute',
+    position: "absolute",
     top: 4,
     left: 4,
     height: 40,
@@ -985,25 +1097,25 @@ const segmentedStyles = StyleSheet.create({
     zIndex: 1,
   },
   optionsContainer: {
-    flexDirection: 'row',
+    flexDirection: "row",
     zIndex: 2,
   },
   option: {
     flex: 1,
     paddingVertical: 10,
     paddingHorizontal: 16,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     minWidth: SEGMENT_WIDTH - 8,
   },
   optionContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
   },
   optionText: {
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: "600",
     marginLeft: 6,
   },
 });
@@ -1018,18 +1130,18 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   progressContainer: {
-    position: 'absolute',
+    position: "absolute",
     bottom: 100,
     left: 0,
     right: 0,
-    alignItems: 'center',
+    alignItems: "center",
     zIndex: 1000,
   },
   progressText: {
-    color: 'white',
+    color: "white",
     fontSize: 16,
-    fontWeight: 'bold',
-    backgroundColor: 'rgba(0,0,0,0.7)',
+    fontWeight: "bold",
+    backgroundColor: "rgba(0,0,0,0.7)",
     padding: 10,
     borderRadius: 8,
   },
@@ -1061,7 +1173,7 @@ const styles = StyleSheet.create({
     height: "100%",
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: 'transparent',
+    borderColor: "transparent",
   },
   deleteButton: {
     position: "absolute",

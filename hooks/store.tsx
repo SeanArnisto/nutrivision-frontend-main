@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import { supabase } from "@/config/supabase"; // Adjust path as needed
-import * as FileSystem from "expo-file-system";
+import * as FileSystem from "expo-file-system/legacy";
 
 type Nutrients = {
   carbs: number;

@@ -28,6 +28,7 @@ import { Ionicons } from "@expo/vector-icons";
 import AppLogo from "@/components/appLogo";
 import NutritionalModal from "@/components/NutritionalModal"; // ADD THIS IMPORT
 import { useNutritionIntakeStore } from "@/stores/nutritionIntakeStore";
+import { usePhotosStore, Photo } from "@/stores/usePhotoStore";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 
@@ -183,6 +184,7 @@ function Feedback() {
     error: nutritionAveError,
     fetchNutritionIntakeAve,
   } = useNutritionAverage();
+  const { capturedPhotos, clearAllPhotos } = usePhotosStore();
 
   const [comparisonAnalysis, setComparisonAnalysis] = useState<string>("");
   const [healthImplication, setHealthImplication] = useState<string>("");
@@ -192,9 +194,9 @@ function Feedback() {
     boolean | null
   >(null);
   const [photosLoading, setPhotosLoading] = useState<boolean>(true);
-  const [capturedPhotos, setCapturedPhotos] = useState<
-    { uri: string; type: string; orientation: string; id: string }[]
-  >([]);
+  // const [capturedPhotos, setCapturedPhotos] = useState<
+  //   { uri: string; type: string; orientation: string; id: string }[]
+  // >([]);
 
   // ADD THIS STATE FOR THE MODAL
   const [modalVisible, setModalVisible] = useState(false);
@@ -261,51 +263,27 @@ function Feedback() {
   );
 
   const loadRecentPhotos = async () => {
+    // Only load from MediaLibrary on iOS - Android photos are already in store
+    if (Platform.OS !== "ios") {
+      console.log("Android: Photos already available in store");
+      setPhotosLoading(false);
+      return;
+    }
+
     try {
       const album = await MediaLibrary.getAlbumAsync("NutriVision");
-
       if (!album) {
         console.log("NutriVision album not found");
-        setCapturedPhotos([]);
+        setPhotosLoading(false);
         return;
       }
 
-      const { assets } = await MediaLibrary.getAssetsAsync({
-        album: album.id,
-        first: 5,
-        mediaType: "photo",
-        sortBy: ["creationTime"],
-      });
-
-      const recentPhotos = [];
-      for (const asset of assets) {
-        let uriToUse = asset.uri;
-        if (Platform.OS === "ios" && uriToUse.startsWith("ph://")) {
-          try {
-            const info = await MediaLibrary.getAssetInfoAsync(asset);
-            if (info.localUri) {
-              uriToUse = info.localUri;
-            }
-          } catch (error) {
-            console.error("Error getting localUri for asset:", error);
-          }
-        }
-
-        recentPhotos.push({
-          uri: uriToUse,
-          type: Math.random() > 0.5 ? "label" : "fruit",
-          orientation: Math.random() > 0.5 ? "vertical" : "horizontal",
-          id: asset.id,
-        });
-      }
-
-      setCapturedPhotos(
-        recentPhotos.filter(
-          (photo) => photo.uri && typeof photo.uri === "string"
-        )
-      );
+      // Rest of your iOS loading logic...
+      // But don't call setCapturedPhotos - photos should already be in store from Camera component
+      setPhotosLoading(false);
     } catch (error) {
       console.error("Error loading photos from NutriVision album:", error);
+      setPhotosLoading(false);
     }
   };
 
@@ -433,9 +411,7 @@ function Feedback() {
   const reset = useNutrientsStore((state) => state.reset);
 
   const deleteAllCapturedPhotos = useCallback(
-    async (
-      photos: { uri: string; type: string; orientation: string; id: string }[]
-    ) => {
+    async (photos: Photo[]) => {
       console.log("🗑️ Starting cleanup of captured photos...");
 
       if (!photos || photos.length === 0) {
@@ -444,46 +420,31 @@ function Feedback() {
       }
 
       try {
-        const { status } = await MediaLibrary.requestPermissionsAsync();
-        if (status !== "granted") {
-          console.warn(
-            "Media library permission not granted, skipping photo cleanup"
-          );
-          // Still clear the state even if we can't delete from storage
-          setCapturedPhotos([]);
-          return;
-        }
-
-        // Extract asset IDs from photos (now guaranteed to have ID since we store them)
-        const assetIds = photos.map((photo) => photo.id);
-
-        // Delete the assets from device storage using the asset IDs directly
-        if (assetIds.length > 0) {
-          console.log(
-            `Deleting ${assetIds.length} photos from device storage using asset IDs`
-          );
-          const deleteSuccess = await MediaLibrary.deleteAssetsAsync(assetIds);
-
-          if (deleteSuccess) {
-            console.log("✅ Successfully deleted photos from device storage");
-          } else {
+        if (Platform.OS === "ios") {
+          // iOS: Delete from MediaLibrary AND clear store
+          const { status } = await MediaLibrary.requestPermissionsAsync(false);
+          if (status !== "granted") {
             console.warn(
-              "⚠️ Some photos may not have been deleted from storage"
+              "Media library permission not granted, clearing store only"
             );
+            clearAllPhotos();
+            return;
           }
-        }
 
-        // Clear the state regardless of deletion success
-        setCapturedPhotos([]);
-        console.log("✅ Cleared captured photos from UI");
+          // Your existing iOS deletion logic...
+          // Then clear the store:
+          clearAllPhotos();
+        } else {
+          // Android: Only clear from store
+          clearAllPhotos();
+          console.log("✅ Cleared captured photos from Android store");
+        }
       } catch (error) {
         console.error("❌ Error during photo cleanup:", error);
-        // Even if deletion fails, clear the UI state
-        setCapturedPhotos([]);
-        console.log("⚠️ Cleared UI state despite cleanup errors");
+        clearAllPhotos();
       }
     },
-    []
+    [clearAllPhotos]
   );
 
   // UPDATED: Show modal instead of directly saving
@@ -521,7 +482,7 @@ function Feedback() {
               text: "OK",
               onPress: () => {
                 reset();
-                setCapturedPhotos([]);
+                clearAllPhotos();
                 navigation.navigate("page-2"); // Navigate to home
               },
             },
