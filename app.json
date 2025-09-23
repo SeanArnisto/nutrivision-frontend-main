@@ -13,7 +13,10 @@
       "supportsTablet": true
     },
     "android": {
-      "permissions": ["INTERNET", "READ_EXTERNAL_STORAGE"],
+      "permissions": [
+        "INTERNET",
+        "READ_EXTERNAL_STORAGE"
+      ],
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#ffffff"
@@ -34,7 +37,9 @@
           "resizeMode": "cover",
           "backgroundColor": "#BBCAA0"
         }
-      ]
+      ],
+      "expo-font",
+      "expo-web-browser"
     ],
     "experiments": {
       "typedRoutes": true
