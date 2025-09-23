@@ -21,14 +21,14 @@ import { RootStackParamList } from "@/types/types";
 import * as MediaLibrary from "expo-media-library";
 import { useRecommStore, useNutrientsStore } from "@/hooks/store";
 import {
-  useNutritionAverage,
-  fetchNutritionAverage,
+  useNutritionAverage
 } from "@/stores/nutritionIntakeStore";
 import { Ionicons } from "@expo/vector-icons";
 import AppLogo from "@/components/appLogo";
 import NutritionalModal from "@/components/NutritionalModal"; // ADD THIS IMPORT
 import { useNutritionIntakeStore } from "@/stores/nutritionIntakeStore";
 import { usePhotosStore, Photo } from "@/stores/usePhotoStore";
+import {useComparisonAnalysis, useHealthImplication, useFeedbackLoading} from "@/stores/useFeedbackStore";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 
@@ -171,6 +171,7 @@ function Feedback() {
   const maxProtein = useRecommStore((state) => state.maxProtein);
   const minSodium = useRecommStore((state) => state.minSodium);
   const maxSodium = useRecommStore((state) => state.maxSodium);
+
   const loadUserRecommendations = useRecommStore(
     (state) => state.loadUserRecommendations
   );
@@ -184,11 +185,12 @@ function Feedback() {
     error: nutritionAveError,
     fetchNutritionIntakeAve,
   } = useNutritionAverage();
+
   const { capturedPhotos, clearAllPhotos } = usePhotosStore();
 
-  const [comparisonAnalysis, setComparisonAnalysis] = useState<string>("");
-  const [healthImplication, setHealthImplication] = useState<string>("");
-  const [loading, setLoading] = useState<boolean>(true);
+  const comparisonAnalysis = useComparisonAnalysis();
+  const healthImplication = useHealthImplication();
+  const isLoading = useFeedbackLoading();
   const [currentSlide, setCurrentSlide] = useState<number>(0);
   const [mediaLibraryPermission, setMediaLibraryPermission] = useState<
     boolean | null
@@ -287,123 +289,6 @@ function Feedback() {
     }
   };
 
-  const fetchFeedback = useCallback(async () => {
-    try {
-      setLoading(true);
-
-      // Use nutrition average data as fallback if regular recommendations aren't available
-      const useNutritionAve =
-        !(
-          minCarb > 0 &&
-          maxCarb > 0 &&
-          minProtein > 0 &&
-          maxProtein > 0 &&
-          minSodium > 0 &&
-          maxSodium > 0
-        ) && nutritionDataAve;
-
-      const finalMinCarb = useNutritionAve
-        ? nutritionDataAve!.minCarbs
-        : minCarb;
-      const finalMaxCarb = useNutritionAve
-        ? nutritionDataAve!.maxCarbs
-        : maxCarb;
-      const finalMinProtein = useNutritionAve
-        ? nutritionDataAve!.minProtein
-        : minProtein;
-      const finalMaxProtein = useNutritionAve
-        ? nutritionDataAve!.maxProtein
-        : maxProtein;
-      const finalMinSodium = useNutritionAve
-        ? nutritionDataAve!.minSodium
-        : minSodium;
-      const finalMaxSodium = useNutritionAve
-        ? nutritionDataAve!.maxSodium
-        : maxSodium;
-
-      const requestData = {
-        carbs_total: carbs,
-        sodium_total: sod * 1000, // Convert g to mg
-        protein_total: prot,
-        recommended_carbs: [finalMinCarb, finalMaxCarb],
-        recommended_sodium: [finalMinSodium, finalMaxSodium],
-        recommended_protein: [finalMinProtein, finalMaxProtein],
-      };
-
-      console.log("Sending feedback request:", requestData);
-
-      const response = await fetch(
-        "https://pel1-feedback-llm.hf.space/get-response",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(requestData),
-        }
-      );
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error(
-          `HTTP error! status: ${response.status}, response:`,
-          errorText
-        );
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      const data = await response.json();
-      console.log("Received feedback response:", data);
-
-      if (data && data.feedback) {
-        const { comparison_analysis, health_implication } = data.feedback;
-        setComparisonAnalysis(
-          comparison_analysis || "No comparison analysis available."
-        );
-        setHealthImplication(
-          health_implication || "No health implications available."
-        );
-      } else {
-        setComparisonAnalysis(
-          "No feedback available. If values are 0, make sure to manually input them."
-        );
-        setHealthImplication(
-          "No feedback available. If values are 0, make sure to manually input them."
-        );
-      }
-    } catch (error) {
-      console.error("Feedback fetch error:", error);
-      if (error instanceof Error && error.message.includes("500")) {
-        setComparisonAnalysis(
-          "The feedback service is currently experiencing issues. Your nutritional data has been recorded and displayed above."
-        );
-        setHealthImplication(
-          "Unable to generate health implications at this time due to a server error. Please try again later."
-        );
-      } else {
-        setComparisonAnalysis(
-          "Unable to connect to feedback service. Please check your internet connection and try again."
-        );
-        setHealthImplication(
-          "Unable to connect to feedback service. Please check your internet connection and try again."
-        );
-      }
-    } finally {
-      setLoading(false);
-    }
-  }, [
-    carbs,
-    prot,
-    sod,
-    minCarb,
-    maxCarb,
-    minProtein,
-    maxProtein,
-    minSodium,
-    maxSodium,
-    nutritionDataAve,
-  ]);
-
   const carbohydrate = useNutrientsStore((state) => state.carbs);
   const protein = useNutrientsStore((state) => state.protein);
   const sodium = useNutrientsStore((state) => state.sodium);
@@ -464,7 +349,6 @@ function Feedback() {
   // NEW: Handle the actual save from modal
   const handleModalSave = async () => {
     try {
-      setLoading(true);
       const result = await saveWithPhotos(capturedPhotos);
 
       if (result.success) {
@@ -498,8 +382,6 @@ function Feedback() {
     } catch (error) {
       Alert.alert("Error", "An unexpected error occurred");
       console.error("Save error:", error);
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -507,55 +389,6 @@ function Feedback() {
   const handleModalClose = () => {
     setModalVisible(false);
   };
-
-  // Fetch feedback when nutrient values change
-  useEffect(() => {
-    // Debug: Log all recommendation values
-    console.log("Recommendation values:", {
-      minCarb,
-      maxCarb,
-      minProtein,
-      maxProtein,
-      minSodium,
-      maxSodium,
-    });
-
-    console.log("Nutrition average data:", nutritionDataAve);
-
-    // Check if recommendation ranges are valid (not zero)
-    const hasValidRecommendations =
-      minCarb > 0 &&
-      maxCarb > 0 &&
-      minProtein > 0 &&
-      maxProtein > 0 &&
-      minSodium > 0 &&
-      maxSodium > 0;
-
-    // Check if we have valid nutrition average data as fallback
-    const hasValidNutritionAve =
-      nutritionDataAve &&
-      nutritionDataAve.minCarbs > 0 &&
-      nutritionDataAve.maxCarbs > 0 &&
-      nutritionDataAve.minProtein > 0 &&
-      nutritionDataAve.maxProtein > 0 &&
-      nutritionDataAve.minSodium > 0 &&
-      nutritionDataAve.maxSodium > 0;
-
-    console.log("hasValidRecommendations:", hasValidRecommendations);
-    console.log("hasValidNutritionAve:", hasValidNutritionAve);
-
-    if (hasValidRecommendations || hasValidNutritionAve) {
-      fetchFeedback();
-    } else {
-      setComparisonAnalysis(
-        "Recommendation ranges are not properly set. Please configure your dietary recommendations in settings."
-      );
-      setHealthImplication(
-        "Recommendation ranges are not properly set. Please configure your dietary recommendations in settings."
-      );
-      setLoading(false);
-    }
-  }, [fetchFeedback]);
 
   // Memoized carousel scroll handler to prevent unnecessary re-renders
   const handleCarouselScroll = useCallback((event: any) => {
@@ -667,7 +500,7 @@ function Feedback() {
 
             {/* Feedback Carousel Section */}
             <View style={styles.feedbackContainer}>
-              {loading ? (
+              {isLoading ? (
                 <Text style={styles.loadingText}>Generating feedback...</Text>
               ) : (
                 <>
@@ -743,12 +576,12 @@ function Feedback() {
 
       {/* Save Button - Opens Modal */}
       <TouchableOpacity
-        style={[styles.saveButton, loading && styles.saveButtonDisabled]}
+        style={[styles.saveButton, isLoading && styles.saveButtonDisabled]}
         onPress={handleSaveToDatabase}
-        disabled={loading}
+        disabled={isLoading}
         activeOpacity={0.8}
       >
-        {loading ? (
+        {isLoading ? (
           <ActivityIndicator color="#fff" size="small" />
         ) : (
           <Text style={styles.saveButtonText}>Save to Database</Text>
@@ -773,7 +606,7 @@ function Feedback() {
           proteinMin: recommendationValues.proteinMin,
           proteinMax: recommendationValues.proteinMax,
         }}
-        loading={loading}
+        loading={isLoading}
       />
     </SafeAreaView>
   );

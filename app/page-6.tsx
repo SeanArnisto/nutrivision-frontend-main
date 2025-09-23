@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import {
   StyleSheet,
   View,
@@ -9,26 +9,28 @@ import {
   ScrollView,
   DimensionValue,
 } from "react-native";
-import { ThemedView } from "@/components/ThemedView";
-import { ThemedText } from "@/components/ThemedText";
 import { useNavigation } from "@react-navigation/native";
 import { RootStackParamList } from "@/types/types";
 import { StackNavigationProp } from "@react-navigation/stack";
-import { useRoute } from "@react-navigation/native";
 import { useNutrientsStore } from "@/hooks/store";
 import { useRecommStore } from "@/hooks/store";
-import { useNutritionIntakeStore, fetchNutritionAverage, useNutritionAverage } from "@/stores/nutritionIntakeStore";
+import {
+  useNutritionIntakeStore,
+  useNutritionAverage,
+} from "@/stores/nutritionIntakeStore";
 import { Ionicons } from "@expo/vector-icons";
-import { useFocusEffect } from "@react-navigation/native";
-import { useCallback } from "react";
 import BarChart from "@/components/Barchart";
 import { format, addDays } from "date-and-time";
 import { getNutritionalHistory } from "@/hooks/store";
 import AppLogo from "@/components/appLogo";
-
+import type { NutritionRequest } from "@/stores/useFeedbackStore";
+import useFeedbackStore, {
+  useFeedbackError,
+  useFeedbackLoading,
+} from "@/stores/useFeedbackStore";
+import Loading from "./loading";
 const toProgressWidth = (value: number) =>
   `${Math.min(value, 100)}%` as DimensionValue;
-const toPercentageText = (value: number) => `${value}%`;
 const formatValue = (value: number, unit: string = "g") => `${value} ${unit}`;
 
 type Page6ScreenNavigationProp = StackNavigationProp<
@@ -75,12 +77,63 @@ export default function Page6() {
   const minSodium = useRecommStore((state) => state.minSodium);
   const maxSodium = useRecommStore((state) => state.maxSodium);
 
+  const isLoading = useFeedbackLoading();
+  const feedbackError = useFeedbackError();
+  const fetchFeedback = useFeedbackStore((state) => state.fetchFeedback);
+
+  const { nutritionData: intakeData, fetchNutritionIntake } =
+    useNutritionIntakeStore();
+  const {
+    nutritionDataAve: averageData,
+    fetchNutritionIntakeAve,
+    nutritionDataAve,
+  } = useNutritionAverage();
+
+  useEffect(() => {
+    fetchNutritionIntake();
+    fetchNutritionIntakeAve();
+  }, []);
+
+  const recommendationValues = useMemo(
+    () => ({
+      carbsMin:
+        nutritionDataAve && minCarb === 0 ? nutritionDataAve.minCarbs : minCarb,
+      carbsMax:
+        nutritionDataAve && maxCarb === 0 ? nutritionDataAve.maxCarbs : maxCarb,
+      sodiumMin:
+        nutritionDataAve && minSodium === 0
+          ? nutritionDataAve.minSodium
+          : minSodium,
+      sodiumMax:
+        nutritionDataAve && maxSodium === 0
+          ? nutritionDataAve.maxSodium
+          : maxSodium,
+      proteinMin:
+        nutritionDataAve && minProtein === 0
+          ? nutritionDataAve.minProtein
+          : minProtein,
+      proteinMax:
+        nutritionDataAve && maxProtein === 0
+          ? nutritionDataAve.maxProtein
+          : maxProtein,
+    }),
+    [
+      nutritionDataAve,
+      minCarb,
+      maxCarb,
+      minSodium,
+      maxSodium,
+      minProtein,
+      maxProtein,
+    ]
+  );
+
   // Get nutrition intake data from stores
-  const { nutritionData: intakeData, fetchNutritionIntake } = useNutritionIntakeStore();
-  const { nutritionDataAve: averageData, fetchNutritionIntakeAve } = useNutritionAverage();
 
   // Add nutritional history state for bar chart
-  const [nutritionalData, setNutritionalData] = useState<NutritionalRecord[]>([]);
+  const [nutritionalData, setNutritionalData] = useState<NutritionalRecord[]>(
+    []
+  );
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -98,10 +151,6 @@ export default function Page6() {
   });
 
   // Fetch nutrition data on component mount
-  useEffect(() => {
-    fetchNutritionIntake();
-    fetchNutritionIntakeAve();
-  }, []);
 
   // Fetch nutritional history for bar chart (same as statistics)
   useEffect(() => {
@@ -133,17 +182,17 @@ export default function Page6() {
       setNutritionData((prev) => ({
         ...prev,
         values: {
-          carbohydrate: { 
-            user: parseFloat(carbs.toFixed(1)), 
-            avg: parseFloat(intakeData.avg_carbs.toFixed(1)) 
+          carbohydrate: {
+            user: parseFloat(carbs.toFixed(1)),
+            avg: parseFloat(intakeData.avg_carbs.toFixed(1)),
           },
-          protein: { 
-            user: parseFloat(prot.toFixed(1)), 
-            avg: parseFloat(intakeData.avg_protein.toFixed(1)) 
+          protein: {
+            user: parseFloat(prot.toFixed(1)),
+            avg: parseFloat(intakeData.avg_protein.toFixed(1)),
           },
-          sodium: { 
-            user: parseFloat(sod.toFixed(2)), 
-            avg: parseFloat((intakeData.avg_sodium / 1000).toFixed(2)) 
+          sodium: {
+            user: parseFloat(sod.toFixed(2)),
+            avg: parseFloat((intakeData.avg_sodium / 1000).toFixed(2)),
           },
         },
       }));
@@ -152,17 +201,17 @@ export default function Page6() {
       setNutritionData((prev) => ({
         ...prev,
         values: {
-          carbohydrate: { 
-            user: parseFloat(carbs.toFixed(1)), 
-            avg: parseFloat(intakeData.avg_carbs.toFixed(1)) 
+          carbohydrate: {
+            user: parseFloat(carbs.toFixed(1)),
+            avg: parseFloat(intakeData.avg_carbs.toFixed(1)),
           },
-          protein: { 
-            user: parseFloat(prot.toFixed(1)), 
-            avg: parseFloat(intakeData.avg_protein.toFixed(1)) 
+          protein: {
+            user: parseFloat(prot.toFixed(1)),
+            avg: parseFloat(intakeData.avg_protein.toFixed(1)),
           },
-          sodium: { 
+          sodium: {
             user: parseFloat((sod / 1000).toFixed(2)), // Convert mg to g
-            avg: parseFloat((intakeData.avg_sodium / 1000).toFixed(2)) // Convert mg to g
+            avg: parseFloat((intakeData.avg_sodium / 1000).toFixed(2)), // Convert mg to g
           },
         },
       }));
@@ -175,17 +224,17 @@ export default function Page6() {
       setNutritionData((prev) => ({
         ...prev,
         values: {
-          carbohydrate: { 
-            user: parseFloat(carbs.toFixed(1)), 
-            avg: parseFloat(carbAvg.toFixed(1)) 
+          carbohydrate: {
+            user: parseFloat(carbs.toFixed(1)),
+            avg: parseFloat(carbAvg.toFixed(1)),
           },
-          protein: { 
-            user: parseFloat(prot.toFixed(1)), 
-            avg: parseFloat(proteinAvg.toFixed(1)) 
+          protein: {
+            user: parseFloat(prot.toFixed(1)),
+            avg: parseFloat(proteinAvg.toFixed(1)),
           },
-          sodium: { 
+          sodium: {
             user: parseFloat((sod / 1000).toFixed(2)), // Convert mg to g
-            avg: parseFloat((sodiumAvg / 1000).toFixed(2)) // Convert mg to g
+            avg: parseFloat((sodiumAvg / 1000).toFixed(2)), // Convert mg to g
           },
         },
       }));
@@ -198,15 +247,26 @@ export default function Page6() {
       ...prev,
       progress: {
         carbohydrate: {
-          user: parseFloat(((prev.values.carbohydrate.user / prev.values.carbohydrate.avg) * 50).toFixed(1)),
+          user: parseFloat(
+            (
+              (prev.values.carbohydrate.user / prev.values.carbohydrate.avg) *
+              50
+            ).toFixed(1)
+          ),
           avg: 50, // Always 50 for average bar
         },
         protein: {
-          user: parseFloat(((prev.values.protein.user / prev.values.protein.avg) * 50).toFixed(1)),
+          user: parseFloat(
+            ((prev.values.protein.user / prev.values.protein.avg) * 50).toFixed(
+              1
+            )
+          ),
           avg: 50, // Always 50 for average bar
         },
         sodium: {
-          user: parseFloat(((prev.values.sodium.user / prev.values.sodium.avg) * 50).toFixed(1)),
+          user: parseFloat(
+            ((prev.values.sodium.user / prev.values.sodium.avg) * 50).toFixed(1)
+          ),
           avg: 50, // Always 50 for average bar
         },
       },
@@ -219,13 +279,50 @@ export default function Page6() {
 
   const navigation = useNavigation<Page6ScreenNavigationProp>();
 
-  const handleCheck = () => {
-    navigation.navigate("feedback");
+  const handleCheck = async () => {
+    try {
+      // Use the same fallback logic as recommendationValues
+      const requestData: NutritionRequest = {
+        carbs_total: carbs,
+        protein_total: prot,
+        sodium_total: sod * 1000, // Convert g to mg like in original code
+        recommended_carbs: [
+          recommendationValues.carbsMin,
+          recommendationValues.carbsMax,
+        ] as [number, number],
+        recommended_sodium: [
+          recommendationValues.sodiumMin,
+          recommendationValues.sodiumMax,
+        ] as [number, number],
+        recommended_protein: [
+          recommendationValues.proteinMin,
+          recommendationValues.proteinMax,
+        ] as [number, number],
+      };
+
+      console.log("Fetching feedback with data:", requestData);
+
+      // Wait for the fetch to complete
+      await fetchFeedback(requestData);
+
+      // Navigate to feedback page (the store will handle success/error states)
+      navigation.navigate("feedback");
+    } catch (error) {
+      console.error("Error fetching feedback:", error);
+      // Still navigate to feedback page - the error will be shown there
+      navigation.navigate("feedback");
+    }
   };
+
+  if (isLoading) {
+    return <Loading />;
+  }
 
   // Get average values for bar chart calculations
   const carbAvg = intakeData?.avg_carbs ? Math.round(intakeData.avg_carbs) : 0;
-  const proteinAvg = intakeData?.avg_protein ? Math.round(intakeData.avg_protein) : 0;
+  const proteinAvg = intakeData?.avg_protein
+    ? Math.round(intakeData.avg_protein)
+    : 0;
   const sodiumAvg = intakeData?.avg_sodium ? intakeData.avg_sodium / 1000 : 0;
 
   // Initialize date constants (same as statistics)
@@ -238,9 +335,10 @@ export default function Page6() {
 
   // Format dates for display
   const startStr = format(startOfWeek, "MMM DD");
-  const endStr = startOfWeek.getMonth() !== endOfWeek.getMonth()
-    ? format(endOfWeek, "MMM DD")
-    : format(endOfWeek, "DD");
+  const endStr =
+    startOfWeek.getMonth() !== endOfWeek.getMonth()
+      ? format(endOfWeek, "MMM DD")
+      : format(endOfWeek, "DD");
 
   // Function to get nutrition totals for a specific date (same as statistics)
   const getDailyNutritionTotals = (date: Date | null) => {
@@ -311,13 +409,13 @@ export default function Page6() {
         }
 
         let dailyTotals;
-        
+
         // Check if current date is today, use current store values
         if (currentDate.toDateString() === today.toDateString()) {
           dailyTotals = {
             carbohydrates: carbs,
             protein: prot,
-            sodium: sod / 1000 // Convert mg to g
+            sodium: sod / 1000, // Convert mg to g
           };
         } else {
           // Use historical data for other days
@@ -407,7 +505,9 @@ export default function Page6() {
                       styles.progressBar,
                       styles.userProgress,
                       {
-                        width: toProgressWidth(nutritionData.progress.carbohydrate.user),
+                        width: toProgressWidth(
+                          nutritionData.progress.carbohydrate.user
+                        ),
                       },
                     ]}
                   />
@@ -418,7 +518,9 @@ export default function Page6() {
                       styles.progressBar,
                       styles.avgProgress,
                       {
-                        width: toProgressWidth(nutritionData.progress.carbohydrate.avg),
+                        width: toProgressWidth(
+                          nutritionData.progress.carbohydrate.avg
+                        ),
                       },
                     ]}
                   />
@@ -450,7 +552,9 @@ export default function Page6() {
                       styles.progressBar,
                       styles.userProgress,
                       {
-                        width: toProgressWidth(nutritionData.progress.sodium.user),
+                        width: toProgressWidth(
+                          nutritionData.progress.sodium.user
+                        ),
                       },
                     ]}
                   />
@@ -461,7 +565,9 @@ export default function Page6() {
                       styles.progressBar,
                       styles.avgProgress,
                       {
-                        width: toProgressWidth(nutritionData.progress.sodium.avg),
+                        width: toProgressWidth(
+                          nutritionData.progress.sodium.avg
+                        ),
                       },
                     ]}
                   />
@@ -493,7 +599,9 @@ export default function Page6() {
                       styles.progressBar,
                       styles.userProgress,
                       {
-                        width: toProgressWidth(nutritionData.progress.protein.user),
+                        width: toProgressWidth(
+                          nutritionData.progress.protein.user
+                        ),
                       },
                     ]}
                   />
@@ -504,7 +612,9 @@ export default function Page6() {
                       styles.progressBar,
                       styles.avgProgress,
                       {
-                        width: toProgressWidth(nutritionData.progress.protein.avg),
+                        width: toProgressWidth(
+                          nutritionData.progress.protein.avg
+                        ),
                       },
                     ]}
                   />
@@ -542,7 +652,6 @@ export default function Page6() {
             ]}
           />
         </View>
-       
       </ScrollView>
 
       <TouchableOpacity
