@@ -17,7 +17,7 @@
       "distribution": "internal",
       "android": {
         "buildType": "apk",
-        "image": "ubuntu-20.04-jdk-11-ndk-r21e",
+        "image": "ubuntu-22.04-jdk-17-ndk-r25b",
         "prebuildCommand": "npx expo install --fix && rm -rf android && npx expo prebuild --platform android"
       },
       "env": {
