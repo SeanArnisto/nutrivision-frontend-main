@@ -17,7 +17,8 @@
       "distribution": "internal",
       "android": {
         "buildType": "apk",
-        "prebuildCommand": "npx expo install --fix && npx expo prebuild --clean"
+        "image": "ubuntu-22.04-jdk-17-ndk-r26b",
+        "prebuildCommand": "npx expo install --fix"
       },
       "env": {
         "EXPO_PUBLIC_SUPABASE_URL": "https://nglxfwxexbpbeybkbrvs.supabase.co",
