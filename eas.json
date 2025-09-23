@@ -16,7 +16,8 @@
     "preview": {
       "distribution": "internal",
       "android": {
-        "buildType": "apk"
+        "buildType": "apk",
+        "prebuildCommand": "npx expo install --fix && npx expo prebuild --clean"
       },
       "env": {
         "EXPO_PUBLIC_SUPABASE_URL": "https://nglxfwxexbpbeybkbrvs.supabase.co",
