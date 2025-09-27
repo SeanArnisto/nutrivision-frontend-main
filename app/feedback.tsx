@@ -214,11 +214,11 @@ function Feedback() {
         nutritionDataAve && maxCarb === 0 ? nutritionDataAve.maxCarbs : maxCarb,
       sodiumMin:
         nutritionDataAve && minSodium === 0
-          ? nutritionDataAve.minSodium
+          ? (nutritionDataAve.minSodium / 1000)
           : minSodium,
       sodiumMax:
         nutritionDataAve && maxSodium === 0
-          ? nutritionDataAve.maxSodium
+          ? (nutritionDataAve.maxSodium / 1000)
           : maxSodium,
       proteinMin:
         nutritionDataAve && minProtein === 0
