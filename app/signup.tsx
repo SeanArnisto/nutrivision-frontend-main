@@ -58,7 +58,7 @@ export default function SignUpScreen() {
   // Redirect authenticated users to the main app
   useEffect(() => {
     if (isAuthenticated) {
-      navigation.replace('page-2');
+      navigation.replace("page-2");
     }
   }, [isAuthenticated, navigation]);
 
@@ -153,7 +153,7 @@ export default function SignUpScreen() {
 
   const handleGoogleSignUp = async () => {
     if (isLoading) return;
-    
+
     setIsLoading(true);
     setErrors({});
 
@@ -163,35 +163,43 @@ export default function SignUpScreen() {
 
       if (error) {
         console.error("Google sign up error:", error);
-        setErrors({ general: error.message || "Google sign-up failed. Please try again." });
+        setErrors({
+          general: error.message || "Google sign-up failed. Please try again.",
+        });
         return;
       }
 
       if (data?.session?.user) {
         console.log("Google sign up successful:", data.session.user.email);
-        
+
         // For Google OAuth, the user is immediately signed in
         // Navigate to onboarding for new users or main app for existing users
         const isProfileComplete = useAuthStore.getState().profileComplete;
 
         if (isProfileComplete === false) {
-          console.log("🆕 New Google user from signup - navigating to onboarding");
+          console.log(
+            "🆕 New Google user from signup - navigating to onboarding"
+          );
           navigation.reset({
             index: 0,
-            routes: [{ name: 'onboarding' }],
+            routes: [{ name: "onboarding" }],
           });
         } else {
-          console.log("👤 Existing Google user from signup - navigating to main app");
+          console.log(
+            "👤 Existing Google user from signup - navigating to main app"
+          );
           navigation.reset({
             index: 0,
-            routes: [{ name: 'page-2' }],
+            routes: [{ name: "page-2" }],
           });
         }
       }
     } catch (error: any) {
       console.error("Unexpected Google sign up error:", error);
       setErrors({
-        general: error.message || "An unexpected error occurred during Google sign-up. Please try again.",
+        general:
+          error.message ||
+          "An unexpected error occurred during Google sign-up. Please try again.",
       });
     } finally {
       setIsLoading(false);
@@ -227,7 +235,7 @@ export default function SignUpScreen() {
           </View>
 
           {/* Title Container */}
-          <View style={styles.titleContainer}> 
+          <View style={styles.titleContainer}>
             <Text style={styles.title}>Sign up</Text>
           </View>
 
@@ -297,33 +305,36 @@ export default function SignUpScreen() {
           </View>
 
           {/* Divider Container */}
-          <View style={styles.dividerContainer}>
-            <View style={styles.dividerLine} />
-            <Text style={styles.dividerText}>Or</Text>
-            <View style={styles.dividerLine} />
-          </View>
+          {Platform.OS === "ios" && (
+            <>
+              <View style={styles.dividerContainer}>
+                <View style={styles.dividerLine} />
+                <Text style={styles.dividerText}>Or</Text>
+                <View style={styles.dividerLine} />
+              </View>
 
-          {/* Social Sign Up Container */}
-          <View style={styles.socialContainer}>
-            <SocialButton
-              provider="google"
-              onPress={handleGoogleSignUp}
-              disabled={isLoading}
-            />
+              {/* Social Sign Up Container */}
+              <View style={styles.socialContainer}>
+                <SocialButton
+                  provider="google"
+                  onPress={handleGoogleSignUp}
+                  disabled={isLoading}
+                />
 
-            <SocialButton
-              provider="facebook"
-              onPress={handleFacebookSignUp}
-              disabled={isLoading}
-            />
-          </View>
+                <SocialButton
+                  provider="facebook"
+                  onPress={handleFacebookSignUp}
+                  disabled={isLoading}
+                />
+              </View>
 
-          {/* Bottom Divider Container */}
-          <View style={styles.bottomDividerContainer}>
-            <View style={styles.dividerLine} />
-            <View style={styles.dividerLine} />
-          </View>
-
+              {/* Bottom Divider Container */}
+              <View style={styles.bottomDividerContainer}>
+                <View style={styles.dividerLine} />
+                <View style={styles.dividerLine} />
+              </View>
+            </>
+          )}
           {/* Login Link Container */}
           <View style={styles.loginLinkContainer}>
             <LinkButton

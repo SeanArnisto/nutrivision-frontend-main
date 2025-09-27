@@ -109,6 +109,7 @@ const styles = StyleSheet.create({
   },
   bottomContainer: {
     alignItems: "center",
+    marginBottom: 60,
     paddingBottom: 10,
     width: "100%",
   },

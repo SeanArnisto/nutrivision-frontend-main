@@ -5,7 +5,7 @@
     "owner": "nutrixtract",
     "version": "1.0.1",
     "orientation": "portrait",
-    "icon": "./assets/images/icon.png",
+    "icon": "./assets/images/logoWithNewCircle.png",  
     "scheme": "com.jamescarillo.nutrivision",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
@@ -18,7 +18,7 @@
         "READ_EXTERNAL_STORAGE"
       ],
       "adaptiveIcon": {
-        "foregroundImage": "./assets/images/adaptive-icon.png",
+        "foregroundImage": "./assets/images/logoWithNewCircle.png",
         "backgroundColor": "#ffffff"
       },
       "package": "com.jamescarillo.nutrivision"

@@ -217,7 +217,7 @@ export default function LoginScreen() {
 
   const handleGoogleLogin = async () => {
     if (isLoading) return;
-    
+
     setIsLoading(true);
     setErrors({});
 
@@ -227,13 +227,15 @@ export default function LoginScreen() {
 
       if (error) {
         console.error("Google login error:", error);
-        setErrors({ general: error.message || "Google sign-in failed. Please try again." });
+        setErrors({
+          general: error.message || "Google sign-in failed. Please try again.",
+        });
         return;
       }
 
       if (data?.session?.user) {
         console.log("Google login successful:", data.session.user.email);
-        
+
         try {
           // Check profile completion first
           const isProfileComplete = useAuthStore.getState().profileComplete;
@@ -243,22 +245,28 @@ export default function LoginScreen() {
             // For new users, go directly to onboarding without preloading nutrition data
             navigation.reset({
               index: 0,
-              routes: [{ name: 'onboarding' }],
+              routes: [{ name: "onboarding" }],
             });
           } else {
-            console.log("👤 Existing Google user - preloading data and navigating to main app");
+            console.log(
+              "👤 Existing Google user - preloading data and navigating to main app"
+            );
             // For existing users, preload nutrition data before going to main app
             await preloadNutritionData();
             navigation.reset({
               index: 0,
-              routes: [{ name: 'page-2' }],
+              routes: [{ name: "page-2" }],
             });
           }
         } catch (preloadError) {
-          console.error("Failed to preload data after Google login:", preloadError);
+          console.error(
+            "Failed to preload data after Google login:",
+            preloadError
+          );
           // Still navigate but show a warning
           setErrors({
-            general: "Login successful but some data failed to load. You may experience slower page loads.",
+            general:
+              "Login successful but some data failed to load. You may experience slower page loads.",
           });
 
           // Navigate anyway after a short delay
@@ -267,12 +275,12 @@ export default function LoginScreen() {
             if (isProfileComplete === false) {
               navigation.reset({
                 index: 0,
-                routes: [{ name: 'onboarding' }],
+                routes: [{ name: "onboarding" }],
               });
             } else {
               navigation.reset({
                 index: 0,
-                routes: [{ name: 'page-2' }],
+                routes: [{ name: "page-2" }],
               });
             }
           }, 1000);
@@ -281,7 +289,9 @@ export default function LoginScreen() {
     } catch (error: any) {
       console.error("Unexpected Google login error:", error);
       setErrors({
-        general: error.message || "An unexpected error occurred during Google sign-in. Please try again.",
+        general:
+          error.message ||
+          "An unexpected error occurred during Google sign-in. Please try again.",
       });
     } finally {
       setIsLoading(false);
@@ -386,32 +396,44 @@ export default function LoginScreen() {
           </View>
 
           {/* Divider Container - Responsive */}
-          <View style={styles.dividerContainer}>
-            <View style={styles.dividerLine} />
-            <Text style={styles.dividerText}>Or</Text>
-            <View style={styles.dividerLine} />
-          </View>
+          {Platform.OS === "ios" && (
+            <>
+              <View style={styles.dividerContainer}>
+                {Platform.OS === "ios" && (
+                  <>
+                    <View style={styles.dividerLine} />
+                    <Text style={styles.dividerText}>Or</Text>
+                    <View style={styles.dividerLine} />
+                  </>
+                )}
+              </View>
 
-          {/* Social Login Container - Flexible height that maintains proportions */}
-          <View style={styles.socialContainer}>
-            <SocialButton
-              provider="google"
-              onPress={handleGoogleLogin}
-              disabled={isLoading}
-            />
+              {/* Social Login Container - Flexible height that maintains proportions */}
+              <View style={styles.socialContainer}>
+                {Platform.OS === "ios" && (
+                  <>
+                    <SocialButton
+                      provider="google"
+                      onPress={handleGoogleLogin}
+                      disabled={isLoading}
+                    />
 
-            <SocialButton
-              provider="facebook"
-              onPress={handleFacebookLogin}
-              disabled={isLoading}
-            />
-          </View>
+                    <SocialButton
+                      provider="facebook"
+                      onPress={handleFacebookLogin}
+                      disabled={isLoading}
+                    />
+                  </>
+                )}
+              </View>
 
-          {/* Bottom Divider Container - Responsive */}
-          <View style={styles.bottomDividerContainer}>
-            <View style={styles.dividerLine} />
-            <View style={styles.dividerLine} />
-          </View>
+              {/* Bottom Divider Container - Responsive */}
+              <View style={styles.bottomDividerContainer}>
+                <View style={styles.dividerLine} />
+                <View style={styles.dividerLine} />
+              </View>
+            </>
+          )}
 
           {/* Create Account Container - Responsive */}
           <View style={styles.createAccountContainer}>

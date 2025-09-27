@@ -6,7 +6,7 @@ export default function ThankYouStep() {
     <View style={styles.container}>
       <View style={styles.logoContainer}>
         <Image
-          source={require('@/assets/images/LogoWithCircle.png')}
+          source={require('@/assets/images/logoWithNewCircle.png')}
           style={styles.circularLogo}
           resizeMode="contain"
         />
@@ -17,7 +17,7 @@ export default function ThankYouStep() {
           Thank you for using
         </Text>
         <Image
-          source={require('@/assets/images/NutriVision.png')}
+          source={require('@/assets/images/logoName.png')}
           style={styles.brandLogo}
           resizeMode="contain"
         />
@@ -59,6 +59,7 @@ const styles = StyleSheet.create({
   brandLogo: {
     width: 200,
     height: 40,
+    left: 20,
     marginBottom: 8,
   },
   subtitle: {
