@@ -1,5 +1,5 @@
 // NutritionalModal.tsx
-import React from 'react';
+import React, { useState, useCallback } from 'react';
 import {
   Modal,
   View,
@@ -13,8 +13,6 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-
-
 
 // Spoon images mapping
 const SPOON_IMAGES = {
@@ -179,6 +177,26 @@ const NutritionalModal: React.FC<NutritionalModalProps> = ({
   recommendations,
   loading = false,
 }) => {
+  const [hasClickedYes, setHasClickedYes] = useState(false);
+
+  const handleYesClick = useCallback(() => {
+    if (hasClickedYes || loading) {
+      return; // Prevent multiple clicks
+    }
+    
+    setHasClickedYes(true);
+    onSave();
+  }, [hasClickedYes, loading, onSave]);
+
+  // Reset the clicked state when modal becomes visible again
+  React.useEffect(() => {
+    if (visible) {
+      setHasClickedYes(false);
+    }
+  }, [visible]);
+
+  const isYesButtonDisabled = hasClickedYes || loading;
+
   return (
     <Modal
       visible={visible}
@@ -198,19 +216,22 @@ const NutritionalModal: React.FC<NutritionalModalProps> = ({
 
             {/* Content */}
             <View style={modalStyles.content}>
-              <Text style={modalStyles.title}>Saved Session</Text>
+              <Text style={modalStyles.title}>Save Session?</Text>
               
               <Text style={modalStyles.message}>
-                All data have been successfully added to the session. Would you like to proceed to the home screen?
+                Data from this session will be saved on your account. Would you like to proceed to the home screen?
               </Text>
 
               {/* Action Buttons */}
               <View style={modalStyles.buttonContainer}>
                 <TouchableOpacity
-                  style={[modalStyles.yesButton, loading && modalStyles.buttonDisabled]}
-                  onPress={onSave}
-                  disabled={loading}
-                  activeOpacity={0.8}
+                  style={[
+                    modalStyles.yesButton, 
+                    isYesButtonDisabled && modalStyles.buttonDisabled
+                  ]}
+                  onPress={handleYesClick}
+                  disabled={isYesButtonDisabled}
+                  activeOpacity={isYesButtonDisabled ? 1 : 0.8}
                 >
                   {loading ? (
                     <ActivityIndicator color="#fff" size="small" />

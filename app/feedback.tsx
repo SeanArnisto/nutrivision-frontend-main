@@ -576,7 +576,7 @@ function Feedback() {
 
       {/* Save Button - Opens Modal */}
       <TouchableOpacity
-        style={[styles.saveButton, isLoading && styles.saveButtonDisabled]}
+        style={[styles.roundHomeButton, isLoading && styles.saveButtonDisabled]}
         onPress={handleSaveToDatabase}
         disabled={isLoading}
         activeOpacity={0.8}
@@ -584,7 +584,7 @@ function Feedback() {
         {isLoading ? (
           <ActivityIndicator color="#fff" size="small" />
         ) : (
-          <Text style={styles.saveButtonText}>Save to Database</Text>
+          <Ionicons name="home-outline" size={28} color='#9AB206'/>
         )}
       </TouchableOpacity>
 
@@ -616,6 +616,17 @@ const styles = StyleSheet.create({
   safeContainer: {
     flex: 1,
     backgroundColor: "#eff1f6",
+  },
+  roundHomeButton: {
+    width: 60,
+    height: 60,
+    bottom: 40,
+    right: 20,
+    borderRadius: 30,
+    backgroundColor: "#333",
+    justifyContent: "center",
+    alignItems: "center",
+    position: "absolute",
   },
   saveButton: {
     position: "absolute",
