@@ -164,7 +164,7 @@ function PhotoFruitDetailsPage({
           
           
           {/* Nutritional Cards Row */}
-          <View style={styles.cardsRow}>
+          <View style={styles.cardsRow}>  
             <View style={styles.cardContainer}>
               <AvgIntakeCard
                 iconSource={carbsIcon}

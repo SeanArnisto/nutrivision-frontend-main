@@ -202,6 +202,7 @@ function Feedback() {
 
   // ADD THIS STATE FOR THE MODAL
   const [modalVisible, setModalVisible] = useState(false);
+  const [modalLoading, setModalLoading] = useState(false);
 
   const navigation = useNavigation() as HomeScreenNavigationProp;
 
@@ -348,6 +349,7 @@ function Feedback() {
 
   // NEW: Handle the actual save from modal
   const handleModalSave = async () => {
+    setModalLoading(true);
     try {
       const result = await saveWithPhotos(capturedPhotos);
 
@@ -358,6 +360,7 @@ function Feedback() {
         console.log("✅ Nutritional history refreshed");
 
         setModalVisible(false);
+        setModalLoading(false);
         Alert.alert(
           "Success",
           "Nutritional data and photos saved successfully!",
@@ -377,9 +380,11 @@ function Feedback() {
         );
         await deleteAllCapturedPhotos(capturedPhotos);
       } else {
+        setModalLoading(false);
         Alert.alert("Error", result.error || "Failed to save data");
       }
     } catch (error) {
+      setModalLoading(false);
       Alert.alert("Error", "An unexpected error occurred");
       console.error("Save error:", error);
     }
@@ -606,7 +611,7 @@ function Feedback() {
           proteinMin: recommendationValues.proteinMin,
           proteinMax: recommendationValues.proteinMax,
         }}
-        loading={isLoading}
+        loading={modalLoading}
       />
     </SafeAreaView>
   );
