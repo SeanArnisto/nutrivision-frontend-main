@@ -31,7 +31,11 @@ import useFeedbackStore, {
 import Loading from "./loading";
 const toProgressWidth = (value: number) =>
   `${Math.min(value, 100)}%` as DimensionValue;
-const formatValue = (value: number, unit: string = "g") => `${value} ${unit}`;
+const formatValue = (value: number, unit: string = "g") => {
+  // Handle values with up to 5 decimal places, removing trailing zeros
+  const formatted = value.toFixed(5).replace(/\.?0+$/, '');
+  return `${formatted} ${unit}`;
+};
 
 type Page6ScreenNavigationProp = StackNavigationProp<
   RootStackParamList,
@@ -183,16 +187,16 @@ export default function Page6() {
         ...prev,
         values: {
           carbohydrate: {
-            user: parseFloat(carbs.toFixed(1)),
-            avg: parseFloat(intakeData.avg_carbs.toFixed(1)),
+            user: parseFloat(carbs.toFixed(5)),
+            avg: parseFloat(intakeData.avg_carbs.toFixed(5)),
           },
           protein: {
-            user: parseFloat(prot.toFixed(1)),
-            avg: parseFloat(intakeData.avg_protein.toFixed(1)),
+            user: parseFloat(prot.toFixed(5)),
+            avg: parseFloat(intakeData.avg_protein.toFixed(5)),
           },
           sodium: {
-            user: parseFloat(sod.toFixed(2)),
-            avg: parseFloat((intakeData.avg_sodium / 1000).toFixed(2)),
+            user: parseFloat(sod.toFixed(5)),
+            avg: parseFloat((intakeData.avg_sodium / 1000).toFixed(5)),
           },
         },
       }));
@@ -202,16 +206,16 @@ export default function Page6() {
         ...prev,
         values: {
           carbohydrate: {
-            user: parseFloat(carbs.toFixed(1)),
-            avg: parseFloat(intakeData.avg_carbs.toFixed(1)),
+            user: parseFloat(carbs.toFixed(5)),
+            avg: parseFloat(intakeData.avg_carbs.toFixed(5)),
           },
           protein: {
-            user: parseFloat(prot.toFixed(1)),
-            avg: parseFloat(intakeData.avg_protein.toFixed(1)),
+            user: parseFloat(prot.toFixed(5)),
+            avg: parseFloat(intakeData.avg_protein.toFixed(5)),
           },
           sodium: {
-            user: parseFloat((sod / 1000).toFixed(2)), // Convert mg to g
-            avg: parseFloat((intakeData.avg_sodium / 1000).toFixed(2)), // Convert mg to g
+            user: parseFloat((sod / 1000).toFixed(5)), // Convert mg to g
+            avg: parseFloat((intakeData.avg_sodium / 1000).toFixed(5)), // Convert mg to g
           },
         },
       }));
@@ -225,16 +229,16 @@ export default function Page6() {
         ...prev,
         values: {
           carbohydrate: {
-            user: parseFloat(carbs.toFixed(1)),
-            avg: parseFloat(carbAvg.toFixed(1)),
+            user: parseFloat(carbs.toFixed(5)),
+            avg: parseFloat(carbAvg.toFixed(5)),
           },
           protein: {
-            user: parseFloat(prot.toFixed(1)),
-            avg: parseFloat(proteinAvg.toFixed(1)),
+            user: parseFloat(prot.toFixed(5)),
+            avg: parseFloat(proteinAvg.toFixed(5)),
           },
           sodium: {
-            user: parseFloat((sod / 1000).toFixed(2)), // Convert mg to g
-            avg: parseFloat((sodiumAvg / 1000).toFixed(2)), // Convert mg to g
+            user: parseFloat((sod / 1000).toFixed(5)), // Convert mg to g
+            avg: parseFloat((sodiumAvg / 1000).toFixed(5)), // Convert mg to g
           },
         },
       }));
@@ -761,14 +765,14 @@ const styles = StyleSheet.create({
   nutrientText: {
     fontSize: 14,
     color: "#333",
-    marginRight: 8,
+    marginRight: 2,
   },
   icon: {
     width: 20,
     height: 20,
   },
   progressBars: {
-    flex: 3.5,
+    flex: 2.9,
   },
   progressBarBackground: {
     height: 4,
@@ -792,12 +796,12 @@ const styles = StyleSheet.create({
     alignItems: "flex-end",
   },
   userValue: {
-    fontSize: 12,
+    fontSize: 10,
     fontWeight: "bold",
     color: "#333",
   },
   avgValue: {
-    fontSize: 12,
+    fontSize: 10,
     fontWeight: "bold",
     color: "#9AB106",
   },
