@@ -359,8 +359,12 @@ function Feedback() {
         await fetchNutritionalHistory(30);
         console.log("✅ Nutritional history refreshed");
 
-        setModalVisible(false);
+        // Keep spinner visible for a moment before closing modal
+        await new Promise(resolve => setTimeout(resolve, 500));
+
         setModalLoading(false);
+        setModalVisible(false);
+
         Alert.alert(
           "Success",
           "Nutritional data and photos saved successfully!",
