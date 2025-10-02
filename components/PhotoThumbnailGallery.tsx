@@ -13,18 +13,6 @@ import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '@/types/types'; // Import your types
 import { useDetailedNutrientStore } from '@/stores/useDetailedNutrientStore';
 
-interface PhotoItem {
-  uri: string;
-  type: string;
-  orientation: string;
-}
-
-interface NutritionalData {
-  carbs: number;
-  sodium: number;
-  protein: number;
-  servings: number;
-}
 
 interface PhotoThumbnailGalleryProps {
   showHorizontalIndicator?: boolean;
@@ -70,18 +58,18 @@ export const PhotoThumbnailGallery: React.FC<PhotoThumbnailGalleryProps> = ({
       // Get the image URI - handle both string and object formats
       const imageUri = typeof intake.imageUrl === 'string'
         ? intake.imageUrl
-        : intake.imageUrl?.uri || '';
+        : (intake.imageUrl as any)?.uri || '';
 
       // Determine navigation based on detected fruit type or image type
       const isDetectedFruit = intake.type && !['fruit', 'label'].includes(intake.type);
 
-      if (isDetectedFruit || intake.type === 'fruit' || intake.imageUrl?.type === 'fruit') {
+      if (isDetectedFruit || intake.type === 'fruit' || (intake.imageUrl as any)?.type === 'fruit') {
         // Navigate to fruit details page
         navigation.navigate('photo-fruit-details', {
           imageUri,
           nutritionalData
         });
-      } else if (intake.type === 'label' || intake.imageUrl?.type === 'label') {
+      } else if (intake.type === 'label' || (intake.imageUrl as any)?.type === 'label') {
         // Navigate to label details page
         navigation.navigate('photo-label-details', {
           imageUri,
@@ -134,7 +122,7 @@ export const PhotoThumbnailGallery: React.FC<PhotoThumbnailGalleryProps> = ({
                 source={{
                   uri: typeof intake.imageUrl === 'string'
                     ? intake.imageUrl
-                    : intake.imageUrl?.uri || ''
+                    : (intake.imageUrl as any)?.uri || ''
                 }}
                 style={styles.thumbnail}
                 onError={() => handleImageError(index)}
@@ -145,18 +133,18 @@ export const PhotoThumbnailGallery: React.FC<PhotoThumbnailGalleryProps> = ({
               <View style={styles.clickableOverlay} />
 
               {/* Optional: Add type indicator */}
-              {intake.type && (
+              {/* {intake.type && (
                 <View style={[
                   styles.typeIndicator,
-                  (intake.type === 'label' || intake.imageUrl?.type === 'label')
+                  (intake.type === 'label' || (intake.imageUrl as any)?.type === 'label')
                     ? styles.labelIndicator
                     : styles.fruitIndicator
                 ]}>
                   <Text style={styles.typeText}>
-                    {intake.type}
+
                   </Text>
                 </View>
-              )}
+              )} */}
             </TouchableOpacity>
           ))}
         </ScrollView>
@@ -219,7 +207,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 4,
   },
   labelIndicator: {
-    backgroundColor: "#f5dd4b",
+    backgroundColor: "#2dcc14ff",
   },
   fruitIndicator: {
     backgroundColor: "#81b0ff",
