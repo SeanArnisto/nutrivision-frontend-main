@@ -462,6 +462,7 @@ export default function Camera() {
         const endpoints = {
           fruits: "https://leidanielaguila-nutrivision.hf.space/detect",
           labels: "https://dwyght-text-recognition.hf.space/extract/",
+          fruits_detailed: "https://leidanielaguila-nutrivision.hf.space/detect/detailed"
         };
 
         const urlToSend = isLabelMode ? endpoints.labels : endpoints.fruits;

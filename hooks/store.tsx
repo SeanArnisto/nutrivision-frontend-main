@@ -58,7 +58,7 @@ export const useNutrientsStore = create<Nutrients & store>((set, get) => ({
       return { success: false, error: "No nutritional data to save" };
     }
 
-    set({ loading: true, error: null });
+    set({ loading: true, error: null });  
 
     try {
       // Get current user
