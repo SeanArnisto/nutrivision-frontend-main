@@ -237,15 +237,7 @@ export default function UserNutrientPage() {
 
             {/* Thumbnail section with added top margin */}
             <View style={{ marginTop: 20 }}>
-              <PhotoThumbnailGallery
-                photos={capturedPhotos}
-                nutritionalData={{
-                  carbs: parseFloat(nutrients.carbohydrate) || 0,
-                  sodium: parseFloat(nutrients.sodium) || 0,
-                  protein: parseFloat(nutrients.protein) || 0,
-                  servings: 1,
-                }}
-              />
+              <PhotoThumbnailGallery />
             </View>
 
             {/* Input section with updated props */}

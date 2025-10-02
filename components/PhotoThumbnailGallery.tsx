@@ -1,16 +1,17 @@
 import React from "react";
-import { 
-  View, 
-  ScrollView, 
-  Image, 
-  Text, 
-  StyleSheet, 
+import {
+  View,
+  ScrollView,
+  Image,
+  Text,
+  StyleSheet,
   TouchableOpacity,
-  Alert 
+  Alert
 } from "react-native";
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '@/types/types'; // Import your types
+import { useDetailedNutrientStore } from '@/stores/useDetailedNutrientStore';
 
 interface PhotoItem {
   uri: string;
@@ -26,87 +27,85 @@ interface NutritionalData {
 }
 
 interface PhotoThumbnailGalleryProps {
-  photos: PhotoItem[];
   showHorizontalIndicator?: boolean;
   onImageError?: (index: number) => void;
-  nutritionalData?: NutritionalData; // Optional nutrition data to pass
-  onPhotoPress?: (photo: PhotoItem, index: number) => void; // Optional custom handler
+  onPhotoPress?: (photoData: any, index: number) => void; // Updated to use actual data
 }
 
 // Use proper navigation type from your RootStackParamList
 type NavigationProp = StackNavigationProp<RootStackParamList>;
 
 export const PhotoThumbnailGallery: React.FC<PhotoThumbnailGalleryProps> = ({
-  photos,
   showHorizontalIndicator = false,
   onImageError,
-  nutritionalData,
   onPhotoPress,
 }) => {
   const navigation = useNavigation<NavigationProp>();
+  const { intakes } = useDetailedNutrientStore();
 
   const handleImageError = (index: number) => {
     console.log(`Image failed to load at index: ${index}`);
     onImageError?.(index);
   };
 
-  const handlePhotoPress = (photo: PhotoItem, index: number) => {
-    console.log(`Photo pressed at index: ${index}`, photo);
-    
+  const handlePhotoPress = (intake: any, index: number) => {
+    console.log(`Photo pressed at index: ${index}`, intake);
+
     // If custom handler is provided, use it
     if (onPhotoPress) {
-      onPhotoPress(photo, index);
+      onPhotoPress(intake, index);
       return;
     }
 
     // Route to different pages based on image type
     try {
-      if (photo.type === 'fruit') {
+      const nutritionalData = {
+        carbs: intake.carbs,
+        sodium: intake.sodium,
+        protein: intake.protein,
+        servings: 1,
+        type: intake.type
+      };
+
+      // Get the image URI - handle both string and object formats
+      const imageUri = typeof intake.imageUrl === 'string'
+        ? intake.imageUrl
+        : intake.imageUrl?.uri || '';
+
+      // Determine navigation based on detected fruit type or image type
+      const isDetectedFruit = intake.type && !['fruit', 'label'].includes(intake.type);
+
+      if (isDetectedFruit || intake.type === 'fruit' || intake.imageUrl?.type === 'fruit') {
         // Navigate to fruit details page
         navigation.navigate('photo-fruit-details', {
-          imageUri: photo.uri,
-          nutritionalData: nutritionalData || {
-            carbs: 18,
-            sodium: 1.8,
-            protein: 2,
-            servings: 1
-          }
+          imageUri,
+          nutritionalData
         });
-      } else if (photo.type === 'label') {
+      } else if (intake.type === 'label' || intake.imageUrl?.type === 'label') {
         // Navigate to label details page
         navigation.navigate('photo-label-details', {
-          imageUri: photo.uri,
-          nutritionalData: nutritionalData || {
-            carbs: 18,
-            sodium: 1.8,
-            protein: 2,
-            servings: 1
-          }
+          imageUri,
+          nutritionalData
         });
       } else {
-        // Default behavior for unknown types - go to label page
-        console.warn(`Unknown photo type: ${photo.type}, defaulting to label page`);
-        navigation.navigate('photo-label-details', {
-          imageUri: photo.uri,
-          nutritionalData: nutritionalData || {
-            carbs: 18,
-            sodium: 1.8,
-            protein: 2,
-            servings: 1
-          }
+        // Default behavior for unknown types - go to fruit page for detected items
+        console.warn(`Unknown photo type: ${intake.type}, defaulting to fruit page`);
+        navigation.navigate('photo-fruit-details', {
+          imageUri,
+          nutritionalData
         });
       }
     } catch (error) {
       console.error('Navigation error:', error);
       Alert.alert(
-        'Navigation Error', 
+        'Navigation Error',
         'Unable to open photo details. Please try again.'
       );
     }
   };
 
   // Show message when no photos
-  if (!photos || photos.length === 0) {
+  if (!intakes || intakes.length === 0) {
     return (
       <View style={styles.thumbnailSection}>
         <Text style={styles.placeholderText}>No photos available</Text>
@@ -122,35 +121,39 @@ export const PhotoThumbnailGallery: React.FC<PhotoThumbnailGalleryProps> = ({
           showsHorizontalScrollIndicator={showHorizontalIndicator}
           contentContainerStyle={styles.thumbnailsRow}
         >
-          {photos.map((item, index) => (
+          {intakes.map((intake, index) => (
             <TouchableOpacity
               key={index}
               style={styles.thumbnailContainer}
-              onPress={() => handlePhotoPress(item, index)}
+              onPress={() => handlePhotoPress(intake, index)}
               activeOpacity={0.7}
               accessibilityRole="button"
               accessibilityLabel={`View photo ${index + 1}`}
             >
               <Image
-                source={{ uri: item.uri }}
+                source={{
+                  uri: typeof intake.imageUrl === 'string'
+                    ? intake.imageUrl
+                    : intake.imageUrl?.uri || ''
+                }}
                 style={styles.thumbnail}
                 onError={() => handleImageError(index)}
                 resizeMode="cover"
               />
-              
+
               {/* Optional: Add a subtle overlay to indicate it's clickable */}
               <View style={styles.clickableOverlay} />
-              
+
               {/* Optional: Add type indicator */}
-              {item.type && (
+              {intake.type && (
                 <View style={[
                   styles.typeIndicator,
-                  item.type === 'label' 
-                    ? styles.labelIndicator 
+                  (intake.type === 'label' || intake.imageUrl?.type === 'label')
+                    ? styles.labelIndicator
                     : styles.fruitIndicator
                 ]}>
                   <Text style={styles.typeText}>
-                    {item.type === 'label' ? 'L' : 'F'}
+                    {intake.type}
                   </Text>
                 </View>
               )}
@@ -208,11 +211,12 @@ const styles = StyleSheet.create({
     position: "absolute",
     bottom: 2,
     right: 2,
-    width: 12,
-    height: 12,
-    borderRadius: 6,
+    minWidth: 30,
+    height: 16,
+    borderRadius: 8,
     justifyContent: "center",
     alignItems: "center",
+    paddingHorizontal: 4,
   },
   labelIndicator: {
     backgroundColor: "#f5dd4b",
@@ -221,9 +225,10 @@ const styles = StyleSheet.create({
     backgroundColor: "#81b0ff",
   },
   typeText: {
-    fontSize: 8,
+    fontSize: 6,
     fontWeight: "bold",
     color: "white",
+    textAlign: "center",
   },
   placeholderText: {
     color: "gray",

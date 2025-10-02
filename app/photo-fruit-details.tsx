@@ -32,6 +32,7 @@ interface NutritionalData {
   sodium: number;
   protein: number;
   servings: number;
+  type: string;
 }
 
 interface PhotoFruitDetailsPageProps {
@@ -46,7 +47,8 @@ function PhotoFruitDetailsPage({
     carbs: 18,
     sodium: 1.8,
     protein: 2,
-    servings: 1
+    servings: 1,
+    type: "large apple"
   }
 }: PhotoFruitDetailsPageProps) {
   const translateY = useRef(new Animated.Value(0)).current;
@@ -158,7 +160,7 @@ function PhotoFruitDetailsPage({
         <View style={styles.contentContainer}>
           {/* Title */}
           <View style={styles.amountHeader}>
-                <Text style={styles.title}>Fruit</Text>
+                <Text style={styles.title}>{nutritionalData.type}</Text>
                 <AmountSelector amount={amount} onIncrease={() => setAmount((prev) => prev + 1)} onDecrease={() => setAmount((prev) => prev - 1)} />
           </View>
           
@@ -209,8 +211,12 @@ export default function FruitScreen() {
   const route = useRoute<PhotoFruitDetailsRouteProp>();
   const navigation = useNavigation<PhotoFruitDetailsNavigationProp>();
   
-  // Get params from navigation
-  const { imageUri, nutritionalData } = route.params || {};
+  // Get params from navigation safely (guard against undefined and incorrect typing)
+  const params = (route.params ?? {}) as Partial<{
+    imageUri?: string;
+    nutritionalData?: NutritionalData;
+  }>;
+  const { imageUri, nutritionalData } = params;
   
   // Handle case where no params are passed (for testing)
   if (!imageUri && __DEV__) {
@@ -219,7 +225,7 @@ export default function FruitScreen() {
   
   return (
     <PhotoFruitDetailsPage 
-      imageUri={imageUri || 'placeholder'}
+      imageUri={imageUri ?? 'placeholder'}
       nutritionalData={nutritionalData}
     />
   );
@@ -304,7 +310,7 @@ const styles = StyleSheet.create({
     paddingBottom: 40,
   },
   title: {
-    fontSize: 45,
+    fontSize: 30,
     fontWeight: 'bold',
     color: '#1f2937',
     marginBottom: 5,
