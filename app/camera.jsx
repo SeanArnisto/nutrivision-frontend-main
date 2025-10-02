@@ -30,6 +30,7 @@ import { useRoute } from "@react-navigation/native";
 import Loading from "./loading";
 import { useAuthStore } from "@/stores/authStore";
 import { usePhotosStore } from "@/stores/usePhotoStore";
+import { useDetailedNutrientStore } from "@/stores/useDetailedNutrientStore";
 
 const { height, width: screenWidth } = Dimensions.get("window");
 
@@ -314,8 +315,14 @@ export default function Camera() {
   const [previewLayout, setPreviewLayout] = useState({ width: 0, height: 0 });
   const [uploadProgress, setUploadProgress] = useState(0);
 
-  const { capturedPhotos, addPhoto, removePhoto, setPhotos, hasMaxPhotos, clearAllPhotos  } =
-    usePhotosStore();
+  const {
+    capturedPhotos,
+    addPhoto,
+    removePhoto,
+    setPhotos,
+    hasMaxPhotos,
+    clearAllPhotos,
+  } = usePhotosStore();
 
   // Redirect unauthenticated users to login
   useEffect(() => {
@@ -439,140 +446,194 @@ export default function Camera() {
   );
 
   // ENHANCED SUBMISSION FUNCTION (PROPERLY IMPLEMENTED)
-  const handleSubmitPhoto = useCallback(
-    async () => {
-      console.log("Button clicked, starting enhanced image submission...");
+  const handleSubmitPhoto = useCallback(async () => {
+    console.log("Button clicked, starting enhanced image submission...");
 
-      const photos = capturedPhotos;
+    const photos = capturedPhotos;
 
-      // Update UI state
-      setSubmit(true);
-      setLoading(true);
-      setUploadProgress(0);
+    // Update UI state
+    setSubmit(true);
+    setLoading(true);
+    setUploadProgress(0);
 
-      try {
-        // Validate photos
-        const validation = submissionService.validatePhotos(photos);
-        if (!validation.isValid) {
-          Alert.alert("Invalid Photos", validation.errors.join("\n"));
-          return;
-        }
-
-        // Set up endpoints
-        const endpoints = {
-          fruits: "https://leidanielaguila-nutrivision.hf.space/detect",
-          labels: "https://dwyght-text-recognition.hf.space/extract/",
-          fruits_detailed: "https://leidanielaguila-nutrivision.hf.space/detect/detailed"
-        };
-
-        const urlToSend = isLabelMode ? endpoints.labels : endpoints.fruits;
-
-        console.log(
-          `Submitting ${photos.length} photos to ${
-            isLabelMode ? "labels" : "fruits"
-          } endpoint`
-        );
-
-        // Create FormData
-        const formData = await submissionService.createFormData(photos);
-
-        // Enhanced headers
-        const headers = {
-          Accept: "application/json",
-          "Content-Type": "multipart/form-data",
-        };
-
-        // Progress callback with enhanced safety checks
-        const onProgress = (percentCompleted) => {
-          console.log("📊 Progress callback called with:", percentCompleted); // Debug log
-
-          // Validate the percentage
-          if (
-            typeof percentCompleted === "number" &&
-            percentCompleted >= 0 &&
-            percentCompleted <= 100
-          ) {
-            setUploadProgress(percentCompleted);
-            console.log(
-              `📈 UI Updated - Upload progress: ${percentCompleted}%`
-            );
-          } else {
-            console.warn("⚠️ Invalid progress percentage:", percentCompleted);
-          }
-        };
-
-        // Submit with retry logic
-        const response = await submissionService.submitWithRetry(
-          urlToSend,
-          formData,
-          headers,
-          0,
-          onProgress
-        );
-
-        console.log("✅ Response from server:", response.data);
-
-        // Process response based on mode with safety checks
-        if (isLabelMode) {
-          const combined = response.data.combined || {};
-          const { carbs_total, protein_total, sodium_total } = combined;
-
-          if (carbs_total !== undefined) setCarbs(parseFloat(carbs_total));
-          if (protein_total !== undefined)
-            setProtein(parseFloat(protein_total));
-          if (sodium_total !== undefined)
-            setSodium(parseFloat(sodium_total) / 1000);
-        } else {
-          const fruits = response.data.fruits || {};
-          const { total_carbs, total_protein, total_sodium } = fruits;
-
-          if (total_carbs !== undefined) setCarbs(total_carbs);
-          if (total_protein !== undefined) setProtein(total_protein);
-          if (total_sodium !== undefined) setSodium(total_sodium);
-        }
-
-        // 🗑️ SUCCESS: Delete all captured photos after successful submission
-        // await deleteAllCapturedPhotos(photos);
-
-        // Navigate to results
-        navigation.navigate("nutrient-page");
-        return response.data;
-      } catch (error) {
-        console.error("❌ Enhanced photo submission error:", error);
-
-        const errorMessage = submissionService.getErrorMessage(error);
-        Alert.alert("Submission Failed", errorMessage);
-
-        // Log detailed error for debugging
-        if (error.response) {
-          console.error("Error details:", error.response.data);
-          console.error("Status code:", error.response.status);
-        }
-
-        // 🗑️ TEMPORARY: Delete photos even on failure (for testing purposes)
-        console.log(
-          "⚠️ TEMPORARY MODE: Deleting photos even though submission failed"
-        );
-        await deleteAllCapturedPhotos(photos);
-
-        throw error;
-      } finally {
-        // Always clean up UI state
-        setLoading(false);
-        setSubmit(false);
-        setUploadProgress(0);
+    try {
+      // Validate photos
+      const validation = submissionService.validatePhotos(photos);
+      if (!validation.isValid) {
+        Alert.alert("Invalid Photos", validation.errors.join("\n"));
+        return;
       }
-    },
-    [
-      capturedPhotos,
-      isLabelMode,
-      navigation,
-      setCarbs,
-      setProtein,
-      setSodium,
-      deleteAllCapturedPhotos,
-    ]
-  );
+
+      // Set up endpoints
+      const endpoints = {
+        fruits: "https://leidanielaguila-nutrivision.hf.space/detect",
+        labels: "https://dwyght-text-recognition.hf.space/extract/",
+        fruits_detailed:
+          "https://leidanielaguila-nutrivision.hf.space/detect/detailed",
+      };
+
+      const urlToSend = isLabelMode ? endpoints.labels : endpoints.fruits;
+
+      console.log(
+        `Submitting ${photos.length} photos to ${
+          isLabelMode ? "labels" : "fruits"
+        } endpoint`
+      );
+
+      // Create FormData
+      const formData = await submissionService.createFormData(photos);
+
+      // Enhanced headers
+      const headers = {
+        Accept: "application/json",
+        "Content-Type": "multipart/form-data",
+      };
+
+      // Progress callback with enhanced safety checks
+      const onProgress = (percentCompleted) => {
+        console.log("📊 Progress callback called with:", percentCompleted); // Debug log
+
+        // Validate the percentage
+        if (
+          typeof percentCompleted === "number" &&
+          percentCompleted >= 0 &&
+          percentCompleted <= 100
+        ) {
+          setUploadProgress(percentCompleted);
+          console.log(`📈 UI Updated - Upload progress: ${percentCompleted}%`);
+        } else {
+          console.warn("⚠️ Invalid progress percentage:", percentCompleted);
+        }
+      };
+
+      // Submit with retry logic
+      const response = await submissionService.submitWithRetry(
+        urlToSend,
+        formData,
+        headers,
+        0,
+        onProgress
+      );
+
+      console.log("✅ Response from server:", response.data);
+
+      // Process response based on mode with safety checks
+      if (isLabelMode) {
+        const combined = response.data.combined || {};
+        const { carbs_total, protein_total, sodium_total } = combined;
+
+        if (carbs_total !== undefined) setCarbs(parseFloat(carbs_total));
+        if (protein_total !== undefined) setProtein(parseFloat(protein_total));
+        if (sodium_total !== undefined)
+          setSodium(parseFloat(sodium_total) / 1000);
+      } else {
+        const fruits = response.data.fruits || {};
+        const { total_carbs, total_protein, total_sodium } = fruits;
+
+        if (total_carbs !== undefined) setCarbs(total_carbs);
+        if (total_protein !== undefined) setProtein(total_protein);
+        if (total_sodium !== undefined) setSodium(total_sodium);
+
+        // 🆕 NEW: Fetch detailed detection data and store it
+        try {
+          console.log("🔍 Fetching detailed detection data...");
+
+          // Create new FormData for detailed endpoint
+          const detailedFormData = await submissionService.createFormData(
+            photos
+          );
+
+          // Call the detailed endpoint
+          const detailedResponse = await submissionService.submitWithRetry(
+            endpoints.fruits_detailed,
+            detailedFormData,
+            headers,
+            0,
+            null // No need for progress callback on second call
+          );
+
+          console.log("✅ Detailed response:", detailedResponse.data);
+
+          if (
+            detailedResponse.data.success &&
+            detailedResponse.data.data.length > 0
+          ) {
+            // Map the detections to include the correct imageUrl from local photos
+            const detailedIntakes = detailedResponse.data.data.map(
+              (intake) => ({
+                type: intake.type,
+                imageUrl: photos[intake.imageIndex], // Map using imageIndex to get local URI
+                carbs: intake.carbs,
+                protein: intake.protein,
+                sodium: intake.sodium,
+              })
+            );
+
+            console.log("📦 Storing detailed intakes:", detailedIntakes);
+
+            // Store in zustand
+            useDetailedNutrientStore.getState().setIntake(detailedIntakes);
+
+            // Optionally save to database immediately
+            // Uncomment the following lines if you want to save to database right away
+            /*
+            const saveResult = await useDetailedNutrientStore.getState().saveToDatabase(detailedIntakes);
+            if (saveResult.success) {
+              console.log("✅ Successfully saved to database:", saveResult.data);
+            } else {
+              console.error("❌ Failed to save to database:", saveResult.error);
+            }
+            */
+          } else {
+            console.warn("⚠️ No detailed detections found");
+          }
+        } catch (detailedError) {
+          console.error("❌ Error fetching detailed data:", detailedError);
+          // Don't fail the entire submission if detailed fetch fails
+          // The main detection already succeeded
+        }
+      }
+
+      // 🗑️ SUCCESS: Delete all captured photos after successful submission
+      // await deleteAllCapturedPhotos(photos);
+
+      // Navigate to results
+      navigation.navigate("nutrient-page");
+      return response.data;
+    } catch (error) {
+      console.error("❌ Enhanced photo submission error:", error);
+
+      const errorMessage = submissionService.getErrorMessage(error);
+      Alert.alert("Submission Failed", errorMessage);
+
+      // Log detailed error for debugging
+      if (error.response) {
+        console.error("Error details:", error.response.data);
+        console.error("Status code:", error.response.status);
+      }
+
+      // 🗑️ TEMPORARY: Delete photos even on failure (for testing purposes)
+      console.log(
+        "⚠️ TEMPORARY MODE: Deleting photos even though submission failed"
+      );
+      await deleteAllCapturedPhotos(photos);
+
+      throw error;
+    } finally {
+      // Always clean up UI state
+      setLoading(false);
+      setSubmit(false);
+      setUploadProgress(0);
+    }
+  }, [
+    capturedPhotos,
+    isLabelMode,
+    navigation,
+    setCarbs,
+    setProtein,
+    setSodium,
+    deleteAllCapturedPhotos,
+  ]);
 
   // Rest of your existing functions remain the same...
   const loadExistingPhotos = async () => {
