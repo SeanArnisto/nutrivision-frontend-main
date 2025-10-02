@@ -20,6 +20,7 @@ import BottomNavBar from "@/components/BottomNavBar";
 import Calendar from "@/components/Calendar";
 import DateDetailModal from "@/components/DateDetailModal";
 import SessionDetailModal from "@/components/SessionDetailModal";
+import { Ionicons } from "@expo/vector-icons";
 
 // Import the hooks and auth store
 import {
@@ -31,6 +32,8 @@ import {
 import { useAuthStore } from "@/stores/authStore";
 import { useNutritionIntakeStore } from "@/stores/nutritionIntakeStore";
 import { useAccountCreationDate } from "@/hooks/useAccountCreationDate";
+import CustomModal from "@/components/customModal";
+import { Custom } from "react-native-reanimated-carousel/lib/typescript/components/Pagination/Custom";
 
 type Page2ScreenNavigationProp = StackNavigationProp<
   RootStackParamList,
@@ -49,6 +52,7 @@ export default function Page2() {
 
   // Use the auth store to get user info
   const { user, isAuthenticated, profileComplete } = useAuthStore();
+  const [isVisible, setIsVisible] = useState<boolean>(false);
 
   // Use the nutrition calendar hook
   const {
@@ -88,7 +92,7 @@ export default function Page2() {
     if (!isAuthenticated) {
       navigation.reset({
         index: 0,
-        routes: [{name: 'login'}]
+        routes: [{ name: "login" }],
       });
     }
   }, [isAuthenticated, navigation]);
@@ -204,11 +208,37 @@ export default function Page2() {
     <SafeAreaView style={SafeViewAndroid.AndroidSafeArea}>
       <AppLogo />
       <ThemedView style={styles.container}>
-        <ProfileBox
-          primaryText="Average"
-          highlightedText="Daily"
-          secondaryText="Intake"
-        />
+        <View style={styles.headerContainer}>
+          <ProfileBox
+            primaryText="Average"
+            highlightedText="Daily"
+            secondaryText="Intake"
+          />
+          <TouchableOpacity onPress={() => setIsVisible(true)}>
+            <Ionicons
+              name="information-circle-outline"
+              size={28}
+              color="#9AB206"
+            />
+          </TouchableOpacity>
+        </View>
+
+        <CustomModal
+          visible={isVisible}
+          onClose={() => setIsVisible(false)}
+          title="Average Daily Intake"
+        >
+          <View>
+            <Text>
+              {"\n"}This screen displays your average daily intake. {"\n\n"}The values shown
+              for carbohydrates, sodium, and protein (in grams) {"\n\n"}Represent your
+              maximum daily threshold, which is customized based on your weight,
+              height, and age.{"\n\n"}The calendar below allows you to track daily intake, it displays
+              the intake for a specific day at a given time.
+              
+            </Text>
+          </View>
+        </CustomModal>
 
         <View style={styles.rowContainer}>
           {/* Carbohydrate Card */}
@@ -319,6 +349,11 @@ const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
     backgroundColor: "#eff1f6",
+  },
+  headerContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
   },
   container: {
     flex: 1,
