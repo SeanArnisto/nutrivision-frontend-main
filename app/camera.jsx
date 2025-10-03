@@ -526,6 +526,23 @@ export default function Camera() {
         if (protein_total !== undefined) setProtein(parseFloat(protein_total));
         if (sodium_total !== undefined)
           setSodium(parseFloat(sodium_total) / 1000);
+
+        console.log(`SERVINGS: ${response.data.items.servings}`)
+
+        const detailedIntakes = response.data.items.map(
+          
+          (intake, index) => ({
+            type: 'label',
+            imageUrl: photos[index]?.uri || capturedPhotos[index]?.uri,
+            carbs: parseFloat(intake.raw_extracted.carbohydrates) || 0,
+            protein: parseFloat(intake.raw_extracted.protein) || 0,
+            sodium: parseFloat(intake.raw_extracted.sodium) || 0,
+            servings: parseFloat(intake.raw_extracted.servings) || 0
+          })
+        );
+
+        useDetailedNutrientStore.getState().setIntake(detailedIntakes);
+
       } else {
         const fruits = response.data.fruits || {};
         const { total_carbs, total_protein, total_sodium } = fruits;

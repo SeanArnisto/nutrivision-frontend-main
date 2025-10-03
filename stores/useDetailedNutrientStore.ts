@@ -8,7 +8,7 @@ type NutrientIntake = {
   carbs: number;
   sodium: number;
   protein: number;
-  serving?: number;
+  servings?: number;
 };
 
 type store = {

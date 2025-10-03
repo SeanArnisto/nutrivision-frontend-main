@@ -51,7 +51,7 @@ export const PhotoThumbnailGallery: React.FC<PhotoThumbnailGalleryProps> = ({
         carbs: intake.carbs,
         sodium: intake.sodium,
         protein: intake.protein,
-        servings: 1,
+        servings: intake.servings,
         type: intake.type
       };
 
