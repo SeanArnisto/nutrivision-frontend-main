@@ -72,22 +72,17 @@ interface NutritionalRecord {
 }
 
 export default function Page6() {
+  // Move all hooks to the top before any conditional returns
+  const isLoading = useFeedbackLoading();
   const carbs = useNutrientsStore((state) => state.carbs);
   const prot = useNutrientsStore((state) => state.protein);
   const sod = useNutrientsStore((state) => state.sodium);
-
   const minCarb = useRecommStore((state) => state.minCarb);
   const maxCarb = useRecommStore((state) => state.maxCarb);
   const minProtein = useRecommStore((state) => state.minProtein);
   const maxProtein = useRecommStore((state) => state.maxProtein);
   const minSodium = useRecommStore((state) => state.minSodium);
   const maxSodium = useRecommStore((state) => state.maxSodium);
-
-  const isLoading = useFeedbackLoading();
-  const feedbackError = useFeedbackError();
-  const fetchFeedback = useFeedbackStore((state) => state.fetchFeedback);
-  const [isVisible, setIsVisible] = useState(true);
-
   const { nutritionData: intakeData, fetchNutritionIntake } =
     useNutritionIntakeStore();
   const {
@@ -95,6 +90,10 @@ export default function Page6() {
     fetchNutritionIntakeAve,
     nutritionDataAve,
   } = useNutritionAverage();
+
+  const fetchFeedback = useFeedbackStore((state) => state.fetchFeedback);
+
+  const [isVisible, setIsVisible] = useState(true);
 
   useEffect(() => {
     fetchNutritionIntake();
@@ -321,10 +320,6 @@ export default function Page6() {
     }
   };
 
-  if (isLoading) {
-    return <Loading />;
-  }
-
   // Get average values for bar chart calculations
   const carbAvg = intakeData?.avg_carbs ? Math.round(intakeData.avg_carbs) : 0;
   const proteinAvg = intakeData?.avg_protein
@@ -476,24 +471,30 @@ export default function Page6() {
   // Weekly data for the bar chart using actual values
   const weeklyChartData = generateWeeklyChartData();
 
+  if (isLoading) {
+    return <Loading />;
+  }
+
   return (
     <SafeAreaView style={styles.safeContainer}>
       <ScrollView contentContainerStyle={styles.scrollContainer}>
         <AppLogo />
 
-        <View style={styles.headerContainer}>
-          <ProfileBox
-            primaryText="Average"
-            highlightedText="Daily"
-            secondaryText="Intake"
-          />
-          <TouchableOpacity onPress={() => setIsVisible(true)}>
-            <Ionicons
-              name="information-circle-outline"
-              size={28}
-              color="#9AB206"
+        <View style={styles.container}>
+          <View style={styles.headerContainer}>
+            <ProfileBox
+              primaryText="Average"
+              highlightedText="Daily"
+              secondaryText="Intake"
             />
-          </TouchableOpacity>
+            <TouchableOpacity onPress={() => setIsVisible(true)}>
+              <Ionicons
+                name="information-circle-outline"
+                size={28}
+                color="#9AB206"
+              />
+            </TouchableOpacity>
+          </View>
         </View>
 
         <CustomModal
@@ -862,9 +863,15 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
-    headerContainer: {
+  headerContainer: {
     flexDirection: "row",
     alignItems: "center",
     gap: 12,
+  },
+  container: {
+    flex: 1,
+    backgroundColor: "#eff1f6",
+    paddingHorizontal: 16,
+    paddingVertical: 16,
   },
 });

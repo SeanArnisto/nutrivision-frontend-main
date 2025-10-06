@@ -220,11 +220,11 @@ export default function UserNutrientPage() {
     })();
   }, []);
 
+  const [isVisible, setIsVisible] = useState(true);
+
   if (!fontsLoaded) {
     return <Text>Loading...</Text>;
   }
-
-  const [isVisible, setIsVisible] = useState(true);
 
   return (
     <SafeAreaView style={styles.safeContainer}>
@@ -254,20 +254,25 @@ export default function UserNutrientPage() {
             >
               <View>
                 <Text>
-                  The donut chart shows your <Text style={{fontWeight: 'bold'}}>User Intake</Text> as a percentage breakdown of
-                  the nutrients you consumed, visually indicating which one
-                  (Carbs, Protein, or Sodium) was the largest part of your diet.                  
+                  The donut chart shows your{" "}
+                  <Text style={{ fontWeight: "bold" }}>User Intake</Text> as a
+                  percentage breakdown of the nutrients you consumed, visually
+                  indicating which one (Carbs, Protein, or Sodium) was the
+                  largest part of your diet.
                 </Text>
-                <Text style={{marginTop: 16}}>
-                  The <Text style={{fontWeight: 'bold'}}>Total Nutrient Amount</Text> provides the combined weight of
-                  these nutrients in grams.
+                <Text style={{ marginTop: 16 }}>
+                  The{" "}
+                  <Text style={{ fontWeight: "bold" }}>
+                    Total Nutrient Amount
+                  </Text>{" "}
+                  provides the combined weight of these nutrients in grams.
                 </Text>
-                <Text style={{fontWeight: 'bold', marginTop: 16}}>
-                  Note:
-                </Text>
-                <Text style={{marginLeft: 8}}>
-                  Some data may return incosistently, therefore the data is editable. {"\n\n"}
-                  Feel free to click the photo and check the intake then compare from the image if results are accurate.
+                <Text style={{ fontWeight: "bold", marginTop: 16 }}>Note:</Text>
+                <Text style={{ marginLeft: 8 }}>
+                  Some data may return incosistently, therefore the data is
+                  editable. {"\n\n"}
+                  Feel free to click the photo and check the intake then compare
+                  from the image if results are accurate.
                 </Text>
               </View>
             </CustomModal>
