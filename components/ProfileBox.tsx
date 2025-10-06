@@ -21,9 +21,9 @@ type ProfileBoxProps = {
 };
 
 export default function ProfileBox({ 
-  primaryText = "Average", 
-  highlightedText = "Daily", 
-  secondaryText = "Intake",
+  primaryText = "", 
+  highlightedText = "", 
+  secondaryText = "",
   style,
   textStyle,
   highlightStyle

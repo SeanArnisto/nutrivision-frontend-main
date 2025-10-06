@@ -1,5 +1,18 @@
-import React from "react";
-import { Modal, View, Text, StyleSheet, TouchableOpacity } from "react-native";
+import React, { useEffect } from "react";
+import {
+  Modal,
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  TouchableWithoutFeedback,
+} from "react-native";
+import Animated, {
+  useSharedValue,
+  withTiming,
+  useAnimatedStyle,
+  Easing,
+} from "react-native-reanimated";
 
 type CustomModalProps = {
   visible: boolean;
@@ -8,23 +21,53 @@ type CustomModalProps = {
   children?: React.ReactNode;
 };
 
-const CustomModal: React.FC<CustomModalProps> = ({ visible, onClose, title, children }) => {
+const CustomModal: React.FC<CustomModalProps> = ({
+  visible,
+  onClose,
+  title,
+  children,
+}) => {
+  const scale = useSharedValue(0.8);
+  const opacity = useSharedValue(0);
+
+  useEffect(() => {
+    if (visible) {
+      scale.value = withTiming(1, {
+        duration: 300,
+        easing: Easing.out(Easing.exp),
+      });
+      opacity.value = withTiming(1, { duration: 250 });
+    } else {
+      scale.value = withTiming(0.8, { duration: 200 });
+      opacity.value = withTiming(0, { duration: 200 });
+    }
+  }, [visible]);
+
+  const animatedStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: scale.value }],
+    opacity: opacity.value,
+  }));
+
   return (
     <Modal
       transparent
       animationType="fade"
       visible={visible}
-      onRequestClose={onClose} // for Android back button
+      onRequestClose={onClose}
     >
-      <View style={styles.overlay}>
-        <View style={styles.modalContainer}>
-          {title && <Text style={styles.title}>{title}</Text>}
-          <View style={styles.content}>{children}</View>
-          <TouchableOpacity style={styles.button} onPress={onClose}>
-            <Text style={styles.buttonText}>Close</Text>
-          </TouchableOpacity>
+      <TouchableWithoutFeedback onPress={onClose}>
+        <View style={styles.overlay}>
+          <TouchableWithoutFeedback>{/* prevent closing when modal clicked */}
+            <Animated.View style={[styles.modalContainer, animatedStyle]}>
+              {title && <Text style={styles.title}>{title}</Text>}
+              <View style={styles.content}>{children}</View>
+              <TouchableOpacity style={styles.button} onPress={onClose}>
+                <Text style={styles.buttonText}>Close</Text>
+              </TouchableOpacity>
+            </Animated.View>
+          </TouchableWithoutFeedback>
         </View>
-      </View>
+      </TouchableWithoutFeedback>
     </Modal>
   );
 };

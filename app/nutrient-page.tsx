@@ -27,6 +27,8 @@ import NutritionDonutChart from "@/components/DonuteChart";
 import PhotoThumbnailGallery from "@/components/PhotoThumbnailGallery";
 import GoNext from "@/components/NextButton";
 import { usePhotosStore } from "@/stores/usePhotoStore";
+import { Ionicons } from "@expo/vector-icons";
+import CustomModal from "@/components/customModal";
 
 // Helper Function
 const toPercentageText = (value: number): string => `${value}%`;
@@ -209,7 +211,7 @@ export default function UserNutrientPage() {
   console.log("Local state - nutrients:", nutrients);
 
   // Handle saving to database
-  
+
   // Request media library permissions on mount
   useEffect(() => {
     (async () => {
@@ -218,10 +220,11 @@ export default function UserNutrientPage() {
     })();
   }, []);
 
-  
   if (!fontsLoaded) {
     return <Text>Loading...</Text>;
   }
+
+  const [isVisible, setIsVisible] = useState(true);
 
   return (
     <SafeAreaView style={styles.safeContainer}>
@@ -233,7 +236,41 @@ export default function UserNutrientPage() {
         <ScrollView contentContainerStyle={styles.scrollContainer}>
           <AppLogo />
           <View style={styles.container}>
-            <ProfileBox primaryText="Average" highlightedText="Intake" />
+            <View style={styles.headerContainer}>
+              <ProfileBox primaryText="User" highlightedText="Intake" />
+              <TouchableOpacity onPress={() => setIsVisible(true)}>
+                <Ionicons
+                  name="information-circle-outline"
+                  size={28}
+                  color="#9AB206"
+                />
+              </TouchableOpacity>
+            </View>
+
+            <CustomModal
+              visible={isVisible}
+              onClose={() => setIsVisible(false)}
+              title="User Intake "
+            >
+              <View>
+                <Text>
+                  The donut chart shows your <Text style={{fontWeight: 'bold'}}>User Intake</Text> as a percentage breakdown of
+                  the nutrients you consumed, visually indicating which one
+                  (Carbs, Protein, or Sodium) was the largest part of your diet.                  
+                </Text>
+                <Text style={{marginTop: 16}}>
+                  The <Text style={{fontWeight: 'bold'}}>Total Nutrient Amount</Text> provides the combined weight of
+                  these nutrients in grams.
+                </Text>
+                <Text style={{fontWeight: 'bold', marginTop: 16}}>
+                  Note:
+                </Text>
+                <Text style={{marginLeft: 8}}>
+                  Some data may return incosistently, therefore the data is editable. {"\n\n"}
+                  Feel free to click the photo and check the intake then compare from the image if results are accurate.
+                </Text>
+              </View>
+            </CustomModal>
 
             {/* Thumbnail section with added top margin */}
             <View style={{ marginTop: 20 }}>
@@ -360,5 +397,10 @@ const styles = StyleSheet.create({
     textAlign: "center",
     fontSize: 14,
     fontFamily: "SpaceMono-Regular",
+  },
+  headerContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
   },
 });

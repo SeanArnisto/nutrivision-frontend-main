@@ -14,11 +14,7 @@ import {
   Dimensions,
   Linking,
 } from "react-native";
-// import Animated, {
-//   useAnimatedStyle,
-//   withSpring,
-//   interpolateColor,
-// } from 'react-native-reanimated';
+
 import { CameraView, useCameraPermissions } from "expo-camera";
 import * as MediaLibrary from "expo-media-library";
 import * as ImageManipulator from "expo-image-manipulator";
@@ -31,6 +27,8 @@ import Loading from "./loading";
 import { useAuthStore } from "@/stores/authStore";
 import { usePhotosStore } from "@/stores/usePhotoStore";
 import { useDetailedNutrientStore } from "@/stores/useDetailedNutrientStore";
+import CustomModal from "@/components/customModal";
+
 
 const { height, width: screenWidth } = Dimensions.get("window");
 
@@ -314,6 +312,7 @@ export default function Camera() {
   const [submit, setSubmit] = useState(false);
   const [previewLayout, setPreviewLayout] = useState({ width: 0, height: 0 });
   const [uploadProgress, setUploadProgress] = useState(0);
+  const [isVisible, setIsVisible] = useState(true);
 
   const {
     capturedPhotos,
@@ -527,22 +526,18 @@ export default function Camera() {
         if (sodium_total !== undefined)
           setSodium(parseFloat(sodium_total) / 1000);
 
-        console.log(`SERVINGS: ${response.data.items.servings}`)
+        console.log(`SERVINGS: ${response.data.items.servings}`);
 
-        const detailedIntakes = response.data.items.map(
-          
-          (intake, index) => ({
-            type: 'label',
-            imageUrl: photos[index]?.uri || capturedPhotos[index]?.uri,
-            carbs: parseFloat(intake.raw_extracted.carbohydrates) || 0,
-            protein: parseFloat(intake.raw_extracted.protein) || 0,
-            sodium: parseFloat(intake.raw_extracted.sodium) || 0,
-            servings: parseFloat(intake.raw_extracted.servings) || 0
-          })
-        );
+        const detailedIntakes = response.data.items.map((intake, index) => ({
+          type: "label",
+          imageUrl: photos[index]?.uri || capturedPhotos[index]?.uri,
+          carbs: parseFloat(intake.raw_extracted.carbohydrates) || 0,
+          protein: parseFloat(intake.raw_extracted.protein) || 0,
+          sodium: parseFloat(intake.raw_extracted.sodium) || 0,
+          servings: parseFloat(intake.raw_extracted.servings) || 0,
+        }));
 
         useDetailedNutrientStore.getState().setIntake(detailedIntakes);
-
       } else {
         const fruits = response.data.fruits || {};
         const { total_carbs, total_protein, total_sodium } = fruits;
@@ -1034,6 +1029,31 @@ export default function Camera() {
     <View style={styles.container}>
       <View style={styles.topSection}>
         <SafeAreaView>
+          <View>
+            <CustomModal
+              title="Proper adjustment for detection"
+              visible={isVisible}
+              onClose={() => setIsVisible(false)}
+            >
+              <Text>
+                For best results of detection:                
+              </Text>
+              <Image source={require("@/assets/images/take-picture.png")} width={80} style={{margin: 'auto'}}/>
+              <Text style={{fontWeight: 'bold', marginTop: 8}}>
+                1. Nutritional Label
+              </Text>
+              <Text style={{ marginLeft: 12, marginTop: 8 }}>
+                make sure that the label is within the green rectangle in the
+                camera.
+              </Text>
+              <Text style={{fontWeight: 'bold', marginTop: 8}}>
+                2. Fruit detection
+              </Text>
+              <Text style={{ marginLeft: 12, marginTop: 8 }}>
+                give at least 0.25 meters or from the end of the middle fingertip to just below the wrist.
+              </Text>
+            </CustomModal>
+          </View>
           <View style={styles.thumbnailsRow}>
             <ScrollView
               horizontal

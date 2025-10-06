@@ -14,6 +14,7 @@ import { RootStackParamList } from "@/types/types";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { useNutrientsStore } from "@/hooks/store";
 import { useRecommStore } from "@/hooks/store";
+import ProfileBox from "@/components/ProfileBox";
 import {
   useNutritionIntakeStore,
   useNutritionAverage,
@@ -29,11 +30,12 @@ import useFeedbackStore, {
   useFeedbackLoading,
 } from "@/stores/useFeedbackStore";
 import Loading from "./loading";
+import CustomModal from "@/components/customModal";
 const toProgressWidth = (value: number) =>
   `${Math.min(value, 100)}%` as DimensionValue;
 const formatValue = (value: number, unit: string = "g") => {
   // Handle values with up to 5 decimal places, removing trailing zeros
-  const formatted = value.toFixed(5).replace(/\.?0+$/, '');
+  const formatted = value.toFixed(5).replace(/\.?0+$/, "");
   return `${formatted} ${unit}`;
 };
 
@@ -84,6 +86,7 @@ export default function Page6() {
   const isLoading = useFeedbackLoading();
   const feedbackError = useFeedbackError();
   const fetchFeedback = useFeedbackStore((state) => state.fetchFeedback);
+  const [isVisible, setIsVisible] = useState(true);
 
   const { nutritionData: intakeData, fetchNutritionIntake } =
     useNutritionIntakeStore();
@@ -478,6 +481,49 @@ export default function Page6() {
       <ScrollView contentContainerStyle={styles.scrollContainer}>
         <AppLogo />
 
+        <View style={styles.headerContainer}>
+          <ProfileBox
+            primaryText="Average"
+            highlightedText="Daily"
+            secondaryText="Intake"
+          />
+          <TouchableOpacity onPress={() => setIsVisible(true)}>
+            <Ionicons
+              name="information-circle-outline"
+              size={28}
+              color="#9AB206"
+            />
+          </TouchableOpacity>
+        </View>
+
+        <CustomModal
+          visible={isVisible}
+          onClose={() => setIsVisible(false)}
+          title="User Intake "
+        >
+          <View>
+            <Text>
+              The donut chart shows your{" "}
+              <Text style={{ fontWeight: "bold" }}>User Intake</Text> as a
+              percentage breakdown of the nutrients you consumed, visually
+              indicating which one (Carbs, Protein, or Sodium) was the largest
+              part of your diet.
+            </Text>
+            <Text style={{ marginTop: 16 }}>
+              The{" "}
+              <Text style={{ fontWeight: "bold" }}>Total Nutrient Amount</Text>{" "}
+              provides the combined weight of these nutrients in grams.
+            </Text>
+            <Text style={{ fontWeight: "bold", marginTop: 16 }}>Note:</Text>
+            <Text style={{ marginLeft: 8 }}>
+              Some data may return incosistently, therefore the data is
+              editable. {"\n\n"}
+              Feel free to click the photo and check the intake then compare
+              from the image if results are accurate.
+            </Text>
+          </View>
+        </CustomModal>
+
         <View style={styles.contentContainer}>
           {/* Progress Bars Section */}
           <View style={styles.progressContainer}>
@@ -815,5 +861,10 @@ const styles = StyleSheet.create({
     backgroundColor: "#333",
     justifyContent: "center",
     alignItems: "center",
+  },
+    headerContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
   },
 });
