@@ -483,9 +483,9 @@ export default function Page6() {
         <View style={styles.container}>
           <View style={styles.headerContainer}>
             <ProfileBox
-              primaryText="Average"
-              highlightedText="Daily"
-              secondaryText="Intake"
+              primaryText="Intake"
+              highlightedText="Comparison"
+              secondaryText=""
             />
             <TouchableOpacity onPress={() => setIsVisible(true)}>
               <Ionicons
@@ -500,27 +500,23 @@ export default function Page6() {
         <CustomModal
           visible={isVisible}
           onClose={() => setIsVisible(false)}
-          title="User Intake "
+          title="Visual Data for Intake "
         >
           <View>
             <Text>
-              The donut chart shows your{" "}
-              <Text style={{ fontWeight: "bold" }}>User Intake</Text> as a
-              percentage breakdown of the nutrients you consumed, visually
-              indicating which one (Carbs, Protein, or Sodium) was the largest
-              part of your diet.
+              This screen displays the label or fruit{" "}
+              <Text style={{ fontWeight: "bold" }}>intake provided</Text> versus
+              your <Text style={{ fontWeight: "bold" }}>average daily intake</Text>
             </Text>
             <Text style={{ marginTop: 16 }}>
-              The{" "}
-              <Text style={{ fontWeight: "bold" }}>Total Nutrient Amount</Text>{" "}
-              provides the combined weight of these nutrients in grams.
+              The bar graph shows how much your intake is compared to the average in terms of 
+              a horizontal line, in the right most the user can also see the comparison in terms of 
+              numerical data.
             </Text>
-            <Text style={{ fontWeight: "bold", marginTop: 16 }}>Note:</Text>
-            <Text style={{ marginLeft: 8 }}>
-              Some data may return incosistently, therefore the data is
-              editable. {"\n\n"}
-              Feel free to click the photo and check the intake then compare
-              from the image if results are accurate.
+
+            <Text style={{ marginTop: 16 }}>
+              The weekly intake chart compares your current input intake
+              to the existing intakes saved for the current week.
             </Text>
           </View>
         </CustomModal>

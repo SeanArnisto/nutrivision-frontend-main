@@ -33,8 +33,8 @@ import CustomModal from "@/components/customModal";
 const { height, width: screenWidth } = Dimensions.get("window");
 
 // SegmentedControl Component (Integrated)
-const SEGMENTED_WIDTH = screenWidth * 0.7;
-const SEGMENT_WIDTH = SEGMENTED_WIDTH / 2;
+const SEGMENTED_WIDTH = screenWidth * 0.85;
+const SEGMENT_WIDTH = SEGMENTED_WIDTH / 3;
 
 // Enhanced Photo Submission Service (MOVED OUTSIDE COMPONENT)
 class PhotoSubmissionService {
@@ -239,6 +239,11 @@ const SegmentedControl = ({
       label: "Fruits",
       icon: "leaf-outline",
     },
+    {
+      key: "both",
+      label: "Both",
+      icon: "git-network-outline"
+    }
   ];
 
   const handlePress = (index) => {
@@ -1215,7 +1220,7 @@ const segmentedStyles = StyleSheet.create({
   optionText: {
     fontSize: 16,
     fontWeight: "600",
-    marginLeft: 6,
+    marginLeft: 18,
   },
 });
 
@@ -1330,7 +1335,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   segmentedControlContainer: {
-    marginHorizontal: 20,
+    marginHorizontal: 21,
   },
   returnButton: {
     backgroundColor: "transparent",
