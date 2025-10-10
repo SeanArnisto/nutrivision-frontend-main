@@ -29,7 +29,6 @@ import { usePhotosStore } from "@/stores/usePhotoStore";
 import { useDetailedNutrientStore } from "@/stores/useDetailedNutrientStore";
 import CustomModal from "@/components/customModal";
 
-
 const { height, width: screenWidth } = Dimensions.get("window");
 
 // SegmentedControl Component (Integrated)
@@ -242,8 +241,8 @@ const SegmentedControl = ({
     {
       key: "both",
       label: "Both",
-      icon: "git-network-outline"
-    }
+      icon: "git-network-outline",
+    },
   ];
 
   const handlePress = (index) => {
@@ -336,6 +335,8 @@ export default function Camera() {
   }, [isAuthenticated, navigation]);
 
   const isLabelMode = selectedSegmentIndex === 0;
+  const isFruitMode = selectedSegmentIndex === 1;
+  const isBothMode = selectedSegmentIndex === 2;
 
   const setCarbs = useNutrientsStore((state) => state.setCarbs);
   const setProtein = useNutrientsStore((state) => state.setProtein);
@@ -455,7 +456,6 @@ export default function Camera() {
 
     const photos = capturedPhotos;
 
-    // Update UI state
     setSubmit(true);
     setLoading(true);
     setUploadProgress(0);
@@ -468,7 +468,6 @@ export default function Camera() {
         return;
       }
 
-      // Set up endpoints
       const endpoints = {
         fruits: "https://leidanielaguila-nutrivision.hf.space/detect",
         labels: "https://dwyght-text-recognition.hf.space/extract/",
@@ -484,66 +483,136 @@ export default function Camera() {
         } endpoint`
       );
 
-      // Create FormData
       const formData = await submissionService.createFormData(photos);
 
-      // Enhanced headers
       const headers = {
         Accept: "application/json",
         "Content-Type": "multipart/form-data",
       };
 
-      // Progress callback with enhanced safety checks
       const onProgress = (percentCompleted) => {
-        console.log("📊 Progress callback called with:", percentCompleted); // Debug log
-
-        // Validate the percentage
         if (
           typeof percentCompleted === "number" &&
           percentCompleted >= 0 &&
           percentCompleted <= 100
         ) {
           setUploadProgress(percentCompleted);
-          console.log(`📈 UI Updated - Upload progress: ${percentCompleted}%`);
-        } else {
-          console.warn("⚠️ Invalid progress percentage:", percentCompleted);
+          console.log(`📈 Upload progress: ${percentCompleted}%`);
         }
       };
 
-      // Submit with retry logic
-      const response = await submissionService.submitWithRetry(
-        urlToSend,
-        formData,
-        headers,
-        0,
-        onProgress
-      );
+      let response;
 
-      console.log("✅ Response from server:", response.data);
+      if (isLabelMode || isFruitMode) {
+        response = await submissionService.submitWithRetry(
+          urlToSend,
+          formData,
+          headers,
+          0,
+          onProgress
+        );
+      }
 
-      // Process response based on mode with safety checks
-      if (isLabelMode) {
-        const combined = response.data.combined || {};
-        const { carbs_total, protein_total, sodium_total } = combined;
+      // 🆕 NEW: Handle BOTH MODE
+      else if (isBothMode) {
+        console.log(
+          "🔄 Submitting to both label and fruit (detailed) endpoints..."
+        );
 
-        if (carbs_total !== undefined) setCarbs(parseFloat(carbs_total));
-        if (protein_total !== undefined) setProtein(parseFloat(protein_total));
-        if (sodium_total !== undefined)
-          setSodium(parseFloat(sodium_total) / 1000);
+        // Submit label and fruit_detailed concurrently
+        const [labelResponse, fruitDetailedResponse] = await Promise.all([
+          submissionService.submitWithRetry(
+            endpoints.labels,
+            formData,
+            headers,
+            0,
+            onProgress
+          ),
+          submissionService.submitWithRetry(
+            endpoints.fruits_detailed,
+            formData,
+            headers,
+            0,
+            onProgress
+          ),
+        ]);
 
-        console.log(`SERVINGS: ${response.data.items.servings}`);
+        console.log("✅ Label response:", labelResponse.data);
+        console.log("✅ Fruit detailed response:", fruitDetailedResponse.data);
 
-        const detailedIntakes = response.data.items.map((intake, index) => ({
-          type: "label",
-          imageUrl: photos[index]?.uri || capturedPhotos[index]?.uri,
-          carbs: parseFloat(intake.raw_extracted.carbohydrates) || 0,
-          protein: parseFloat(intake.raw_extracted.protein) || 0,
-          sodium: parseFloat(intake.raw_extracted.sodium) || 0,
-          servings: parseFloat(intake.raw_extracted.servings) || 0,
+        // Extract totals from label response
+        const labelCombined = labelResponse.data.combined || {};
+        const { carbs_total, protein_total, sodium_total } = labelCombined;
+
+        // Extract fruits data (array of detections)
+        const fruitData = fruitDetailedResponse.data.data || [];
+
+        // Compute fruit totals
+        const fruitTotals = fruitData.reduce(
+          (totals, f) => ({
+            carbs: totals.carbs + (f.carbs || 0),
+            protein: totals.protein + (f.protein || 0),
+            sodium: totals.sodium + (f.sodium || 0),
+          }),
+          { carbs: 0, protein: 0, sodium: 0 }
+        );
+
+        // Combine both totals
+        const totalCarbs =
+          (parseFloat(carbs_total) || 0) + (fruitTotals.carbs || 0);
+        const totalProtein =
+          (parseFloat(protein_total) || 0) + (fruitTotals.protein || 0);
+        const totalSodium =
+          (parseFloat(sodium_total) / 1000 || 0) + (fruitTotals.sodium || 0);
+
+        // Update UI totals
+        setCarbs(totalCarbs);
+        setProtein(totalProtein);
+        setSodium(totalSodium);
+
+        // Map detailed entries from both detections
+        const labelIntakes = labelResponse.data.items
+          .map((intake, index) => ({
+            type: "label",
+            imageUrl: photos[index]?.uri,
+            carbs: parseFloat(intake.raw_extracted.carbohydrates) || 0,
+            protein: parseFloat(intake.raw_extracted.protein) || 0,
+            sodium: parseFloat(intake.raw_extracted.sodium) || 0,
+            servings: parseFloat(intake.raw_extracted.servings) || 0,
+            hasData:
+              intake.carbs_total !== null ||
+              intake.protein_total !== null ||
+              intake.sodium_total !== null,
+          }))
+          .filter((intake) => intake.hasData)
+          .map(({ hasData, ...intake }) => intake);
+
+        const fruitIntakes = fruitData.map((intake) => ({
+          type: intake.type,
+          imageUrl: photos[intake.imageIndex],
+          carbs: intake.carbs,
+          protein: intake.protein,
+          sodium: intake.sodium,
         }));
 
+        const detailedIntakes = [...labelIntakes, ...fruitIntakes];
+
+        // Store in Zustand
         useDetailedNutrientStore.getState().setIntake(detailedIntakes);
+
+        response = { data: { labelResponse, fruitDetailedResponse } };
       } else {
+        // Regular fruit detection (non-both mode)
+        response = await submissionService.submitWithRetry(
+          endpoints.fruits,
+          formData,
+          headers,
+          0,
+          onProgress
+        );
+
+        console.log("✅ Response from server:", response.data);
+
         const fruits = response.data.fruits || {};
         const { total_carbs, total_protein, total_sodium } = fruits;
 
@@ -551,93 +620,47 @@ export default function Camera() {
         if (total_protein !== undefined) setProtein(total_protein);
         if (total_sodium !== undefined) setSodium(total_sodium);
 
-        // 🆕 NEW: Fetch detailed detection data and store it
         try {
           console.log("🔍 Fetching detailed detection data...");
-
-          // Create new FormData for detailed endpoint
           const detailedFormData = await submissionService.createFormData(
             photos
           );
-
-          // Call the detailed endpoint
           const detailedResponse = await submissionService.submitWithRetry(
             endpoints.fruits_detailed,
             detailedFormData,
             headers,
             0,
-            null // No need for progress callback on second call
+            null
           );
-
-          console.log("✅ Detailed response:", detailedResponse.data);
 
           if (
             detailedResponse.data.success &&
             detailedResponse.data.data.length > 0
           ) {
-            // Map the detections to include the correct imageUrl from local photos
             const detailedIntakes = detailedResponse.data.data.map(
               (intake) => ({
                 type: intake.type,
-                imageUrl: photos[intake.imageIndex], // Map using imageIndex to get local URI
+                imageUrl: photos[intake.imageIndex],
                 carbs: intake.carbs,
                 protein: intake.protein,
                 sodium: intake.sodium,
               })
             );
 
-            console.log("📦 Storing detailed intakes:", detailedIntakes);
-
-            // Store in zustand
             useDetailedNutrientStore.getState().setIntake(detailedIntakes);
-
-            // Optionally save to database immediately
-            // Uncomment the following lines if you want to save to database right away
-            /*
-            const saveResult = await useDetailedNutrientStore.getState().saveToDatabase(detailedIntakes);
-            if (saveResult.success) {
-              console.log("✅ Successfully saved to database:", saveResult.data);
-            } else {
-              console.error("❌ Failed to save to database:", saveResult.error);
-            }
-            */
-          } else {
-            console.warn("⚠️ No detailed detections found");
           }
         } catch (detailedError) {
           console.error("❌ Error fetching detailed data:", detailedError);
-          // Don't fail the entire submission if detailed fetch fails
-          // The main detection already succeeded
         }
       }
 
-      // 🗑️ SUCCESS: Delete all captured photos after successful submission
-      // await deleteAllCapturedPhotos(photos);
-
-      // Navigate to results
       navigation.navigate("nutrient-page");
       return response.data;
     } catch (error) {
       console.error("❌ Enhanced photo submission error:", error);
-
       const errorMessage = submissionService.getErrorMessage(error);
       Alert.alert("Submission Failed", errorMessage);
-
-      // Log detailed error for debugging
-      if (error.response) {
-        console.error("Error details:", error.response.data);
-        console.error("Status code:", error.response.status);
-      }
-
-      // 🗑️ TEMPORARY: Delete photos even on failure (for testing purposes)
-      console.log(
-        "⚠️ TEMPORARY MODE: Deleting photos even though submission failed"
-      );
-      await deleteAllCapturedPhotos(photos);
-
-      throw error;
     } finally {
-      // Always clean up UI state
       setLoading(false);
       setSubmit(false);
       setUploadProgress(0);
@@ -645,11 +668,12 @@ export default function Camera() {
   }, [
     capturedPhotos,
     isLabelMode,
+    isFruitMode,
+    isBothMode,
     navigation,
     setCarbs,
     setProtein,
     setSodium,
-    deleteAllCapturedPhotos,
   ]);
 
   // Rest of your existing functions remain the same...
@@ -1040,22 +1064,25 @@ export default function Camera() {
               visible={isVisible}
               onClose={() => setIsVisible(false)}
             >
-              <Text>
-                For best results of detection:                
-              </Text>
-              <Image source={require("@/assets/images/take-picture.png")} width={80} style={{margin: 'auto'}}/>
-              <Text style={{fontWeight: 'bold', marginTop: 8}}>
+              <Text>For best results of detection:</Text>
+              <Image
+                source={require("@/assets/images/take-picture.png")}
+                width={80}
+                style={{ margin: "auto" }}
+              />
+              <Text style={{ fontWeight: "bold", marginTop: 8 }}>
                 1. Nutritional Label
               </Text>
               <Text style={{ marginLeft: 12, marginTop: 8 }}>
                 make sure that the label is within the green rectangle in the
                 camera.
               </Text>
-              <Text style={{fontWeight: 'bold', marginTop: 8}}>
+              <Text style={{ fontWeight: "bold", marginTop: 8 }}>
                 2. Fruit detection
               </Text>
               <Text style={{ marginLeft: 12, marginTop: 8 }}>
-                give at least 0.25 meters or from the end of the middle fingertip to just below the wrist.
+                give at least 0.25 meters or from the end of the middle
+                fingertip to just below the wrist.
               </Text>
             </CustomModal>
           </View>
