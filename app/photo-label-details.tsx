@@ -161,7 +161,7 @@ function PhotoLabelDetailsPage({
                 tintColor="#9AB206"
                 subtitle="Carbs"
                 value={nutritionalData.carbs}
-                fill={75}
+                fill={100}
               />
             </View>
             
@@ -171,7 +171,7 @@ function PhotoLabelDetailsPage({
                 tintColor="#9AB206"
                 subtitle="Sodium"
                 value={nutritionalData.sodium}
-                fill={60}
+                fill={100}
               />
             </View>
             
@@ -181,7 +181,7 @@ function PhotoLabelDetailsPage({
                 tintColor="#9AB206"
                 subtitle="Protein"
                 value={nutritionalData.protein}
-                fill={80}
+                fill={100}
               />
             </View>
           </View>
