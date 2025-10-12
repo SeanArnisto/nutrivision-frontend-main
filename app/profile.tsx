@@ -304,19 +304,19 @@ export default function Profile() {
 
   return (
     <SafeAreaView style={SafeViewAndroid.AndroidSafeArea}>
-      <View style={styles.mainContainer}>
-        <ScrollView
-          style={styles.container}
-          contentContainerStyle={styles.scrollContent}
-          showsVerticalScrollIndicator={false}
-        >
-          <AppLogo />
+      <ScrollView
+        style={styles.container}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
+        <AppLogo />
+        <View style={styles.mainContainer}>
           <View style={styles.profileBoxContainer}>
             <ProfileBox
               primaryText="Personal"
               highlightedText="Profile"
               secondaryText="Information"
-              style={styles.customProfileBox}
+              style={styles.customProfileBox}              
             />
           </View>
 
@@ -366,8 +366,8 @@ export default function Profile() {
               style={styles.lastField}
             />
           </View>
-        </ScrollView>
-      </View>
+        </View>
+      </ScrollView>
 
       <BottomNavBar
         onCameraPress={() => navigation.navigate("camera")}
@@ -411,9 +411,10 @@ const styles = StyleSheet.create({
   },
   profileBoxContainer: {
     marginBottom: 20,
+    
   },
   customProfileBox: {
-    width: 200, // Wider for "Personal Profile Information"
+    width: 205, // Wider for "Personal Profile Information"
   },
   container: {
     flex: 1,

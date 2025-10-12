@@ -235,9 +235,14 @@ export default function UserNutrientPage() {
       >
         <ScrollView contentContainerStyle={styles.scrollContainer}>
           <AppLogo />
-          <View style={styles.container}>
+          <View style={styles.container1}>
             <View style={styles.headerContainer}>
-              <ProfileBox primaryText="User" highlightedText="Intake" />
+              <ProfileBox
+                primaryText="User"
+                highlightedText="Nutrient"
+                secondaryText="Intake"
+                style={{width:165}}
+              />
               <TouchableOpacity onPress={() => setIsVisible(true)}>
                 <Ionicons
                   name="information-circle-outline"
@@ -359,6 +364,13 @@ const styles = StyleSheet.create({
     backgroundColor: "#eff1f6",
     paddingHorizontal: 16,
     paddingVertical: 16,
+  },
+  container1: {
+    flex: 1,
+    backgroundColor: "#eff1f6",
+    gap: 15,
+    padding: 15,
+    paddingBottom: 100,
   },
   saveButton: {
     position: "absolute",

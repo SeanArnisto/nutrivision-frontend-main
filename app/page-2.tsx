@@ -34,6 +34,7 @@ import { useNutritionIntakeStore } from "@/stores/nutritionIntakeStore";
 import { useAccountCreationDate } from "@/hooks/useAccountCreationDate";
 import CustomModal from "@/components/customModal";
 import { Custom } from "react-native-reanimated-carousel/lib/typescript/components/Pagination/Custom";
+import { withDecay } from "react-native-reanimated";
 
 type Page2ScreenNavigationProp = StackNavigationProp<
   RootStackParamList,
@@ -213,6 +214,7 @@ export default function Page2() {
             primaryText="Average"
             highlightedText="Daily"
             secondaryText="Intake"
+            style={{width: 165}}
           />
           <TouchableOpacity onPress={() => setIsVisible(true)}>
             <Ionicons

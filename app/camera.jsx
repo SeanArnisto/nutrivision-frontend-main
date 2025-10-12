@@ -513,6 +513,8 @@ export default function Camera() {
         );
       }
 
+      // console.log("🧾 Sodium raw:", JSON.stringify(response));
+
       if (isLabelMode) {
         const combined = response.data.combined || {};
         const { carbs_total, protein_total, sodium_total } = combined;
@@ -529,12 +531,12 @@ export default function Camera() {
           imageUrl: photos[index]?.uri || capturedPhotos[index]?.uri,
           carbs: parseFloat(intake.raw_extracted.carbohydrates) || 0,
           protein: parseFloat(intake.raw_extracted.protein) || 0,
-          sodium: parseFloat(intake.raw_extracted.sodium) || 0,
+          sodium: parseFloat(intake.raw_extracted.sodium) / 1000 || 0,
           servings: parseFloat(intake.raw_extracted.servings) || 0,
         }));
 
         useDetailedNutrientStore.getState().setIntake(detailedIntakes);
-      } 
+      }
       // 🆕 NEW: Handle BOTH MODE
       else if (isBothMode) {
         console.log(
@@ -754,17 +756,23 @@ export default function Camera() {
 
   useEffect(() => {
     (async () => {
-      const { status } = await MediaLibrary.requestPermissionsAsync();
-      setMediaLibraryPermission(status === "granted");
+      if (Platform.OS === "ios") {
+        const { status } = await MediaLibrary.requestPermissionsAsync();
+        setMediaLibraryPermission(status === "granted");
 
-      if (status === "granted") {
-        await loadExistingPhotos();
+        if (status === "granted") {
+          await loadExistingPhotos();
+        }
+      } else {
+        // Android: Don't request Media Library permissions, just use store
+        setMediaLibraryPermission(false);
+        console.log("Android: Skipping Media Library permissions");
       }
     })();
   }, []);
 
   useEffect(() => {
-    if (mediaLibraryPermission) {
+    if (Platform.OS === "ios" && mediaLibraryPermission) {
       loadExistingPhotos();
     }
   }, [mediaLibraryPermission]);
