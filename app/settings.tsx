@@ -103,12 +103,13 @@ export default function Settings() {
 
   return (
     <SafeAreaView style={SafeViewAndroid.AndroidSafeArea}>
-      <AppLogo />
+      
       <ScrollView
         style={styles.container}
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
+        <AppLogo />
         <View style={styles.mainContainer}>
           <View style={styles.profileBoxContainer}>
             <ProfileBox

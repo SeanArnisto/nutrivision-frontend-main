@@ -890,7 +890,7 @@ const styles = StyleSheet.create({
   feedbackText: {
     fontSize: 14,
     color: "#333",
-    textAlign: "left",
+    textAlign: "justify",
   },
   loadingText: {
     fontSize: 14,

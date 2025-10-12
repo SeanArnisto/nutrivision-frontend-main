@@ -53,6 +53,7 @@ const styles = StyleSheet.create({
   centeredContainer: {
     flex: 1,
     justifyContent: "center",
+    marginLeft: 10,
     alignItems: "center",
     paddingVertical: 20, // Add padding to bring elements closer
   },

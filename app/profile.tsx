@@ -304,22 +304,22 @@ export default function Profile() {
 
   return (
     <SafeAreaView style={SafeViewAndroid.AndroidSafeArea}>
-      <AppLogo />
-
       <View style={styles.mainContainer}>
-        <View style={styles.profileBoxContainer}>
-          <ProfileBox
-            primaryText="Personal"
-            highlightedText="Profile"
-            secondaryText="Information"
-            style={styles.customProfileBox}
-          />
-        </View>
-
         <ScrollView
           style={styles.container}
+          contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
         >
+          <AppLogo />
+          <View style={styles.profileBoxContainer}>
+            <ProfileBox
+              primaryText="Personal"
+              highlightedText="Profile"
+              secondaryText="Information"
+              style={styles.customProfileBox}
+            />
+          </View>
+
           {/* Profile Avatar Section */}
           <View style={styles.avatarSection}>
             <View style={styles.avatarContainer}>
@@ -457,5 +457,8 @@ const styles = StyleSheet.create({
   },
   lastField: {
     borderBottomWidth: 0,
+  },
+  scrollContent: {
+    paddingBottom: 100, // Add padding to prevent content hiding under navigation bar
   },
 });
