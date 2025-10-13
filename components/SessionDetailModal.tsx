@@ -122,7 +122,7 @@ const SessionDetailModal: React.FC<SessionDetailModalProps> = ({
                 tintColor={nutrients.carbohydrate.tintColor}
                 subtitle="Carbs"
                 value={nutritionSummary.carbs}
-                fill={75}
+                fill={100}
                 containerWidth={nutritionCardWidth}
               />
               
@@ -131,7 +131,7 @@ const SessionDetailModal: React.FC<SessionDetailModalProps> = ({
                 tintColor={nutrients.sodium.tintColor}
                 subtitle="Sodium"
                 value={nutritionSummary.sodium}
-                fill={50}
+                fill={100}
                 containerWidth={nutritionCardWidth}
               />
               
@@ -140,7 +140,7 @@ const SessionDetailModal: React.FC<SessionDetailModalProps> = ({
                 tintColor={nutrients.protein.tintColor}
                 subtitle="Protein"
                 value={nutritionSummary.protein}
-                fill={25}
+                fill={100}
                 containerWidth={nutritionCardWidth}
               />
             </View>

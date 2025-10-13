@@ -130,7 +130,7 @@ const NutrientInputSection: React.FC<NutrientInputSectionProps> = ({
     }
 
     // Validate decimal format - allow numbers and single decimal point
-    const regex = /^\d*\.?\d*$/;
+    const regex = /^\d*\.?\d{0,5}$/;
     if (regex.test(text)) {
       // Remove leading zeros except for decimal numbers less than 1
       let cleanedText = text;

@@ -80,8 +80,8 @@ export const useNutritionCalendar = (): UseNutritionCalendarReturn => {
     }
     // Use local date formatting to avoid timezone issues
     const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const day = String(date.getDate()).padStart(2, "0");
     return `${year}-${month}-${day}`;
   };
 
@@ -237,10 +237,12 @@ export const useNutritionCalendar = (): UseNutritionCalendarReturn => {
       if (!record) return null;
 
       return {
-        carbs: Math.round(record.carbohydrates || 0),
-        sodium: Math.round((record.sodium || 0) / 1000), // Convert to grams
-        protein: Math.round(record.protein || 0),
-        total: Math.round(record.total || 0),
+        carbs: record.carbohydrates
+          ? parseFloat(record.carbohydrates.toFixed(5))
+          : 0,
+        sodium: record.sodium ? parseFloat(record.sodium.toFixed(5)) : 0, // Convert to grams
+        protein: record.protein ? parseFloat(record.protein.toFixed(5)) : 0,
+        total: record.total || 0,
       };
     },
     [nutritionalRecords]

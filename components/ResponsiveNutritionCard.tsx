@@ -95,7 +95,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   title: {
-    fontSize: 22,
+    fontSize: 15,
     fontWeight: "bold",
     color: "#385802",
     textAlign: "left",

@@ -518,7 +518,6 @@ export default function Camera() {
       if (isLabelMode) {
         const combined = response.data.combined || {};
         const { carbs_total, protein_total, sodium_total } = combined;
-
         if (carbs_total !== undefined) setCarbs(parseFloat(carbs_total));
         if (protein_total !== undefined) setProtein(parseFloat(protein_total));
         if (sodium_total !== undefined)
@@ -586,8 +585,11 @@ export default function Camera() {
           (parseFloat(carbs_total) || 0) + (fruitTotals.carbs || 0);
         const totalProtein =
           (parseFloat(protein_total) || 0) + (fruitTotals.protein || 0);
-        const totalSodium =
-          (parseFloat(sodium_total) / 1000 || 0) + (fruitTotals.sodium || 0);
+        const totalSodium = parseFloat(
+          (
+            (parseFloat(sodium_total) / 1000 || 0) + (fruitTotals.sodium || 0)
+          ).toFixed(5)
+        );
 
         // Update UI totals
         setCarbs(totalCarbs);
@@ -601,7 +603,7 @@ export default function Camera() {
             imageUrl: photos[index]?.uri,
             carbs: parseFloat(intake.raw_extracted.carbohydrates) || 0,
             protein: parseFloat(intake.raw_extracted.protein) || 0,
-            sodium: parseFloat(intake.raw_extracted.sodium) || 0,
+            sodium: parseFloat(intake.raw_extracted.sodium) / 1000 || 0,
             servings: parseFloat(intake.raw_extracted.servings) || 0,
             hasData:
               intake.carbs_total !== null ||
