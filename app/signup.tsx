@@ -307,14 +307,14 @@ export default function SignUpScreen() {
           {/* Divider Container */}
           {Platform.OS === "ios" && (
             <>
-              <View style={styles.dividerContainer}>
+              {/* <View style={styles.dividerContainer}>
                 <View style={styles.dividerLine} />
                 <Text style={styles.dividerText}>Or</Text>
                 <View style={styles.dividerLine} />
-              </View>
+              </View> */}
 
               {/* Social Sign Up Container */}
-              <View style={styles.socialContainer}>
+              {/* <View style={styles.socialContainer}>
                 <SocialButton
                   provider="google"
                   onPress={handleGoogleSignUp}
@@ -326,13 +326,13 @@ export default function SignUpScreen() {
                   onPress={handleFacebookSignUp}
                   disabled={isLoading}
                 />
-              </View>
+              </View> */}
 
               {/* Bottom Divider Container */}
-              <View style={styles.bottomDividerContainer}>
+              {/* <View style={styles.bottomDividerContainer}>
                 <View style={styles.dividerLine} />
                 <View style={styles.dividerLine} />
-              </View>
+              </View> */}
             </>
           )}
           {/* Login Link Container */}

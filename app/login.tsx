@@ -398,7 +398,7 @@ export default function LoginScreen() {
           {/* Divider Container - Responsive */}
           {Platform.OS === "ios" && (
             <>
-              <View style={styles.dividerContainer}>
+              {/* <View style={styles.dividerContainer}>
                 {Platform.OS === "ios" && (
                   <>
                     <View style={styles.dividerLine} />
@@ -406,10 +406,10 @@ export default function LoginScreen() {
                     <View style={styles.dividerLine} />
                   </>
                 )}
-              </View>
+              </View> */}
 
               {/* Social Login Container - Flexible height that maintains proportions */}
-              <View style={styles.socialContainer}>
+              {/* <View style={styles.socialContainer}>
                 {Platform.OS === "ios" && (
                   <>
                     <SocialButton
@@ -425,13 +425,13 @@ export default function LoginScreen() {
                     />
                   </>
                 )}
-              </View>
+              </View> */}
 
               {/* Bottom Divider Container - Responsive */}
-              <View style={styles.bottomDividerContainer}>
+              {/* <View style={styles.bottomDividerContainer}>
                 <View style={styles.dividerLine} />
                 <View style={styles.dividerLine} />
-              </View>
+              </View> */}
             </>
           )}
 
