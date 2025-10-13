@@ -801,14 +801,15 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   nutrientLabel: {
-    flex: 1.5,
+    flex: 1.1,
     flexDirection: "row",
     alignItems: "center",
   },
   nutrientText: {
-    fontSize: 14,
+    fontSize: 16,
     color: "#333",
     marginRight: 2,
+    marginLeft: -3
   },
   icon: {
     width: 20,
@@ -839,12 +840,12 @@ const styles = StyleSheet.create({
     alignItems: "flex-end",
   },
   userValue: {
-    fontSize: 10,
+    fontSize: 11,
     fontWeight: "bold",
     color: "#333",
   },
   avgValue: {
-    fontSize: 10,
+    fontSize: 11,
     fontWeight: "bold",
     color: "#9AB106",
   },
