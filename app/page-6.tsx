@@ -169,8 +169,6 @@ export default function Page6() {
 
         if (result.success) {
           setNutritionalData(result.data || []);
-        } else {
-          setError(result.error || "Failed to load nutritional data");
         }
       } catch (err) {
         setError(err instanceof Error ? err.message : "Unknown error occurred");

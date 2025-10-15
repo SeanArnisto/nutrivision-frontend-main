@@ -19,6 +19,7 @@ import AuthButton from "@/components/AuthButton";
 import SocialButton from "@/components/SocialButton";
 import LinkButton from "@/components/LinkButton";
 import DisclaimerModal from "@/components/DisclaimerModal";
+import Loading from "@/app/loading";
 
 import { useAuthStore } from "@/stores/authStore";
 import {
@@ -171,7 +172,6 @@ export default function LoginScreen() {
 
   const handleLogin = async () => {
     if (!validateForm()) return;
-
     setIsLoading(true);
     setErrors({});
 
@@ -179,30 +179,45 @@ export default function LoginScreen() {
       const { data, error } = await signIn(formData.email, formData.password);
 
       if (error) {
-        // ... existing error handling
+        if (error.message.includes("Invalid login credentials")) {
+          setErrors({
+            general: "Incorrect email or password. Please try again.",
+          });
+        } else if (error.message.includes("Email not confirmed")) {
+          setErrors({
+            general: "Please confirm your email before logging in.",
+          });
+        } else {
+          setErrors({
+            general: error.message || "Login failed. Please try again.",
+          });
+        }
       } else if (data?.user) {
         console.log("Login successful:", data.user.email);
+        const isProfileComplete = useAuthStore.getState().profileComplete;
+
+        if (isProfileComplete === false) {
+          console.log("Navigating to onboarding");
+          navigation.navigate("onboarding");
+        }
 
         try {
-          // Try to preload data, but don't block navigation on failure
+          setIsLoading(true);
+          await new Promise((resolve) => setTimeout(resolve, 3000));
           await preloadNutritionData();
         } catch (preloadError) {
           console.log(
             "Preload failed, but continuing with navigation:",
             preloadError
           );
-        }
-
-        // Navigate regardless of preload success/failure
-        const isProfileComplete = useAuthStore.getState().profileComplete;
-
-        if (isProfileComplete === false) {
-          console.log("Navigating to onboarding");
-          navigation.navigate("onboarding");
-        } else {
+        } finally {
           console.log("Navigating to main app");
-          navigation.navigate("page-2");
+          navigation.reset({
+            index: 0,
+            routes: [{ name: "page-2" }],
+          });
         }
+        // Navigate regardless of preload success/failure
       }
     } catch (error: any) {
       console.error("Login error:", error);
@@ -318,6 +333,10 @@ export default function LoginScreen() {
     setIsDisclaimerModalVisible(false);
     navigation.navigate("signup");
   };
+
+  if (isLoading) {
+    return <Loading />;
+  }
 
   return (
     <ScreenContainer>
