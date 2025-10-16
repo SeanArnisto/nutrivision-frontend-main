@@ -49,7 +49,7 @@ const { width: screenWidth, height: screenHeight } = Dimensions.get("window");
 
 const preloadNutritionData = async () => {
   try {
-    console.log("Starting nutrition data preload...");
+    console.log("🚀 Starting nutrition data preload...");
 
     const nutritionIntakeStore = useNutritionIntakeStore.getState();
     const nutritionAverageStore = fetchNutritionAverage.getState();
@@ -59,65 +59,54 @@ const preloadNutritionData = async () => {
 
     // Fetch nutrition intake data
     if (!nutritionIntakeStore.nutritionData) {
-      console.log("Adding nutrition intake to preload queue...");
-      preloadPromises.push(
-        nutritionIntakeStore.fetchNutritionIntake().catch((error) => {
-          console.log(
-            "Nutrition intake fetch failed during preload:",
-            error.message
-          );
-          return null; // Don't fail the entire preload
-        })
-      );
+      console.log("🧩 Preloading: Nutrition intake...");
+      preloadPromises.push(nutritionIntakeStore.fetchNutritionIntake());
     }
 
     // Fetch nutrition average data
     if (!nutritionAverageStore.nutritionDataAve) {
-      console.log("Adding nutrition average to preload queue...");
-      preloadPromises.push(
-        nutritionAverageStore.fetchNutritionIntakeAve().catch((error) => {
-          console.log(
-            "Nutrition average fetch failed during preload:",
-            error.message
-          );
-          return null; // Don't fail the entire preload
-        })
-      );
+      console.log("🧩 Preloading: Nutrition average...");
+      preloadPromises.push(nutritionAverageStore.fetchNutritionIntakeAve());
     }
 
     // Fetch nutritional history
     if (nutritionIntakeStore.nutritionalHistory.length === 0) {
-      console.log("Adding nutritional history to preload queue...");
-      preloadPromises.push(
-        nutritionIntakeStore.fetchNutritionalHistory(30).catch((error) => {
-          console.log(
-            "Nutritional history fetch failed during preload:",
-            error.message
-          );
-          return null; // Don't fail the entire preload
-        })
-      );
+      console.log("🧩 Preloading: Nutritional history...");
+      preloadPromises.push(nutritionIntakeStore.fetchNutritionalHistory(30));
     }
 
-    // Wait for all promises (some may fail, but we continue)
     console.log(
-      `Waiting for ${preloadPromises.length} data sources to load...`
+      `⏳ Waiting for ${preloadPromises.length} data sources to load...`
     );
-    await Promise.allSettled(preloadPromises);
 
-    console.log("Nutrition data preload completed (some may have failed)");
-    return true;
+    // Wait for all promises to settle
+    const results = await Promise.allSettled(preloadPromises);
+
+    // Check if any failed
+    const failed = results.filter((res) => res.status === "rejected");
+
+    if (failed.length > 0) {
+      console.error("❌ Some preload operations failed:");
+      failed.forEach((f, index) => {
+        console.error(
+          `   - Task ${index + 1} failed:`,
+          f.reason?.message || f.reason
+        );
+      });
+      return false; // Indicate failure
+    }
+
+    console.log("✅ All nutrition data preloaded successfully!");
+    return true; // All good
   } catch (error) {
-    console.error("Preload error:", error);
-    // Don't throw - allow navigation to continue
+    console.error("🔥 Preload error:", error);
     return false;
   }
 };
-// Responsive scaling functions
-const scale = (size: number) => (screenWidth / 375) * size; // Base on iPhone X width
-const verticalScale = (size: number) => (screenHeight / 812) * size; // Base on iPhone X
 
-// Moderate scaling for elements that shouldn't scale as much
+// Responsive scaling functions
+const scale = (size: number) => (screenWidth / 375) * size;
+const verticalScale = (size: number) => (screenHeight / 812) * size;
 const moderateScale = (size: number, factor = 0.5) =>
   size + (scale(size) - size) * factor;
 
@@ -143,6 +132,7 @@ export default function LoginScreen() {
 
   const [errors, setErrors] = useState<LoginErrors>({});
   const [isLoading, setIsLoading] = useState(false);
+  const [isLoadingData, setIsLoadingData] = useState(false);
   const [isDisclaimerModalVisible, setIsDisclaimerModalVisible] =
     useState(false);
 
@@ -192,32 +182,28 @@ export default function LoginScreen() {
             general: error.message || "Login failed. Please try again.",
           });
         }
-      } else if (data?.user) {
-        console.log("Login successful:", data.user.email);
+        setIsLoading(false);
+        return;
+      }
+
+      if (data?.user) {
+        console.log("✅ Login successful:", data.user.email);
+
         const isProfileComplete = useAuthStore.getState().profileComplete;
-
         if (isProfileComplete === false) {
-          console.log("Navigating to onboarding");
+          console.log("Navigating to onboarding...");
+          setIsLoading(false);
           navigation.navigate("onboarding");
+          return;
         }
 
-        try {
-          setIsLoading(true);
-          await new Promise((resolve) => setTimeout(resolve, 3000));
-          await preloadNutritionData();
-        } catch (preloadError) {
-          console.log(
-            "Preload failed, but continuing with navigation:",
-            preloadError
-          );
-        } finally {
-          console.log("Navigating to main app");
-          navigation.reset({
-            index: 0,
-            routes: [{ name: "page-2" }],
-          });
-        }
-        // Navigate regardless of preload success/failure
+        // Set loading state for data fetching
+        setIsLoading(false);
+        setIsLoadingData(true);        
+         navigation.reset({
+        index: 0,
+        routes: [{ name: "page-2" }],
+      });
       }
     } catch (error: any) {
       console.error("Login error:", error);
@@ -225,91 +211,8 @@ export default function LoginScreen() {
         general:
           error.message || "An unexpected error occurred. Please try again.",
       });
-    } finally {
       setIsLoading(false);
-    }
-  };
-
-  const handleGoogleLogin = async () => {
-    if (isLoading) return;
-
-    setIsLoading(true);
-    setErrors({});
-
-    try {
-      console.log("Starting Google OAuth login...");
-      const { data, error } = await GoogleAuthService.signInWithGoogle();
-
-      if (error) {
-        console.error("Google login error:", error);
-        setErrors({
-          general: error.message || "Google sign-in failed. Please try again.",
-        });
-        return;
-      }
-
-      if (data?.session?.user) {
-        console.log("Google login successful:", data.session.user.email);
-
-        try {
-          // Check profile completion first
-          const isProfileComplete = useAuthStore.getState().profileComplete;
-
-          if (isProfileComplete === false) {
-            console.log("🆕 New Google user - navigating to onboarding");
-            // For new users, go directly to onboarding without preloading nutrition data
-            navigation.reset({
-              index: 0,
-              routes: [{ name: "onboarding" }],
-            });
-          } else {
-            console.log(
-              "👤 Existing Google user - preloading data and navigating to main app"
-            );
-            // For existing users, preload nutrition data before going to main app
-            await preloadNutritionData();
-            navigation.reset({
-              index: 0,
-              routes: [{ name: "page-2" }],
-            });
-          }
-        } catch (preloadError) {
-          console.error(
-            "Failed to preload data after Google login:",
-            preloadError
-          );
-          // Still navigate but show a warning
-          setErrors({
-            general:
-              "Login successful but some data failed to load. You may experience slower page loads.",
-          });
-
-          // Navigate anyway after a short delay
-          setTimeout(() => {
-            const isProfileComplete = useAuthStore.getState().profileComplete;
-            if (isProfileComplete === false) {
-              navigation.reset({
-                index: 0,
-                routes: [{ name: "onboarding" }],
-              });
-            } else {
-              navigation.reset({
-                index: 0,
-                routes: [{ name: "page-2" }],
-              });
-            }
-          }, 1000);
-        }
-      }
-    } catch (error: any) {
-      console.error("Unexpected Google login error:", error);
-      setErrors({
-        general:
-          error.message ||
-          "An unexpected error occurred during Google sign-in. Please try again.",
-      });
-    } finally {
-      setIsLoading(false);
+      setIsLoadingData(false);
     }
   };
 
@@ -334,7 +237,8 @@ export default function LoginScreen() {
     navigation.navigate("signup");
   };
 
-  if (isLoading) {
+  // Show loading screen while fetching data
+  if (isLoadingData) {
     return <Loading />;
   }
 
@@ -483,51 +387,51 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     flexGrow: 1,
-    paddingHorizontal: scale(20), // Reduced from 24
-    paddingTop: verticalScale(5), // Reduced from 10
-    paddingBottom: verticalScale(5), // Reduced from 10
+    paddingHorizontal: scale(20),
+    paddingTop: verticalScale(5),
+    paddingBottom: verticalScale(5),
   },
   logoContainer: {
     alignItems: "center",
-    minHeight: verticalScale(50), // Reduced from 80
+    minHeight: verticalScale(50),
     justifyContent: "center",
-    marginBottom: verticalScale(5), // Reduced from 10
-    paddingVertical: verticalScale(2), // Reduced padding
+    marginBottom: verticalScale(5),
+    paddingVertical: verticalScale(2),
   },
   logo: {
-    width: scale(220), // Reduced from 260
-    height: verticalScale(50), // Reduced from 70
-    maxWidth: screenWidth * 0.6, // Reduced from 0.7
-    maxHeight: verticalScale(60), // Reduced from 80
+    width: scale(220),
+    height: verticalScale(50),
+    maxWidth: screenWidth * 0.6,
+    maxHeight: verticalScale(60),
   },
   titleContainer: {
-    minHeight: verticalScale(30), // Reduced from 40
+    minHeight: verticalScale(30),
     justifyContent: "center",
     alignItems: "center",
-    marginBottom: verticalScale(10), // Reduced from 20
-    paddingVertical: verticalScale(2), // Reduced padding
+    marginBottom: verticalScale(10),
+    paddingVertical: verticalScale(2),
   },
   title: {
-    fontSize: moderateScale(24), // Moderate scaling for better readability
+    fontSize: moderateScale(24),
     fontWeight: "bold",
     color: "#333",
     lineHeight: moderateScale(30),
   },
   formContainer: {
-    marginBottom: verticalScale(5), // Reduced from 10
+    marginBottom: verticalScale(5),
   },
   forgotPasswordContainer: {
-    minHeight: verticalScale(24), // Reduced from 32
+    minHeight: verticalScale(24),
     alignItems: "flex-end",
     justifyContent: "center",
-    marginBottom: verticalScale(5), // Reduced from 10
-    paddingVertical: verticalScale(2), // Reduced padding
+    marginBottom: verticalScale(5),
+    paddingVertical: verticalScale(2),
   },
   generalErrorContainer: {
     minHeight: verticalScale(18),
     justifyContent: "center",
     alignItems: "center",
-    marginBottom: verticalScale(12), // Increased slightly since we removed forgot password container
+    marginBottom: verticalScale(12),
     paddingHorizontal: scale(10),
   },
   generalError: {
@@ -535,22 +439,22 @@ const styles = StyleSheet.create({
     color: "#F44336",
     textAlign: "center",
     lineHeight: scale(18),
-    flexWrap: "wrap", // Allow wrapping on smaller screens
+    flexWrap: "wrap",
   },
   generalErrorHidden: {
-    opacity: 0, // Hide but maintain space
+    opacity: 0,
   },
   loginButtonContainer: {
-    minHeight: verticalScale(44), // Reduced from 48
-    marginBottom: verticalScale(5), // Reduced from 10
-    paddingVertical: verticalScale(1), // Reduced padding
+    minHeight: verticalScale(44),
+    marginBottom: verticalScale(5),
+    paddingVertical: verticalScale(1),
   },
   dividerContainer: {
     flexDirection: "row",
     alignItems: "center",
-    minHeight: verticalScale(30), // Reduced from 40
-    marginVertical: verticalScale(5), // Reduced from 10
-    paddingVertical: verticalScale(2), // Reduced padding
+    minHeight: verticalScale(30),
+    marginVertical: verticalScale(5),
+    paddingVertical: verticalScale(2),
   },
   dividerLine: {
     flex: 1,
@@ -566,22 +470,22 @@ const styles = StyleSheet.create({
     lineHeight: scale(20),
   },
   socialContainer: {
-    minHeight: verticalScale(90), // Reduced from 120
+    minHeight: verticalScale(90),
     justifyContent: "space-between",
-    marginBottom: verticalScale(5), // Reduced from 10
-    paddingVertical: verticalScale(2), // Reduced padding
+    marginBottom: verticalScale(5),
+    paddingVertical: verticalScale(2),
   },
   bottomDividerContainer: {
     flexDirection: "row",
     alignItems: "center",
-    minHeight: verticalScale(15), // Reduced from 20
-    marginVertical: verticalScale(5), // Reduced from 10
+    minHeight: verticalScale(15),
+    marginVertical: verticalScale(5),
   },
   createAccountContainer: {
-    minHeight: verticalScale(24), // Reduced from 32
+    minHeight: verticalScale(24),
     alignItems: "center",
     justifyContent: "center",
-    marginTop: verticalScale(5), // Reduced from 10
-    paddingVertical: verticalScale(2), // Reduced padding
+    marginTop: verticalScale(5),
+    paddingVertical: verticalScale(2),
   },
 });
