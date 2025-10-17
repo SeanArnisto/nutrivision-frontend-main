@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState } from "react";
 import {
   View,
   Text,
@@ -7,17 +7,22 @@ import {
   Dimensions,
   TouchableWithoutFeedback,
   Keyboard,
-} from 'react-native';
-import { useNavigation, useRoute } from '@react-navigation/native';
-import { StackNavigationProp } from '@react-navigation/stack';
-import { Ionicons } from '@expo/vector-icons';
-import { RootStackParamList } from '@/types/types';
+} from "react-native";
+import { useNavigation, useRoute } from "@react-navigation/native";
+import { StackNavigationProp } from "@react-navigation/stack";
+import { Ionicons } from "@expo/vector-icons";
+import { RootStackParamList } from "@/types/types";
+import { useAuthStore } from "@/stores/authStore";
+import Toast, { ToastType } from "@/components/Toast";
 
-import ScreenContainer from '@/components/ScreenContainer';
-import CustomTextInput from '@/components/CustomTextInput';
-import AuthButton from '@/components/AuthButton';
+import ScreenContainer from "@/components/ScreenContainer";
+import CustomTextInput from "@/components/CustomTextInput";
+import AuthButton from "@/components/AuthButton";
 
-type ForgotPasswordResetNavigationProp = StackNavigationProp<RootStackParamList, 'forgot-reset'>;
+type ForgotPasswordResetNavigationProp = StackNavigationProp<
+  RootStackParamList,
+  "forgot-reset"
+>;
 
 interface RouteParams {
   email?: string;
@@ -34,7 +39,7 @@ interface PasswordErrors {
   general?: string;
 }
 
-const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
+const { width: screenWidth, height: screenHeight } = Dimensions.get("window");
 
 const scale = (size: number) => (screenWidth / 375) * size;
 const verticalScale = (size: number) => (screenHeight / 812) * size;
@@ -45,14 +50,36 @@ export default function ForgotPasswordResetScreen() {
   const navigation = useNavigation<ForgotPasswordResetNavigationProp>();
   const route = useRoute();
   const { email } = (route.params as RouteParams) || {};
+  const { resetPasswordInApp } = useAuthStore();
+
+  const [toast, setToast] = useState<{
+    visible: boolean;
+    type: ToastType;
+    title: string;
+    message: string;
+  }>({
+    visible: false,
+    type: "info",
+    title: "",
+    message: "",
+  });
 
   const [formData, setFormData] = useState<PasswordFormData>({
-    newPassword: '',
-    confirmPassword: '',
+    newPassword: "",
+    confirmPassword: "",
   });
 
   const [errors, setErrors] = useState<PasswordErrors>({});
   const [isLoading, setIsLoading] = useState(false);
+
+  const showToast = (type: ToastType, title: string, message: string) => {
+  setToast({ visible: true, type, title, message });
+  
+ 
+  setTimeout(() => {
+    setToast({ visible: false, type: "", title: "", message: "" });
+  }, 3000);
+};
 
   // Password validation checks
   const hasMinLength = formData.newPassword.length >= 8;
@@ -62,17 +89,17 @@ export default function ForgotPasswordResetScreen() {
     const newErrors: PasswordErrors = {};
 
     if (!formData.newPassword) {
-      newErrors.newPassword = 'New password is required';
+      newErrors.newPassword = "New password is required";
     } else if (formData.newPassword.length < 8) {
-      newErrors.newPassword = 'Password must be at least 8 characters';
+      newErrors.newPassword = "Password must be at least 8 characters";
     } else if (!hasSpecialChar) {
-      newErrors.newPassword = 'Password must contain one special character';
+      newErrors.newPassword = "Password must contain one special character";
     }
 
     if (!formData.confirmPassword) {
-      newErrors.confirmPassword = 'Please confirm your password';
+      newErrors.confirmPassword = "Please confirm your password";
     } else if (formData.newPassword !== formData.confirmPassword) {
-      newErrors.confirmPassword = 'Passwords do not match';
+      newErrors.confirmPassword = "Passwords do not match";
     }
 
     setErrors(newErrors);
@@ -87,12 +114,34 @@ export default function ForgotPasswordResetScreen() {
 
     try {
       // Simulate API call to reset password
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      
-      // Navigate back to login
-      navigation.navigate('login');
+      await new Promise((resolve) => setTimeout(resolve, 1500));
+      const { error } = await resetPasswordInApp(formData.confirmPassword);
+
+      if (error) {
+        showToast(
+          "error",
+          "Error!",
+          "Failed to change password. Please try again."
+        );
+        await new Promise((resolve) => setTimeout(resolve, 3500));
+        navigation.reset({
+          index: 0,
+          routes: [{ name: "forgot-email" }],
+        });
+      } else {
+        showToast(
+          "success",
+          "Change Password Success!",
+          "Login with your new password."
+        );
+        await new Promise((resolve) => setTimeout(resolve, 3500));
+        navigation.reset({
+          index: 0,
+          routes: [{ name: "login" }],
+        });
+      }
     } catch (error) {
-      setErrors({ general: 'Failed to reset password. Please try again.' });
+      setErrors({ general: "Failed to reset password. Please try again." });
     } finally {
       setIsLoading(false);
     }
@@ -108,7 +157,10 @@ export default function ForgotPasswordResetScreen() {
         <View style={styles.container}>
           {/* Header */}
           <View style={styles.header}>
-            <TouchableOpacity onPress={handleBackPress} style={styles.backButton}>
+            <TouchableOpacity
+              onPress={handleBackPress}
+              style={styles.backButton}
+            >
               <Ionicons name="chevron-back" size={scale(24)} color="#333" />
             </TouchableOpacity>
             <Text style={styles.headerTitle}>Forgot Password</Text>
@@ -123,13 +175,20 @@ export default function ForgotPasswordResetScreen() {
                 <Ionicons name="lock-closed" size={scale(40)} color="#9AB106" />
               </View>
             </View>
+            <Toast
+              type={toast.type}
+              title={toast.title}
+              message={toast.message}
+              visible={toast.visible}
+            />
 
             {/* Title */}
             <Text style={styles.title}>Set New Password</Text>
 
             {/* Subtitle */}
             <Text style={styles.subtitle}>
-              your new password must be different{'\n'}to previously used Passwords.
+              your new password must be different{"\n"}to previously used
+              Passwords.
             </Text>
 
             {/* Form */}
@@ -137,7 +196,9 @@ export default function ForgotPasswordResetScreen() {
               <CustomTextInput
                 label="New Password*"
                 value={formData.newPassword}
-                onChangeText={(newPassword) => setFormData(prev => ({ ...prev, newPassword }))}
+                onChangeText={(newPassword) =>
+                  setFormData((prev) => ({ ...prev, newPassword }))
+                }
                 placeholder="Enter your new password"
                 secureTextEntry
                 error={errors.newPassword}
@@ -146,7 +207,9 @@ export default function ForgotPasswordResetScreen() {
               <CustomTextInput
                 label="Confirm Password*"
                 value={formData.confirmPassword}
-                onChangeText={(confirmPassword) => setFormData(prev => ({ ...prev, confirmPassword }))}
+                onChangeText={(confirmPassword) =>
+                  setFormData((prev) => ({ ...prev, confirmPassword }))
+                }
                 placeholder="Confirm your password"
                 secureTextEntry
                 error={errors.confirmPassword}
@@ -155,23 +218,41 @@ export default function ForgotPasswordResetScreen() {
               {/* Password Requirements */}
               <View style={styles.requirementsContainer}>
                 <View style={styles.requirementItem}>
-                  <Ionicons 
-                    name={hasMinLength ? "checkmark-circle" : "checkmark-circle-outline"} 
-                    size={scale(16)} 
-                    color={hasMinLength ? "#4CAF50" : "#E0E0E0"} 
+                  <Ionicons
+                    name={
+                      hasMinLength
+                        ? "checkmark-circle"
+                        : "checkmark-circle-outline"
+                    }
+                    size={scale(16)}
+                    color={hasMinLength ? "#4CAF50" : "#E0E0E0"}
                   />
-                  <Text style={[styles.requirementText, hasMinLength && styles.requirementMet]}>
+                  <Text
+                    style={[
+                      styles.requirementText,
+                      hasMinLength && styles.requirementMet,
+                    ]}
+                  >
                     Must be at least 8 characters
                   </Text>
                 </View>
 
                 <View style={styles.requirementItem}>
-                  <Ionicons 
-                    name={hasSpecialChar ? "checkmark-circle" : "checkmark-circle-outline"} 
-                    size={scale(16)} 
-                    color={hasSpecialChar ? "#4CAF50" : "#E0E0E0"} 
+                  <Ionicons
+                    name={
+                      hasSpecialChar
+                        ? "checkmark-circle"
+                        : "checkmark-circle-outline"
+                    }
+                    size={scale(16)}
+                    color={hasSpecialChar ? "#4CAF50" : "#E0E0E0"}
                   />
-                  <Text style={[styles.requirementText, hasSpecialChar && styles.requirementMet]}>
+                  <Text
+                    style={[
+                      styles.requirementText,
+                      hasSpecialChar && styles.requirementMet,
+                    ]}
+                  >
                     Must contain one special character
                   </Text>
                 </View>
@@ -179,8 +260,13 @@ export default function ForgotPasswordResetScreen() {
 
               {/* General Error */}
               <View style={styles.generalErrorContainer}>
-                <Text style={[styles.generalError, !errors.general && styles.generalErrorHidden]}>
-                  {errors.general || ' '}
+                <Text
+                  style={[
+                    styles.generalError,
+                    !errors.general && styles.generalErrorHidden,
+                  ]}
+                >
+                  {errors.general || " "}
                 </Text>
               </View>
 
@@ -206,9 +292,9 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     paddingHorizontal: scale(20),
     paddingVertical: verticalScale(15),
     paddingTop: verticalScale(10),
@@ -218,8 +304,8 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontSize: moderateScale(18),
-    fontWeight: '600',
-    color: '#333',
+    fontWeight: "600",
+    color: "#333",
   },
   headerPlaceholder: {
     width: scale(34),
@@ -227,8 +313,8 @@ const styles = StyleSheet.create({
   content: {
     flex: 1,
     paddingHorizontal: scale(20),
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
   },
   iconContainer: {
     marginBottom: verticalScale(20),
@@ -237,60 +323,60 @@ const styles = StyleSheet.create({
     width: scale(80),
     height: scale(80),
     borderRadius: scale(40),
-    backgroundColor: '#F0F8E8',
-    alignItems: 'center',
-    justifyContent: 'center',
+    backgroundColor: "#F0F8E8",
+    alignItems: "center",
+    justifyContent: "center",
   },
   title: {
     fontSize: moderateScale(24),
-    fontWeight: 'bold',
-    color: '#333',
+    fontWeight: "bold",
+    color: "#333",
     marginBottom: verticalScale(10),
-    textAlign: 'center',
+    textAlign: "center",
   },
   subtitle: {
     fontSize: scale(16),
-    color: '#666',
-    textAlign: 'center',
+    color: "#666",
+    textAlign: "center",
     marginBottom: verticalScale(25),
     lineHeight: scale(22),
   },
   formContainer: {
-    width: '100%',
+    width: "100%",
   },
   requirementsContainer: {
     marginTop: verticalScale(10),
     marginBottom: verticalScale(10),
   },
   requirementItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     marginBottom: verticalScale(8),
   },
   requirementText: {
     fontSize: scale(14),
-    color: '#666',
+    color: "#666",
     marginLeft: scale(8),
   },
   requirementMet: {
-    color: '#4CAF50',
+    color: "#4CAF50",
   },
   generalErrorContainer: {
     minHeight: verticalScale(18),
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     marginBottom: verticalScale(12),
   },
   generalError: {
     fontSize: scale(14),
-    color: '#F44336',
-    textAlign: 'center',
+    color: "#F44336",
+    textAlign: "center",
   },
   generalErrorHidden: {
     opacity: 0,
   },
   submitButtonContainer: {
-    width: '100%',
+    width: "100%",
     paddingHorizontal: scale(10),
   },
 });
