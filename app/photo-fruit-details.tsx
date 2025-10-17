@@ -1,5 +1,5 @@
 // photo-label-details.tsx - The main page component
-import React, { useRef, useState, useEffect } from 'react';
+import React, { useRef, useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -9,23 +9,29 @@ import {
   PanResponder,
   Animated,
   StatusBar,
-} from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { useRoute, RouteProp } from '@react-navigation/native';
-import { StackNavigationProp } from '@react-navigation/stack';
-import { useNavigation } from '@react-navigation/native';
-import { RootStackParamList } from '@/types/types'; // Import your existing types
-import ReturnButton from '@/components/ReturnButton';
-import AvgIntakeCard from '@/components/avgIntakeCard';
-import AmountSelector from '@/components/amount';
+} from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { useRoute, RouteProp } from "@react-navigation/native";
+import { StackNavigationProp } from "@react-navigation/stack";
+import { useNavigation } from "@react-navigation/native";
+import { RootStackParamList } from "@/types/types"; // Import your existing types
+import ReturnButton from "@/components/ReturnButton";
+import AvgIntakeCard from "@/components/avgIntakeCard";
+import AmountSelector from "@/components/amount";
 
-const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
+const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get("window");
 const BOTTOM_SHEET_MAX_HEIGHT = SCREEN_HEIGHT * 0.5;
 const BOTTOM_SHEET_MIN_HEIGHT = 120;
 
 // Use your existing RootStackParamList from types.ts
-type PhotoFruitDetailsRouteProp = RouteProp<RootStackParamList, 'photo-fruit-details'>;
-type PhotoFruitDetailsNavigationProp = StackNavigationProp<RootStackParamList, 'photo-fruit-details'>;
+type PhotoFruitDetailsRouteProp = RouteProp<
+  RootStackParamList,
+  "photo-fruit-details"
+>;
+type PhotoFruitDetailsNavigationProp = StackNavigationProp<
+  RootStackParamList,
+  "photo-fruit-details"
+>;
 
 interface NutritionalData {
   carbs: number;
@@ -41,20 +47,20 @@ interface PhotoFruitDetailsPageProps {
 }
 
 // Main Page Component
-function PhotoFruitDetailsPage({ 
-  imageUri = 'placeholder',
+function PhotoFruitDetailsPage({
+  imageUri = "placeholder",
   nutritionalData = {
     carbs: 18,
     sodium: 1.8,
     protein: 2,
     servings: 1,
-    type: "large apple"
-  }
+    type: "large apple",
+  },
 }: PhotoFruitDetailsPageProps) {
   const translateY = useRef(new Animated.Value(0)).current;
   const [isExpanded, setIsExpanded] = useState(true);
   const currentY = useRef(0);
-  const [amount, setAmount] = useState(0);
+  const [amount, setAmount] = useState(1);
 
   useEffect(() => {
     const listener = translateY.addListener(({ value }) => {
@@ -74,18 +80,17 @@ function PhotoFruitDetailsPage({
       },
       onPanResponderMove: (evt, gestureState) => {
         const newY = gestureState.dy;
-        const clampedY = Math.max(
-          Math.min(newY, BOTTOM_SHEET_MIN_HEIGHT),
-          0
-        );
+        const clampedY = Math.max(Math.min(newY, BOTTOM_SHEET_MIN_HEIGHT), 0);
         translateY.setValue(clampedY);
       },
       onPanResponderRelease: (evt, gestureState) => {
         translateY.flattenOffset();
-        
-        const shouldExpand = gestureState.vy < -0.5 || 
-          (gestureState.vy > -0.5 && currentY.current < -BOTTOM_SHEET_MAX_HEIGHT / 2);
-        
+
+        const shouldExpand =
+          gestureState.vy < -0.5 ||
+          (gestureState.vy > -0.5 &&
+            currentY.current < -BOTTOM_SHEET_MAX_HEIGHT / 2);
+
         if (shouldExpand) {
           setIsExpanded(true);
           Animated.spring(translateY, {
@@ -106,14 +111,14 @@ function PhotoFruitDetailsPage({
   const overlayOpacity = translateY.interpolate({
     inputRange: [0, BOTTOM_SHEET_MAX_HEIGHT - BOTTOM_SHEET_MIN_HEIGHT],
     outputRange: [0.4, 0],
-    extrapolate: 'clamp',
+    extrapolate: "clamp",
   });
 
   // Placeholder icons - replace these with your actual icon paths
   // For now, comment these out to avoid errors until you add the icon files
-  const carbsIcon = require('@/assets/images/Carbohydrate Icon.png'); 
-  const sodiumIcon = require('@/assets/images/Sodium Icon.png');  
-  const proteinIcon = require('@/assets/images/Protein Icon.png');
+  const carbsIcon = require("@/assets/images/Carbohydrate Icon.png");
+  const sodiumIcon = require("@/assets/images/Sodium Icon.png");
+  const proteinIcon = require("@/assets/images/Protein Icon.png");
 
   // Temporary placeholders - replace with actual icons
   // const carbsIcon = null;
@@ -123,17 +128,21 @@ function PhotoFruitDetailsPage({
   return (
     <View style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor="#000" />
-      
+
       {/* Background Image Container */}
       <View style={styles.imageContainer}>
-        {imageUri === 'placeholder' ? (
+        {imageUri === "placeholder" ? (
           <View style={styles.placeholderContainer}>
-            <Text style={styles.placeholderText}>Captured Photo Will Appear Here</Text>
-            <Text style={styles.placeholderSubtext}>Image from camera module</Text>
+            <Text style={styles.placeholderText}>
+              Captured Photo Will Appear Here
+            </Text>
+            <Text style={styles.placeholderSubtext}>
+              Image from camera module
+            </Text>
           </View>
         ) : (
-          <Image 
-            source={{ uri: imageUri }} 
+          <Image
+            source={{ uri: imageUri }}
             style={styles.backgroundImage}
             resizeMode="cover"
           />
@@ -141,13 +150,13 @@ function PhotoFruitDetailsPage({
       </View>
 
       {/* Overlay when sheet is expanded */}
-      <Animated.View 
-        style={[styles.overlay, { opacity: overlayOpacity }]} 
-        pointerEvents={isExpanded ? 'auto' : 'none'}
+      <Animated.View
+        style={[styles.overlay, { opacity: overlayOpacity }]}
+        pointerEvents={isExpanded ? "auto" : "none"}
       />
 
       {/* Bottom Sheet */}
-      <Animated.View 
+      <Animated.View
         style={[styles.bottomSheet, { transform: [{ translateY }] }]}
         {...panResponder.panHandlers}
       >
@@ -155,18 +164,21 @@ function PhotoFruitDetailsPage({
         <View style={styles.handleContainer}>
           <View style={styles.handle} />
         </View>
-        
+
         {/* Content Container */}
         <View style={styles.contentContainer}>
           {/* Title */}
           <View style={styles.amountHeader}>
-                <Text style={styles.title}>{nutritionalData.type}</Text>
-                <AmountSelector amount={amount} onIncrease={() => setAmount((prev) => prev + 1)} onDecrease={() => setAmount((prev) => prev - 1)} />
+            <Text style={styles.title}>{nutritionalData.type}</Text>
+            <AmountSelector
+              amount={amount}
+              onIncrease={() => setAmount((prev) => prev + 1)}
+              onDecrease={() => setAmount((prev) => prev - 1)}
+            />
           </View>
-          
-          
+
           {/* Nutritional Cards Row */}
-          <View style={styles.cardsRow}>  
+          <View style={styles.cardsRow}>
             <View style={styles.cardContainer}>
               <AvgIntakeCard
                 iconSource={carbsIcon}
@@ -176,7 +188,7 @@ function PhotoFruitDetailsPage({
                 fill={100}
               />
             </View>
-            
+
             <View style={styles.cardContainer}>
               <AvgIntakeCard
                 iconSource={sodiumIcon}
@@ -186,7 +198,7 @@ function PhotoFruitDetailsPage({
                 fill={100}
               />
             </View>
-            
+
             <View style={styles.cardContainer}>
               <AvgIntakeCard
                 iconSource={proteinIcon}
@@ -210,80 +222,82 @@ function PhotoFruitDetailsPage({
 export default function FruitScreen() {
   const route = useRoute<PhotoFruitDetailsRouteProp>();
   const navigation = useNavigation<PhotoFruitDetailsNavigationProp>();
-  
+
   // Get params from navigation safely (guard against undefined and incorrect typing)
   const params = (route.params ?? {}) as Partial<{
     imageUri?: string;
     nutritionalData?: NutritionalData;
   }>;
   const { imageUri, nutritionalData } = params;
-  
+
   // Handle case where no params are passed (for testing)
   if (!imageUri && __DEV__) {
-    console.warn('NutritionalLabelScreen: No imageUri provided in route params');
+    console.warn(
+      "NutritionalLabelScreen: No imageUri provided in route params"
+    );
   }
-  
+
   return (
-    <PhotoFruitDetailsPage 
-      imageUri={imageUri ?? 'placeholder'}
+    <PhotoFruitDetailsPage
+      imageUri={imageUri ?? "placeholder"}
       nutritionalData={nutritionalData}
     />
   );
 }
 
 const styles = StyleSheet.create({
-    amountHeader: {
-        display: 'flex',
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'flex-end',
-        marginBottom: 50
-    },
+  amountHeader: {
+    display: "flex",
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "flex-end",
+    marginBottom: 50,
+  },
   container: {
     flex: 1,
-    backgroundColor: '#000',
+    backgroundColor: "#000",
   },
   imageContainer: {
     flex: 1,
-    width: '100%',
-    height: '100%',
+    width: "100%",
+    height: "100%",
   },
   backgroundImage: {
-    width: '100%',
-    height: '100%',
+    width: "100%",
+    height: "100%",
   },
   placeholderContainer: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#1a1a1a',
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "#1a1a1a",
   },
   placeholderText: {
-    color: '#9AB206',
+    color: "#9AB206",
     fontSize: 18,
-    fontWeight: 'bold',
+    fontWeight: "bold",
     marginBottom: 8,
-    textAlign: 'center',
+    textAlign: "center",
   },
   placeholderSubtext: {
-    color: '#666',
+    color: "#666",
     fontSize: 14,
-    textAlign: 'center',
+    textAlign: "center",
   },
   overlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'black',
+    backgroundColor: "black",
   },
   bottomSheet: {
-    position: 'absolute',
+    position: "absolute",
     bottom: 0,
     left: 0,
     right: 0,
     height: BOTTOM_SHEET_MAX_HEIGHT,
-    backgroundColor: '#f8f9fa',
+    backgroundColor: "#f8f9fa",
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
-    shadowColor: '#000',
+    shadowColor: "#000",
     shadowOffset: {
       width: 0,
       height: -4,
@@ -293,14 +307,14 @@ const styles = StyleSheet.create({
     elevation: 16,
   },
   handleContainer: {
-    alignItems: 'center',
+    alignItems: "center",
     paddingTop: 12,
     paddingBottom: 8,
   },
   handle: {
     width: 40,
     height: 4,
-    backgroundColor: '#d1d5db',
+    backgroundColor: "#d1d5db",
     borderRadius: 2,
   },
   contentContainer: {
@@ -311,14 +325,14 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 30,
-    fontWeight: 'bold',
-    color: '#1f2937',
+    fontWeight: "bold",
+    color: "#1f2937",
     marginBottom: 5,
-    textAlign: 'left',
+    textAlign: "left",
   },
   cardsRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    justifyContent: "space-between",
     marginBottom: 20,
     gap: 12,
   },
@@ -328,22 +342,22 @@ const styles = StyleSheet.create({
   },
   amountContainer: {
     marginBottom: 20,
-    alignItems: 'flex-end',
+    alignItems: "flex-end",
   },
   amountLabel: {
     fontSize: 16,
-    color: '#666',
+    color: "#666",
     marginBottom: 8,
-    fontWeight: '500',
+    fontWeight: "500",
   },
   amountSelector: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'white',
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "white",
     borderRadius: 12,
     paddingHorizontal: 16,
     paddingVertical: 8,
-    shadowColor: '#000',
+    shadowColor: "#000",
     shadowOffset: {
       width: 0,
       height: 2,
@@ -356,29 +370,29 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: '#f0f0f0',
-    justifyContent: 'center',
-    alignItems: 'center',
+    backgroundColor: "#f0f0f0",
+    justifyContent: "center",
+    alignItems: "center",
   },
   amountButtonText: {
     fontSize: 20,
-    fontWeight: 'bold',
-    color: '#666',
+    fontWeight: "bold",
+    color: "#666",
   },
   amountValue: {
     fontSize: 18,
-    fontWeight: 'bold',
-    color: '#1f2937',
+    fontWeight: "bold",
+    color: "#1f2937",
     marginHorizontal: 20,
     minWidth: 30,
-    textAlign: 'center',
+    textAlign: "center",
   },
   servingsCard: {
-    backgroundColor: 'white',
+    backgroundColor: "white",
     borderRadius: 12,
     padding: 20,
     marginTop: 22,
-    shadowColor: '#000',
+    shadowColor: "#000",
     shadowOffset: {
       width: 0,
       height: 2,
@@ -389,9 +403,9 @@ const styles = StyleSheet.create({
   },
   servingsTitle: {
     fontSize: 18,
-    fontWeight: 'bold',
-    color: '#1f2937',
-    textAlign: 'center',
+    fontWeight: "bold",
+    color: "#1f2937",
+    textAlign: "center",
   },
 });
 

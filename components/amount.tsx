@@ -51,7 +51,7 @@ export default function AmountSelector({
       {/* Amount Selector */}
       <View style={[styles.selectorContainer, disabled && styles.disabledContainer]}>
         {/* Decrease Button */}
-        <TouchableOpacity
+        {/* <TouchableOpacity
           style={[
             styles.button,
             styles.decreaseButton,
@@ -67,7 +67,7 @@ export default function AmountSelector({
           ]}>
             −
           </Text>
-        </TouchableOpacity>
+        </TouchableOpacity> */}
 
         {/* Amount Display */}
         <View style={styles.amountContainer}>
@@ -77,7 +77,7 @@ export default function AmountSelector({
         </View>
 
         {/* Increase Button */}
-        <TouchableOpacity
+        {/* <TouchableOpacity
           style={[
             styles.button,
             styles.increaseButton,
@@ -93,7 +93,7 @@ export default function AmountSelector({
           ]}>
             +
           </Text>
-        </TouchableOpacity>
+        </TouchableOpacity> */}
       </View>
     </View>
   );

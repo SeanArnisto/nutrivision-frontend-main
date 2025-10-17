@@ -58,7 +58,7 @@ export const useNutrientsStore = create<Nutrients & store>((set, get) => ({
       return { success: false, error: "No nutritional data to save" };
     }
 
-    set({ loading: true, error: null });  
+    set({ loading: true, error: null });
 
     try {
       // Get current user
@@ -73,6 +73,8 @@ export const useNutrientsStore = create<Nutrients & store>((set, get) => ({
       // Calculate total (all nutrients are in grams)
       const total = carbs + protein + sodium;
 
+      const localNow = new Date();
+
       // Insert nutritional record
       const { data: recordData, error: recordError } = await supabase
         .from("nutritional_records")
@@ -83,6 +85,7 @@ export const useNutrientsStore = create<Nutrients & store>((set, get) => ({
             protein: protein,
             sodium: sodium,
             total: total,
+            created_at: localNow.toISOString(),
           },
         ])
         .select()
@@ -107,14 +110,14 @@ export const useNutrientsStore = create<Nutrients & store>((set, get) => ({
 
             // Create FormData for file upload
             const formData = new FormData();
-            formData.append('file', {
+            formData.append("file", {
               uri: image.uri,
-              type: 'image/jpeg',
+              type: "image/jpeg",
               name: fileName,
             } as any);
 
-            console.log('Uploading image:', fileName);
-            console.log('Image URI:', image.uri);
+            console.log("Uploading image:", fileName);
+            console.log("Image URI:", image.uri);
 
             const { data: uploadData, error: uploadError } =
               await supabase.storage
@@ -154,7 +157,7 @@ export const useNutrientsStore = create<Nutrients & store>((set, get) => ({
               return null;
             }
 
-            console.log('Image uploaded successfully:', fileName);
+            console.log("Image uploaded successfully:", fileName);
             return imageData;
           } catch (error) {
             console.error("Error processing image:", error);
@@ -201,6 +204,8 @@ export const useNutrientsStore = create<Nutrients & store>((set, get) => ({
       // Calculate total (all nutrients are in grams)
       const total = carbs + protein + sodium;
 
+      const localNow = new Date();
+
       // Insert nutritional record
       const { data: recordData, error: recordError } = await supabase
         .from("nutritional_records")
@@ -211,6 +216,7 @@ export const useNutrientsStore = create<Nutrients & store>((set, get) => ({
             protein: protein,
             sodium: sodium,
             total: total,
+            created_at: localNow.toISOString(),
           },
         ])
         .select()
@@ -234,14 +240,14 @@ export const useNutrientsStore = create<Nutrients & store>((set, get) => ({
 
             // Create FormData for file upload
             const formData = new FormData();
-            formData.append('file', {
+            formData.append("file", {
               uri: photo.uri,
-              type: 'image/jpeg',
+              type: "image/jpeg",
               name: fileName,
             } as any);
 
-            console.log('Uploading photo:', fileName);
-            console.log('Photo URI:', photo.uri);
+            console.log("Uploading photo:", fileName);
+            console.log("Photo URI:", photo.uri);
 
             const { data: uploadData, error: uploadError } =
               await supabase.storage
@@ -271,6 +277,7 @@ export const useNutrientsStore = create<Nutrients & store>((set, get) => ({
                   nutritional_record_id: recordData.id,
                   image_url: publicUrl,
                   image_order: index + 1,
+                  created_at: localNow.toISOString(),
                 },
               ])
               .select()
@@ -281,7 +288,7 @@ export const useNutrientsStore = create<Nutrients & store>((set, get) => ({
               return null;
             }
 
-            console.log('Photo uploaded successfully:', fileName);
+            console.log("Photo uploaded successfully:", fileName);
             return imageData;
           } catch (error) {
             console.error("Error processing image:", error);
