@@ -10,10 +10,11 @@ import {
   Image,
   ScrollView,
   Platform,
-  SafeAreaView,
   Dimensions,
   Linking,
 } from "react-native";
+
+import { SafeAreaView } from "react-native-safe-area-context";
 
 import { CameraView, useCameraPermissions } from "expo-camera";
 import * as MediaLibrary from "expo-media-library";
@@ -1090,13 +1091,6 @@ export default function Camera() {
     return (
       <View style={styles.container}>
         <Loading />
-        {uploadProgress > 0 && (
-          <View style={styles.progressContainer}>
-            <Text style={styles.progressText}>
-              Uploading: {uploadProgress}%
-            </Text>
-          </View>
-        )}
       </View>
     );
   }

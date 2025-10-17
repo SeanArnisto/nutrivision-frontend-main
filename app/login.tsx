@@ -198,6 +198,7 @@ export default function LoginScreen() {
           navigation.navigate("onboarding");
           return;
         }
+        preloadNutritionData();
         setIsLoading(true);
         // Only set the timer if profile is complete
         setTimeout(() => {

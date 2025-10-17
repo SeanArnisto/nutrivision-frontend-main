@@ -30,7 +30,7 @@ export default function Loading() {
     >
       <View style={styles.centeredContainer}>
         <Image
-          source={require("@/assets/images/loading_logo.png")}
+          source={require("@/assets/images/new_loading_logo.png")}
           style={styles.logo}
         />
         <LottieView
@@ -53,7 +53,6 @@ const styles = StyleSheet.create({
   centeredContainer: {
     flex: 1,
     justifyContent: "center",
-    marginLeft: 10,
     alignItems: "center",
     paddingVertical: 20, // Add padding to bring elements closer
   },
