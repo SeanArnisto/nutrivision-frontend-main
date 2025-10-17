@@ -74,6 +74,7 @@ interface AverageIntakeState {
 
   // Actions
   fetchNutritionIntakeAve: () => Promise<void>;
+  updateNutritionIntakeAve: () => Promise<void>;
   clearNutritionData: () => void;
 }
 
@@ -180,6 +181,103 @@ export const fetchNutritionAverage = create<AverageIntakeState>((set, get) => ({
     }
   },
 
+  updateNutritionIntakeAve: async () => {
+    try {
+      set({ isLoading: true, error: null });
+
+      const { user, profileComplete } = useAuthStore.getState();
+
+      if (!user || profileComplete === false) {
+        console.log("❌ no authenticated user or user's profile isnt complete");
+        set({ isLoading: false, error: "System did not find any record." });
+
+        return;
+      }
+
+      // user intake information select statement
+      const { data: profile, error: profileError } = await supabase
+        .from("profiles")
+        .select("height, weight, age")
+        .eq("id", user.id)
+        .single();
+
+      if (profileError || !profile) {
+        set({
+          isLoading: false,
+          error: "User has no profile, please check back",
+        });
+        return;
+      }
+
+      if (!profile.height || !profile.weight || !profile.age) {
+        set({
+          isLoading: false,
+          error:
+            "User demographic is incomplete, please finish the onboarding first.",
+        });
+      }
+
+      const apiResponse = await fetch(
+        "https://pel1-recommendation.hf.space/get-nutrition-range",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            height: profile.height,
+            weight: profile.weight,
+            age: profile.age,
+          }),
+        }
+      );
+
+      if (!apiResponse.ok) {
+        throw new Error(`API request failed: ${apiResponse.status}`);
+      }
+
+      const nutritionResponse: NutritionApiResponse = await apiResponse.json();
+
+      if (nutritionResponse.status !== "success") {
+        throw new Error("API returned unsuccessful status");
+      }
+
+      const nutritionDataAve: AverageIntakeData = {
+        minCarbs: nutritionResponse.nutrition_range.carbs[0],
+        maxCarbs: nutritionResponse.nutrition_range.carbs[1],
+        minProtein: nutritionResponse.nutrition_range.protein[0],
+        maxProtein: nutritionResponse.nutrition_range.protein[1],
+        minSodium: nutritionResponse.nutrition_range.sodium[0],
+        maxSodium: nutritionResponse.nutrition_range.sodium[1],
+      };
+
+      const averageCarb =
+        (nutritionDataAve.minCarbs + nutritionDataAve.maxCarbs) / 2;
+      const averageSodium =
+        (nutritionDataAve.minSodium + nutritionDataAve.maxSodium) / 2;
+      const averageProtein =
+        (nutritionDataAve.minProtein + nutritionDataAve.maxProtein) / 2;
+
+      const { data, error } = await supabase
+        .from("user_nutrition_intake")
+        .update({
+          avg_carbs: averageCarb,
+          avg_sodium: averageSodium,
+          avg_protein: averageProtein,
+        })
+        .eq("user_id", user.id)
+        .single();
+
+      if (error) {
+        console.log("❌ Failed updating in supabase", error);
+      }
+    } catch (error: any) {
+      console.log("❗Update error", error);
+    } finally {
+      console.log("✔️ user nutrition updated!");
+    }
+  },
+
   clearNutritionData: () => {
     set({
       nutritionDataAve: null,
@@ -207,14 +305,14 @@ export const useNutritionIntakeStore = create<NutritionIntakeState>(
           throw new Error("No authenticated user found");
         }
 
-         if (profileComplete === false) {
-        console.log("Profile not complete, skipping nutrition intake fetch");
-        set({
-          isLoading: false,
-          error: null,
-        });
-        return;
-      }
+        if (profileComplete === false) {
+          console.log("Profile not complete, skipping nutrition intake fetch");
+          set({
+            isLoading: false,
+            error: null,
+          });
+          return;
+        }
 
         // Check if user already has nutrition intake data
         const { data: existingIntake, error: intakeError } = await supabase

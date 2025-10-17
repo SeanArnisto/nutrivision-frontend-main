@@ -162,7 +162,6 @@ export default function LoginScreen() {
 
   const handleLogin = async () => {
     if (!validateForm()) return;
-    setIsLoading(true);
     setErrors({});
 
     try {

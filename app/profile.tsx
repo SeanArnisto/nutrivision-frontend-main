@@ -19,6 +19,7 @@ import ProfileField from "@/components/ProfileField";
 import ProfileBox from "@/components/ProfileBox";
 import TextInputModal from "@/components/TextInputModal";
 import GenderSelectionModal from "@/components/GenderSelectionModal";
+import { fetchNutritionAverage } from "@/stores/nutritionIntakeStore";
 
 import { useAuthStore } from "@/stores/authStore";
 import { supabase } from "@/config/supabase";
@@ -52,6 +53,8 @@ export default function Profile() {
 
   const [userProfile, setUserProfile] = useState<UserProfile>({});
   const [isLoading, setIsLoading] = useState(true);
+
+  const fetchRecommendedIntake = fetchNutritionAverage();
 
   // Modal state
   const [modalVisible, setModalVisible] = useState(false);
@@ -121,6 +124,8 @@ export default function Profile() {
           gender: profile.gender,
           email: profile.email || user.email,
         });
+        fetchRecommendedIntake.updateNutritionIntakeAve();
+        fetchRecommendedIntake.fetchNutritionIntakeAve();
       }
     } catch (error) {
       console.error("Profile fetch error:", error);
