@@ -28,6 +28,7 @@ import { useAuthStore } from "@/stores/authStore";
 import { usePhotosStore } from "@/stores/usePhotoStore";
 import { useDetailedNutrientStore } from "@/stores/useDetailedNutrientStore";
 import CustomModal from "@/components/customModal";
+import Toast from "@/components/Toast";
 
 const { height, width: screenWidth } = Dimensions.get("window");
 
@@ -317,6 +318,20 @@ export default function Camera() {
   const [previewLayout, setPreviewLayout] = useState({ width: 0, height: 0 });
   const [uploadProgress, setUploadProgress] = useState(0);
   const [isVisible, setIsVisible] = useState(true);
+  const [toast, setToast] = useState({
+    visible: false,
+    type: "info",
+    title: "",
+    message: "",
+  });
+
+  const showToast = (type, title, message) => {
+    setToast({ visible: true, type, title, message });
+
+    setTimeout(() => {
+      setToast({ visible: false, type: "", title: "", message: "" });
+    }, 3000);
+  };
 
   const {
     capturedPhotos,
@@ -677,15 +692,15 @@ export default function Camera() {
           }
         } catch (detailedError) {
           console.error("❌ Error fetching detailed data:", detailedError);
+          showToast("error", "Error!", "Network Error, please try again");
         }
       }
 
       navigation.navigate("nutrient-page");
       return response.data;
     } catch (error) {
-      console.error("❌ Enhanced photo submission error:", error);
-      const errorMessage = submissionService.getErrorMessage(error);
-      Alert.alert("Submission Failed", errorMessage);
+      Alert.alert("Detection Error", "Please try submitting again.");
+      showToast("error", "Error!", "Network Error, please try again");
     } finally {
       setLoading(false);
       setSubmit(false);
@@ -782,7 +797,7 @@ export default function Camera() {
   if (!permission) {
     return <View />;
   }
-  if (!permission.granted) {
+  if (!permission.granted && Platform.OS === "ios") {
     return (
       <View style={[styles.container, styles.centered]}>
         <Text style={{ textAlign: "center", marginBottom: 10 }}>
@@ -1096,6 +1111,12 @@ export default function Camera() {
               visible={isVisible}
               onClose={() => setIsVisible(false)}
             >
+              <Toast
+                type={toast.type}
+                title={toast.title}
+                message={toast.message}
+                visible={toast.visible}
+              />
               <Text>For best results of detection:</Text>
               <Image
                 source={require("@/assets/images/take-picture.png")}

@@ -109,7 +109,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       isAuthenticated: !!session?.user,
     });
     // Manual persistence
-    AsyncStorage.setItem("auth_session", JSON.stringify(session));
+    //AsyncStorage.setItem("auth_session", JSON.stringify(session));
 
     // Check profile completion when setting session
     if (session?.user) {

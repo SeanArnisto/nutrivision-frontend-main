@@ -27,11 +27,11 @@ const Page2: React.FC = () => {
   const [showDisclaimerModal, setShowDisclaimerModal] = useState<boolean>(false);
 
   // Redirect authenticated users to the main app
-  useEffect(() => {
-    if (isAuthenticated) {
-      navigation.replace('page-2');
-    }
-  }, [isAuthenticated, navigation]);
+  // useEffect(() => {
+  //   if (isAuthenticated) {
+  //     navigation.replace('page-2');
+  //   }
+  // }, [isAuthenticated, navigation]);
 
   const handleGetStarted = (): void => {
     setShowDisclaimerModal(true);

@@ -73,13 +73,12 @@ export default function ForgotPasswordResetScreen() {
   const [isLoading, setIsLoading] = useState(false);
 
   const showToast = (type: ToastType, title: string, message: string) => {
-  setToast({ visible: true, type, title, message });
-  
- 
-  setTimeout(() => {
-    setToast({ visible: false, type: "", title: "", message: "" });
-  }, 3000);
-};
+    setToast({ visible: true, type, title, message });
+
+    setTimeout(() => {
+      setToast({ visible: false, type: "", title: "", message: "" });
+    }, 3000);
+  };
 
   // Password validation checks
   const hasMinLength = formData.newPassword.length >= 8;

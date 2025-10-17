@@ -116,14 +116,14 @@ export default function LoginScreen() {
   const { signIn, isLoading: authLoading, isAuthenticated } = useAuthStore();
 
   // Redirect authenticated users to the main app
-  useEffect(() => {
-    if (isAuthenticated) {
-      navigation.reset({
-        index: 0,
-        routes: [{ name: "page-2" }],
-      });
-    }
-  }, [isAuthenticated, navigation]);
+  // useEffect(() => {
+  //   if (isAuthenticated) {
+  //     navigation.reset({
+  //       index: 0,
+  //       routes: [{ name: "page-2" }],
+  //     });
+  //   }
+  // }, [isAuthenticated, navigation]);
 
   const [formData, setFormData] = useState<LoginFormData>({
     email: "",
@@ -132,7 +132,7 @@ export default function LoginScreen() {
 
   const [errors, setErrors] = useState<LoginErrors>({});
   const [isLoading, setIsLoading] = useState(false);
-  const [isLoadingData, setIsLoadingData] = useState(false);
+  const [isLoadingScreen, setIsLoadingScreen] = useState(false);
   const [isDisclaimerModalVisible, setIsDisclaimerModalVisible] =
     useState(false);
 
@@ -167,6 +167,7 @@ export default function LoginScreen() {
 
     try {
       const { data, error } = await signIn(formData.email, formData.password);
+      
 
       if (error) {
         if (error.message.includes("Invalid login credentials")) {
@@ -182,7 +183,7 @@ export default function LoginScreen() {
             general: error.message || "Login failed. Please try again.",
           });
         }
-        setIsLoading(false);
+
         return;
       }
 
@@ -190,20 +191,24 @@ export default function LoginScreen() {
         console.log("✅ Login successful:", data.user.email);
 
         const isProfileComplete = useAuthStore.getState().profileComplete;
+
         if (isProfileComplete === false) {
           console.log("Navigating to onboarding...");
           setIsLoading(false);
           navigation.navigate("onboarding");
           return;
         }
-
-        // Set loading state for data fetching
-        setIsLoading(false);
-        setIsLoadingData(true);        
-         navigation.reset({
-        index: 0,
-        routes: [{ name: "page-2" }],
-      });
+        setIsLoading(true);
+        // Only set the timer if profile is complete
+        setTimeout(() => {
+          console.log("==timer started==");
+          navigation.reset({
+            index: 0,
+            routes: [{ name: "page-2" }],
+          });
+          setIsLoading(false)
+        }, 3000);
+        
       }
     } catch (error: any) {
       console.error("Login error:", error);
@@ -211,8 +216,6 @@ export default function LoginScreen() {
         general:
           error.message || "An unexpected error occurred. Please try again.",
       });
-      setIsLoading(false);
-      setIsLoadingData(false);
     }
   };
 
@@ -238,7 +241,7 @@ export default function LoginScreen() {
   };
 
   // Show loading screen while fetching data
-  if (isLoadingData) {
+  if (isLoading) {
     return <Loading />;
   }
 
