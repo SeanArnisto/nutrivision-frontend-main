@@ -1,7 +1,7 @@
 import { create } from "zustand";
 import { supabase } from "@/config/supabase";
 import { useAuthStore } from "@/stores/authStore";
-import { getNutritionalHistory } from "@/hooks/store"; // Import your existing utility
+import { getNutritionalHistory } from "@/hooks/store";
 
 interface NutritionIntakeData {
   avg_carbs: number;
@@ -18,7 +18,6 @@ interface AverageIntakeData {
   maxProtein: number;
 }
 
-// Add interface for nutritional record (from your store file)
 interface NutritionalRecord {
   id: string;
   user_id: string;
@@ -45,43 +44,39 @@ interface NutritionApiResponse {
   };
 }
 
-interface UserProfile {
-  height: number;
-  weight: number;
-  age: number;
-}
-
 interface NutritionIntakeState {
   nutritionData: NutritionIntakeData | null;
-  nutritionalHistory: NutritionalRecord[]; // Add nutritional history
+  nutritionalHistory: NutritionalRecord[];
   isLoading: boolean;
-  isHistoryLoading: boolean; // Separate loading state for history
+  isHistoryLoading: boolean;
   error: string | null;
-  historyError: string | null; // Separate error state for history
+  historyError: string | null;
+  currentUserId: string | null; // Track current user
 
-  // Actions
   fetchNutritionIntake: () => Promise<void>;
-  fetchNutritionalHistory: (days?: number) => Promise<void>; // Add history fetching
+  fetchNutritionalHistory: (days?: number) => Promise<void>;
   clearNutritionData: () => void;
-  clearNutritionalHistory: () => void; // Add history clearing
+  clearNutritionalHistory: () => void;
+  resetAllData: () => void; // Clear everything
 }
 
-// Keep existing AverageIntakeState interface unchanged
 interface AverageIntakeState {
   nutritionDataAve: AverageIntakeData | null;
   isLoading: boolean;
   error: string | null;
+  currentUserId: string | null; // Track current user
 
-  // Actions
   fetchNutritionIntakeAve: () => Promise<void>;
   updateNutritionIntakeAve: () => Promise<void>;
   clearNutritionData: () => void;
+  resetAllData: () => void; // Clear everything
 }
 
 export const fetchNutritionAverage = create<AverageIntakeState>((set, get) => ({
   nutritionDataAve: null,
   isLoading: false,
   error: null,
+  currentUserId: null,
 
   fetchNutritionIntakeAve: async () => {
     try {
@@ -92,12 +87,18 @@ export const fetchNutritionAverage = create<AverageIntakeState>((set, get) => ({
         throw new Error("No authenticated user found");
       }
 
+      // Check if user changed
+      const { currentUserId } = get();
+      if (currentUserId && currentUserId !== user.id) {
+        console.log("User changed, clearing nutrition average data");
+        get().resetAllData();
+      }
+
+      set({ currentUserId: user.id });
+
       if (profileComplete === false) {
         console.log("Profile not complete, skipping nutrition intake fetch");
-        set({
-          isLoading: false,
-          error: null,
-        });
+        set({ isLoading: false, error: null });
         return;
       }
 
@@ -117,7 +118,6 @@ export const fetchNutritionAverage = create<AverageIntakeState>((set, get) => ({
         );
       }
 
-      // Call nutrition API
       const apiResponse = await fetch(
         "https://pel1-recommendation.hf.space/get-nutrition-range",
         {
@@ -159,7 +159,6 @@ export const fetchNutritionAverage = create<AverageIntakeState>((set, get) => ({
     } catch (error: any) {
       console.error("Nutrition average fetch error:", error);
 
-      // Check if it's a network error
       const isNetworkError =
         error.message &&
         (error.message.includes("Network request failed") ||
@@ -190,11 +189,9 @@ export const fetchNutritionAverage = create<AverageIntakeState>((set, get) => ({
       if (!user || profileComplete === false) {
         console.log("❌ no authenticated user or user's profile isnt complete");
         set({ isLoading: false, error: "System did not find any record." });
-
         return;
       }
 
-      // user intake information select statement
       const { data: profile, error: profileError } = await supabase
         .from("profiles")
         .select("height, weight, age")
@@ -284,37 +281,51 @@ export const fetchNutritionAverage = create<AverageIntakeState>((set, get) => ({
       error: null,
     });
   },
+
+  resetAllData: () => {
+    set({
+      nutritionDataAve: null,
+      isLoading: false,
+      error: null,
+      currentUserId: null,
+    });
+  },
 }));
 
 export const useNutritionIntakeStore = create<NutritionIntakeState>(
   (set, get) => ({
     nutritionData: null,
-    nutritionalHistory: [], // Initialize as empty array
+    nutritionalHistory: [],
     isLoading: false,
     isHistoryLoading: false,
     error: null,
     historyError: null,
+    currentUserId: null,
 
     fetchNutritionIntake: async () => {
       try {
         set({ isLoading: true, error: null });
 
-        // Get current user
         const { user, profileComplete } = useAuthStore.getState();
         if (!user) {
           throw new Error("No authenticated user found");
         }
 
+        // Check if user changed
+        const { currentUserId } = get();
+        if (currentUserId && currentUserId !== user.id) {
+          console.log("User changed, clearing nutrition intake data");
+          get().resetAllData();
+        }
+
+        set({ currentUserId: user.id });
+
         if (profileComplete === false) {
           console.log("Profile not complete, skipping nutrition intake fetch");
-          set({
-            isLoading: false,
-            error: null,
-          });
+          set({ isLoading: false, error: null });
           return;
         }
 
-        // Check if user already has nutrition intake data
         const { data: existingIntake, error: intakeError } = await supabase
           .from("user_nutrition_intake")
           .select("avg_carbs, avg_protein, avg_sodium")
@@ -322,7 +333,6 @@ export const useNutritionIntakeStore = create<NutritionIntakeState>(
           .single();
 
         if (existingIntake && !intakeError) {
-          // User already has nutrition data, use existing
           set({
             nutritionData: {
               avg_carbs: existingIntake.avg_carbs,
@@ -334,7 +344,6 @@ export const useNutritionIntakeStore = create<NutritionIntakeState>(
           return;
         }
 
-        // User doesn't have nutrition data, get profile data and call API
         const { data: profile, error: profileError } = await supabase
           .from("profiles")
           .select("height, weight, age")
@@ -351,7 +360,6 @@ export const useNutritionIntakeStore = create<NutritionIntakeState>(
           );
         }
 
-        // Call nutrition API
         const apiResponse = await fetch(
           "https://pel1-recommendation.hf.space/get-nutrition-range",
           {
@@ -378,7 +386,6 @@ export const useNutritionIntakeStore = create<NutritionIntakeState>(
           throw new Error("API returned unsuccessful status");
         }
 
-        // Calculate averages from the ranges
         const avgCarbs =
           (nutritionResponse.nutrition_range.carbs[0] +
             nutritionResponse.nutrition_range.carbs[1]) /
@@ -392,7 +399,6 @@ export const useNutritionIntakeStore = create<NutritionIntakeState>(
             nutritionResponse.nutrition_range.sodium[1]) /
           2;
 
-        // Store in Supabase
         const { data: savedData, error: saveError } = await supabase
           .from("user_nutrition_intake")
           .insert({
@@ -410,7 +416,6 @@ export const useNutritionIntakeStore = create<NutritionIntakeState>(
           );
         }
 
-        // Update store with the new data
         set({
           nutritionData: {
             avg_carbs: avgCarbs,
@@ -428,10 +433,21 @@ export const useNutritionIntakeStore = create<NutritionIntakeState>(
       }
     },
 
-    // Add new function to fetch nutritional history using your existing utility
     fetchNutritionalHistory: async (days = 30) => {
       try {
         set({ isHistoryLoading: true, historyError: null });
+
+        const { user } = useAuthStore.getState();
+        if (!user) {
+          throw new Error("No authenticated user found");
+        }
+
+        // Check if user changed
+        const { currentUserId } = get();
+        if (currentUserId && currentUserId !== user.id) {
+          console.log("User changed, clearing nutritional history");
+          get().clearNutritionalHistory();
+        }
 
         console.log(`Fetching ${days} days of nutritional history...`);
         const result = await getNutritionalHistory(days);
@@ -452,7 +468,6 @@ export const useNutritionIntakeStore = create<NutritionIntakeState>(
       } catch (error: any) {
         console.error("Nutritional history fetch error:", error);
 
-        // Check if it's a network error
         const isNetworkError =
           error.message &&
           (error.message.includes("Network request failed") ||
@@ -476,6 +491,7 @@ export const useNutritionIntakeStore = create<NutritionIntakeState>(
         }
       }
     },
+
     clearNutritionData: () => {
       set({
         nutritionData: null,
@@ -487,6 +503,18 @@ export const useNutritionIntakeStore = create<NutritionIntakeState>(
       set({
         nutritionalHistory: [],
         historyError: null,
+      });
+    },
+
+    resetAllData: () => {
+      set({
+        nutritionData: null,
+        nutritionalHistory: [],
+        isLoading: false,
+        isHistoryLoading: false,
+        error: null,
+        historyError: null,
+        currentUserId: null,
       });
     },
   })

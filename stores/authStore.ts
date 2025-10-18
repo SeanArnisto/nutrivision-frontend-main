@@ -15,7 +15,7 @@ interface AuthState {
   session: any;
   isLoading: boolean;
   isAuthenticated: boolean;
-  profileComplete: boolean | null; // Add this
+  profileComplete: boolean | null;
   signUp: (
     email: string,
     password: string
@@ -26,7 +26,7 @@ interface AuthState {
   ) => Promise<{ data: any; error: any }>;
   signOut: () => Promise<void>;
   checkAuth: () => Promise<void>;
-  checkProfileComplete: () => Promise<boolean>; // Add this
+  checkProfileComplete: () => Promise<boolean>;
   setUser: (user: User | null) => void;
   setSession: (session: any) => void;
   resetPasswordInApp: (newPassword: string) => Promise<{ error: any | null }>;
@@ -41,7 +41,6 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
   setUser: (user) => {
     set({ user, isAuthenticated: !!user });
-    // Manual persistence
     AsyncStorage.setItem("auth_user", JSON.stringify(user));
   },
 
@@ -50,7 +49,6 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       const { user } = get();
       if (!user) return false;
 
-      // Check if user has profile data in the profiles table
       const { data: profile, error } = await supabase
         .from("profiles")
         .select("name, age, height, weight, gender")
@@ -63,7 +61,6 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         return false;
       }
 
-      // Check if all required fields are present
       const hasRequiredFields =
         profile &&
         profile.name &&
@@ -84,14 +81,12 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
   resetPasswordInApp: async (newPassword: string) => {
     try {
-      // You might want to set loading state here if you have it
       const { data, error } = await supabase.auth.updateUser({
         password: newPassword,
       });
 
       if (error) throw error;
 
-      // Sign out the user after successful password change
       await get().signOut();
       
       Alert.alert('Success', 'Password updated successfully! You have been logged out for security.');
@@ -108,10 +103,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       user: session?.user || null,
       isAuthenticated: !!session?.user,
     });
-    // Manual persistence
-    //AsyncStorage.setItem("auth_session", JSON.stringify(session));
 
-    // Check profile completion when setting session
     if (session?.user) {
       get().checkProfileComplete();
     }
@@ -142,7 +134,6 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
       if (data.session && !error) {
         get().setSession(data.session);
-        // Check profile completion after successful login
         await get().checkProfileComplete();
       }
 
@@ -157,17 +148,35 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   signOut: async () => {
     set({ isLoading: true });
     try {
-      await supabase.auth.signOut();
+      // CRITICAL: Clear auth state FIRST before doing anything else
       set({
         user: null,
         session: null,
         isAuthenticated: false,
         profileComplete: null,
       });
+
+      // Clear AsyncStorage
       AsyncStorage.removeItem("auth_user");
       AsyncStorage.removeItem("auth_session");
+
+      // Sign out from Supabase
+      await supabase.auth.signOut();
+
+      // Clear nutrition stores
+      // Import the stores dynamically to avoid circular dependencies
+      const { useNutritionIntakeStore, fetchNutritionAverage } = await import("@/stores/nutritionIntakeStore");
       
-      // Reset navigation to prevent going back to authenticated pages
+      // Clear nutrition intake data and history
+      useNutritionIntakeStore.getState().clearNutritionData();
+      useNutritionIntakeStore.getState().clearNutritionalHistory();
+      
+      // Clear nutrition average data
+      fetchNutritionAverage.getState().clearNutritionData();
+
+      console.log("✅ All user data cleared on logout");
+      
+      // Reset navigation to login screen
       reset('login');
     } catch (error) {
       console.error("Sign out error:", error);
@@ -179,7 +188,6 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   checkAuth: async () => {
     set({ isLoading: true });
     try {
-      // First check AsyncStorage
       const storedUser = await AsyncStorage.getItem("auth_user");
       const storedSession = await AsyncStorage.getItem("auth_session");
 
@@ -193,7 +201,6 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         });
       }
 
-      // Then check Supabase for fresh session
       const {
         data: { session },
         error,
