@@ -468,196 +468,312 @@ export default function Camera() {
 
   // ENHANCED SUBMISSION FUNCTION (PROPERLY IMPLEMENTED)
 const handleSubmitPhoto = useCallback(async () => {
-  console.log("Button clicked, starting enhanced image submission...");
+    console.log("Button clicked, starting enhanced image submission...");
 
-  const photos = capturedPhotos;
-  setSubmit(true);
-  setLoading(true);
-  setUploadProgress(0);
+    // Get fresh photos from the store instead of using stale closure reference
+    const photos = usePhotosStore.getState().capturedPhotos;
+    
+    console.log("📸 Current photos being submitted:", photos.map(p => p.id));
+    
+    setSubmit(true);
+    setLoading(true);
+    setUploadProgress(0);
 
-  try {
-    // Validate photos
-    const validation = submissionService.validatePhotos(photos);
-    if (!validation.isValid) {
-      Alert.alert("Invalid Photos", validation.errors.join("\n"));
-      return;
-    }
-
-    const endpoints = {
-      fruits: "https://leidanielaguila-nutrivision.hf.space/detect",
-      labels: "https://dwyght-text-recognition.hf.space/extract/",
-      fruits_detailed: "https://leidanielaguila-nutrivision.hf.space/detect/detailed",
-    };
-
-    const urlToSend = isLabelMode ? endpoints.labels : endpoints.fruits;
-    console.log(
-      `Submitting ${photos.length} photos to ${isLabelMode ? "labels" : "fruits"} endpoint`
-    );
-
-    const formData = await submissionService.createFormData(photos);
-    const headers = {
-      Accept: "application/json",
-      "Content-Type": "multipart/form-data",
-    };
-
-    const onProgress = (percentCompleted) => {
-      if (typeof percentCompleted === "number" && percentCompleted >= 0 && percentCompleted <= 100) {
-        setUploadProgress(percentCompleted);
-        console.log(`📈 Upload progress: ${percentCompleted}%`);
-      }
-    };
-
-    let response;
-
-    if (isLabelMode || isFruitMode) {
-      response = await submissionService.submitWithRetry(urlToSend, formData, headers, 0, onProgress);
-
-      console.log("🧾 Sodium raw:", JSON.stringify(response.data));
-
-      if (isLabelMode) {
-        const combined = response.data.combined || {};
-        const { carbs_total, protein_total, sodium_total } = combined;
-
-        if (carbs_total !== undefined) setCarbs(parseFloat(carbs_total));
-        if (protein_total !== undefined) setProtein(parseFloat(protein_total));
-        if (sodium_total !== undefined) setSodium(parseFloat(sodium_total) / 1000);
-
-        console.log(`SERVINGS: ${response.data.items.servings}`);
-
-        const detailedIntakes = response.data.items.map((intake, index) => ({
-          type: "label",
-          imageUrl: photos[index]?.uri || capturedPhotos[index]?.uri,
-          carbs: parseFloat(intake.raw_extracted.carbohydrates) || 0,
-          protein: parseFloat(intake.raw_extracted.protein) || 0,
-          sodium: parseFloat(intake.raw_extracted.sodium) / 1000 || 0,
-          servings: intake.servings_count || parseFloat(intake.final_extracted?.servings) || 0,
-        }));
-
-        useDetailedNutrientStore.getState().setIntake(detailedIntakes);
+    try {
+      // Validate photos
+      const validation = submissionService.validatePhotos(photos);
+      if (!validation.isValid) {
+        Alert.alert("Invalid Photos", validation.errors.join("\n"));
+        return;
       }
 
-    } else if (isBothMode) {
-      console.log("🔄 Submitting to both label and fruit (detailed) endpoints...");
+      const endpoints = {
+        fruits: "https://leidanielaguila-nutrivision.hf.space/detect",
+        labels: "https://dwyght-text-recognition.hf.space/extract/",
+        fruits_detailed:
+          "https://leidanielaguila-nutrivision.hf.space/detect/detailed",
+      };
 
-      const [labelResponse, fruitDetailedResponse] = await Promise.all([
-        submissionService.submitWithRetry(endpoints.labels, formData, headers, 0, onProgress),
-        submissionService.submitWithRetry(endpoints.fruits_detailed, formData, headers, 0, onProgress),
-      ]);
-
-      console.log("✅ Label response:", labelResponse.data);
-      console.log("✅ Fruit detailed response:", fruitDetailedResponse.data);
-
-      // Extract totals from label response
-      const labelCombined = labelResponse.data.combined || {};
-      const { carbs_total, protein_total, sodium_total } = labelCombined;
-
-      // Extract fruits data (array of detections)
-      const fruitData = fruitDetailedResponse.data.data || [];
-
-      // Compute fruit totals
-      const fruitTotals = fruitData.reduce(
-        (totals, f) => ({
-          carbs: totals.carbs + (f.carbs || 0),
-          protein: totals.protein + (f.protein || 0),
-          sodium: totals.sodium + (f.sodium || 0),
-        }),
-        { carbs: 0, protein: 0, sodium: 0 }
+      const urlToSend = isLabelMode ? endpoints.labels : endpoints.fruits;
+      console.log(
+        `Submitting ${photos.length} photos to ${
+          isLabelMode ? "labels" : "fruits"
+        } endpoint`
       );
 
-      // Combine both totals
-      const totalCarbs = (parseFloat(carbs_total) || 0) + (fruitTotals.carbs || 0);
-      const totalProtein = (parseFloat(protein_total) || 0) + (fruitTotals.protein || 0);
-      const totalSodium = parseFloat(
-        ((parseFloat(sodium_total) / 1000 || 0) + (fruitTotals.sodium || 0)).toFixed(5)
-      );
+      const formData = await submissionService.createFormData(photos);
+      const headers = {
+        Accept: "application/json",
+        "Content-Type": "multipart/form-data",
+      };
 
-      // Update UI totals
-      setCarbs(totalCarbs);
-      setProtein(totalProtein);
-      setSodium(totalSodium);
+      const onProgress = (percentCompleted) => {
+        if (
+          typeof percentCompleted === "number" &&
+          percentCompleted >= 0 &&
+          percentCompleted <= 100
+        ) {
+          setUploadProgress(percentCompleted);
+          console.log(`📈 Upload progress: ${percentCompleted}%`);
+        }
+      };
 
-      // Map detailed entries from both detections
-      const labelIntakes = labelResponse.data.items
-        .map((intake, index) => ({
-          type: "label",
-          imageUrl: photos[index]?.uri,
-          carbs: parseFloat(intake.raw_extracted.carbohydrates) || 0,
-          protein: parseFloat(intake.raw_extracted.protein) || 0,
-          sodium: parseFloat(intake.raw_extracted.sodium) / 1000 || 0,
-          servings: parseFloat(intake.raw_extracted.servings),
-          hasData: intake.carbs_total !== null || intake.protein_total !== null || intake.sodium_total !== null,
-        }))
-        .filter((intake) => intake.hasData)
-        .map(({ hasData, ...intake }) => intake);
+      let response;
 
-      const fruitIntakes = fruitData.map((intake) => ({
-        type: intake.type,
-        imageUrl: photos[intake.imageIndex],
-        carbs: intake.carbs,
-        protein: intake.protein,
-        sodium: intake.sodium,
-      }));
+      if (isLabelMode || isFruitMode) {
+        response = await submissionService.submitWithRetry(
+          urlToSend,
+          formData,
+          headers,
+          0,
+          onProgress
+        );
 
-      const detailedIntakes = [...labelIntakes, ...fruitIntakes];
-      useDetailedNutrientStore.getState().setIntake(detailedIntakes);
+        console.log("🧾 Raw response:", JSON.stringify(response.data));
 
-      response = { data: { labelResponse, fruitDetailedResponse } };
-    } else {
-      // Regular fruit detection (non-both mode)
-      response = await submissionService.submitWithRetry(endpoints.fruits, formData, headers, 0, onProgress);
-      console.log("✅ Response from server:", response.data);
+        if (isLabelMode) {
+          const combined = response.data.combined || {};
+          const { carbs_total, protein_total, sodium_total } = combined;
 
-      const fruits = response.data.fruits || {};
-      const { total_carbs, total_protein, total_sodium } = fruits;
+          console.log("🔍 LABEL MODE - Extracted values:");
+          console.log("  carbs_total:", carbs_total);
+          console.log("  protein_total:", protein_total);
+          console.log("  sodium_total:", sodium_total);
 
-      if (total_carbs !== undefined) setCarbs(total_carbs);
-      if (total_protein !== undefined) setProtein(total_protein);
-      if (total_sodium !== undefined) setSodium(total_sodium);
+          const parsedCarbs = parseFloat(carbs_total ?? 0);
+          const parsedProtein = parseFloat(protein_total ?? 0);
+          const parsedSodium = parseFloat(sodium_total ?? 0) / 1000;
 
-      try {
-        console.log("🔍 Fetching detailed detection data...");
-        const detailedFormData = await submissionService.createFormData(photos);
-        const detailedResponse = await submissionService.submitWithRetry(endpoints.fruits_detailed, detailedFormData, headers, 0, null);
+          console.log("🔍 LABEL MODE - Parsed values:");
+          console.log("  parsedCarbs:", parsedCarbs);
+          console.log("  parsedProtein:", parsedProtein);
+          console.log("  parsedSodium:", parsedSodium);
 
-        if (detailedResponse.data.success && detailedResponse.data.data.length > 0) {
-          const detailedIntakes = detailedResponse.data.data.map((intake) => ({
-            type: intake.type,
-            imageUrl: photos[intake.imageIndex],
-            carbs: intake.carbs,
-            protein: intake.protein,
-            sodium: intake.sodium,
+          if (carbs_total !== undefined) {
+            console.log("✅ Setting carbs to:", parsedCarbs);
+            setCarbs(parsedCarbs);
+          }
+          if (protein_total !== undefined) {
+            console.log("✅ Setting protein to:", parsedProtein);
+            setProtein(parsedProtein);
+          }
+          if (sodium_total !== undefined) {
+            console.log("✅ Setting sodium to:", parsedSodium);
+            setSodium(parsedSodium);
+          }
+
+          console.log(`SERVINGS: ${response.data.items?.servings}`);
+
+          const detailedIntakes = response.data.items.map((intake, index) => ({
+            type: "label",
+            imageUrl: photos[index]?.uri,
+            carbs: parseFloat(intake.raw_extracted.carbohydrates ?? 0) || 0,
+            protein: parseFloat(intake.raw_extracted.protein ?? 0) || 0,
+            sodium: parseFloat(intake.raw_extracted.sodium ?? 0) / 1000 || 0,
+            servings:
+              intake.servings_count ||
+              parseFloat(intake.final_extracted?.servings ?? 0) ||
+              0,
           }));
 
+          console.log("📊 Setting detailed intakes:", detailedIntakes);
           useDetailedNutrientStore.getState().setIntake(detailedIntakes);
+        } else if (isFruitMode) {
+          // FRUIT MODE - This is likely where your issue is
+          const fruits = response.data.fruits || {};
+          const { total_carbs, total_protein, total_sodium } = fruits;
+
+          console.log("🍎 FRUIT MODE - Raw fruits object:", fruits);
+          console.log("🔍 FRUIT MODE - Extracted values:");
+          console.log("  total_carbs:", total_carbs);
+          console.log("  total_protein:", total_protein);
+          console.log("  total_sodium:", total_sodium);
+
+          const parsedCarbs = total_carbs ?? 0;
+          const parsedProtein = total_protein ?? 0;
+          const parsedSodium = total_sodium ?? 0;
+
+          console.log("🔍 FRUIT MODE - Parsed values:");
+          console.log("  parsedCarbs:", parsedCarbs);
+          console.log("  parsedProtein:", parsedProtein);
+          console.log("  parsedSodium:", parsedSodium);
+
+          if (total_carbs !== undefined) {
+            console.log("✅ Setting carbs to:", parsedCarbs);
+            setCarbs(parsedCarbs);
+          } else {
+            console.log("⚠️ total_carbs is undefined");
+          }
+          
+          if (total_protein !== undefined) {
+            console.log("✅ Setting protein to:", parsedProtein);
+            setProtein(parsedProtein);
+          } else {
+            console.log("⚠️ total_protein is undefined");
+          }
+          
+          if (total_sodium !== undefined) {
+            console.log("✅ Setting sodium to:", parsedSodium);
+            setSodium(parsedSodium);
+          } else {
+            console.log("⚠️ total_sodium is undefined");
+          }
+
+          // Fetch detailed data for fruit mode
+          try {
+            console.log("🔍 Fetching detailed detection data...");
+            const detailedFormData = await submissionService.createFormData(photos);
+            const detailedResponse = await submissionService.submitWithRetry(
+              endpoints.fruits_detailed,
+              detailedFormData,
+              headers,
+              0,
+              null
+            );
+
+            console.log("📊 Detailed response:", JSON.stringify(detailedResponse.data));
+
+            if (
+              detailedResponse.data.success &&
+              detailedResponse.data.data.length > 0
+            ) {
+              const detailedIntakes = detailedResponse.data.data.map(
+                (intake) => ({
+                  type: intake.type,
+                  imageUrl: photos[intake.imageIndex],
+                  carbs: intake.carbs ?? 0,
+                  protein: intake.protein ?? 0,
+                  sodium: intake.sodium ?? 0,
+                })
+              );
+
+              console.log("📊 Setting detailed intakes:", detailedIntakes);
+              useDetailedNutrientStore.getState().setIntake(detailedIntakes);
+            }
+          } catch (detailedError) {
+            console.error("❌ Error fetching detailed data:", detailedError);
+            showToast("error", "Error!", "Network Error, please try again");
+          }
         }
-      } catch (detailedError) {
-        console.error("❌ Error fetching detailed data:", detailedError);
-        showToast("error", "Error!", "Network Error, please try again");
+      } else if (isBothMode) {
+        console.log(
+          "🔄 Submitting to both label and fruit (detailed) endpoints..."
+        );
+
+        const [labelResponse, fruitDetailedResponse] = await Promise.all([
+          submissionService.submitWithRetry(
+            endpoints.labels,
+            formData,
+            headers,
+            0,
+            onProgress
+          ),
+          submissionService.submitWithRetry(
+            endpoints.fruits_detailed,
+            formData,
+            headers,
+            0,
+            onProgress
+          ),
+        ]);
+
+        console.log("✅ Label response:", JSON.stringify(labelResponse.data));
+        console.log("✅ Fruit detailed response:", JSON.stringify(fruitDetailedResponse.data));
+
+        // Extract totals from label response
+        const labelCombined = labelResponse.data.combined || {};
+        const { carbs_total, protein_total, sodium_total } = labelCombined;
+
+        // Extract fruits data (array of detections)
+        const fruitData = fruitDetailedResponse.data.data || [];
+
+        // Compute fruit totals
+        const fruitTotals = fruitData.reduce(
+          (totals, f) => ({
+            carbs: totals.carbs + ((f.carbs ?? 0) || 0),
+            protein: totals.protein + ((f.protein ?? 0) || 0),
+            sodium: totals.sodium + ((f.sodium ?? 0) || 0),
+          }),
+          { carbs: 0, protein: 0, sodium: 0 }
+        );
+
+        console.log("🍎 Fruit totals computed:", fruitTotals);
+
+        // Combine both totals
+        const totalCarbs =
+          (parseFloat(carbs_total ?? 0) || 0) + (fruitTotals.carbs || 0);
+        const totalProtein =
+          (parseFloat(protein_total ?? 0) || 0) + (fruitTotals.protein || 0);
+        const totalSodium = parseFloat(
+          (
+            (parseFloat(sodium_total ?? 0) / 1000 || 0) + (fruitTotals.sodium || 0)
+          ).toFixed(5)
+        );
+
+        console.log("🔍 BOTH MODE - Combined totals:");
+        console.log("  totalCarbs:", totalCarbs);
+        console.log("  totalProtein:", totalProtein);
+        console.log("  totalSodium:", totalSodium);
+
+        // Update UI totals
+        console.log("✅ Setting combined values...");
+        setCarbs(totalCarbs);
+        setProtein(totalProtein);
+        setSodium(totalSodium);
+
+        // Map detailed entries from both detections
+        const labelIntakes = labelResponse.data.items
+          .map((intake, index) => ({
+            type: "label",
+            imageUrl: photos[index]?.uri,
+            carbs: parseFloat(intake.raw_extracted.carbohydrates ?? 0) || 0,
+            protein: parseFloat(intake.raw_extracted.protein ?? 0) || 0,
+            sodium: parseFloat(intake.raw_extracted.sodium ?? 0) / 1000 || 0,
+            servings: parseFloat(intake.raw_extracted.servings ?? 0),
+            hasData:
+              intake.carbs_total !== null ||
+              intake.protein_total !== null ||
+              intake.sodium_total !== null,
+          }))
+          .filter((intake) => intake.hasData)
+          .map(({ hasData, ...intake }) => intake);
+
+        const fruitIntakes = fruitData.map((intake) => ({
+          type: intake.type,
+          imageUrl: photos[intake.imageIndex],
+          carbs: intake.carbs ?? 0,
+          protein: intake.protein ?? 0,
+          sodium: intake.sodium ?? 0,
+        }));
+
+        const detailedIntakes = [...labelIntakes, ...fruitIntakes];
+        console.log("📊 Setting detailed intakes:", detailedIntakes);
+        useDetailedNutrientStore.getState().setIntake(detailedIntakes);
+
+        response = { data: { labelResponse, fruitDetailedResponse } };
       }
+
+      console.log("🎯 About to navigate to nutrient-page");
+      navigation.navigate("nutrient-page");
+      return response.data;
+    } catch (error) {
+      console.error("❌ Error in handleSubmitPhoto:", error);
+      Alert.alert("Detection Error", "Please try submitting again.");
+      showToast("error", "Error!", "Network Error, please try again");
+    } finally {
+      setLoading(false);
+      setSubmit(false);
+      setUploadProgress(0);
     }
-
-    navigation.navigate("nutrient-page");
-    return response.data;
-
-  } catch (error) {
-    Alert.alert("Detection Error", "Please try submitting again.");
-    showToast("error", "Error!", "Network Error, please try again");
-  } finally {
-    setLoading(false);
-    setSubmit(false);
-    setUploadProgress(0);
-  }
-}, [
-  capturedPhotos,
-  isLabelMode,
-  isFruitMode,
-  isBothMode,
-  navigation,
-  setCarbs,
-  setProtein,
-  setSodium,
-]);
-
+  }, [
+    isLabelMode,
+    isFruitMode,
+    isBothMode,
+    navigation,
+    setCarbs,
+    setProtein,
+    setSodium,
+  ]);
 
   // Rest of your existing functions remain the same...
   const loadExistingPhotos = async () => {
