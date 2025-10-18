@@ -114,14 +114,28 @@ export default function ForgotPasswordResetScreen() {
     try {
       // Simulate API call to reset password
       await new Promise((resolve) => setTimeout(resolve, 1500));
-      const { error } = await resetPasswordInApp(formData.confirmPassword);
+      const response = await fetch(
+        "https://leidanielaguila-nutrivision.hf.space/reset-password",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            email: email,
+            new_password: formData.confirmPassword,
+          }),
+        }
+      );
 
-      if (error) {
+      if (!response.ok) {
         showToast(
           "error",
           "Error!",
           "Failed to change password. Please try again."
         );
+        const errorData = await response.json();
+        console.log("Error data:", errorData);
         await new Promise((resolve) => setTimeout(resolve, 3500));
         navigation.reset({
           index: 0,
@@ -140,7 +154,9 @@ export default function ForgotPasswordResetScreen() {
         });
       }
     } catch (error) {
-      setErrors({ general: "Failed to reset password. Please try again." });
+      setErrors({
+        general: "Failed to reset password. Please try again. " + error,
+      });
     } finally {
       setIsLoading(false);
     }
