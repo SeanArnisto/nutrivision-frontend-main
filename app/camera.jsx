@@ -529,7 +529,7 @@ export default function Camera() {
         );
       }
 
-      // console.log("🧾 Sodium raw:", JSON.stringify(response));
+      console.log("🧾 Sodium raw:", JSON.stringify(response.data));
 
       if (isLabelMode) {
         const combined = response.data.combined || {};
@@ -547,7 +547,10 @@ export default function Camera() {
           carbs: parseFloat(intake.raw_extracted.carbohydrates) || 0,
           protein: parseFloat(intake.raw_extracted.protein) || 0,
           sodium: parseFloat(intake.raw_extracted.sodium) / 1000 || 0,
-          servings: parseFloat(intake.raw_extracted.servings) || 0,
+          servings:
+            intake.servings_count ||
+            parseFloat(intake.final_extracted?.servings) ||
+            0,
         }));
 
         useDetailedNutrientStore.getState().setIntake(detailedIntakes);
@@ -620,7 +623,7 @@ export default function Camera() {
             carbs: parseFloat(intake.raw_extracted.carbohydrates) || 0,
             protein: parseFloat(intake.raw_extracted.protein) || 0,
             sodium: parseFloat(intake.raw_extracted.sodium) / 1000 || 0,
-            servings: parseFloat(intake.raw_extracted.servings) || 0,
+            servings: parseFloat(intake.raw_extracted.servings),
             hasData:
               intake.carbs_total !== null ||
               intake.protein_total !== null ||
