@@ -701,9 +701,9 @@ const handleSubmitPhoto = useCallback(async () => {
 
         // Combine both totals
         const totalCarbs =
-          (parseFloat(carbs_total ?? 0) || 0) + (fruitTotals.carbs || 0);
+          parseFloat((parseFloat(carbs_total ?? 0) || 0) + (fruitTotals.carbs || 0).toFixed(5));
         const totalProtein =
-          (parseFloat(protein_total ?? 0) || 0) + (fruitTotals.protein || 0);
+          parseFloat((parseFloat(protein_total ?? 0) || 0) + (fruitTotals.protein || 0).toFixed(5));
         const totalSodium = parseFloat(
           (
             (parseFloat(sodium_total ?? 0) / 1000 || 0) + (fruitTotals.sodium || 0)
