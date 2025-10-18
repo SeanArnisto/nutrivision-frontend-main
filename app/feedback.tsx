@@ -337,7 +337,7 @@ function Feedback() {
   const handleSaveToDatabase = () => {
     // Validate that we have nutrition data
     if (carbohydrate === 0 && protein === 0 && sodium === 0) {
-      Alert.alert("No Data", "Please enter nutritional values before saving.", [
+      Alert.alert("No Internet Connection", "Please check internet connection before saving.", [
         { text: "OK" },
       ]);
       return;
@@ -385,11 +385,11 @@ function Feedback() {
         await deleteAllCapturedPhotos(capturedPhotos);
       } else {
         setModalLoading(false);
-        Alert.alert("Error", result.error || "Failed to save data");
+        Alert.alert("No Internet connection", result.error || "Failed to save data");
       }
     } catch (error) {
       setModalLoading(false);
-      Alert.alert("Error", "An unexpected error occurred");
+      Alert.alert("No Internet connection ", "An unexpected error occurred");
       console.error("Save error:", error);
     }
   };

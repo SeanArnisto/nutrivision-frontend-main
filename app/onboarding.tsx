@@ -132,7 +132,7 @@ export default function OnboardingScreen() {
         console.error("Error saving profile:", error);
         showToast(
           "error",
-          "Error!",
+          "Check Internet Connection!",
           "Failed to save profile. Please try again."
         );
         return false;
@@ -150,7 +150,7 @@ export default function OnboardingScreen() {
       console.error("Profile save error:", error);
       showToast(
         "error",
-        "Error!",
+        "Check Internet Connection!",
         "An unexpected error occurred. Please try again."
       );
       return false;

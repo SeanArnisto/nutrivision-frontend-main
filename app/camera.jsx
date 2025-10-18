@@ -776,8 +776,7 @@ export default function Camera() {
       return response.data;
     } catch (error) {
       console.error("❌ Error in handleSubmitPhoto:", error);
-      Alert.alert("Detection Error", "Please try submitting again.");
-      showToast("error", "Error!", "Network Error, please try again");
+      Alert.alert("Check internet connection", "Please try submitting again.");      
     } finally {
       setLoading(false);
       setSubmit(false);
@@ -1060,7 +1059,7 @@ export default function Camera() {
         setPhoto(null);
       } catch (error) {
         console.error("Error saving photo on iOS:", error);
-        Alert.alert("Error", "Failed to save photo to gallery.");
+        Alert.alert("Check internet connection", "Failed to save photo to gallery.");
       }
     } else {
       // Android: Only use Zustand store (no MediaLibrary)
@@ -1081,7 +1080,7 @@ export default function Camera() {
         setPhoto(null);
       } catch (error) {
         console.error("Error saving photo on Android:", error);
-        Alert.alert("Error", "Failed to add photo.");
+        Alert.alert("Check internet connection", "Failed to add photo.");
       }
     }
   };
@@ -1147,7 +1146,7 @@ export default function Camera() {
       }
     } catch (error) {
       console.error("Delete photo error:", error);
-      Alert.alert("Error", "Failed to delete photo. Please try again.");
+      Alert.alert("Check Internet Connectivity...", "Failed to delete photo. Please try again.");
     }
   };
   if (photo) {

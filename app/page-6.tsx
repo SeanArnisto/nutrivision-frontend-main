@@ -378,7 +378,7 @@ export default function Page6() {
         { carbohydrates: 0, protein: 0, sodium: 0 }
       );
     } catch (error) {
-      console.error("Error in getDailyNutritionTotals:", error);
+      console.error("Check Internet Connection", "Failed loading data.");
       return { carbohydrates: 0, protein: 0, sodium: 0 };
     }
   };

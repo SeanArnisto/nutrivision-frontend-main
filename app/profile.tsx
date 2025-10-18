@@ -214,7 +214,7 @@ export default function Profile() {
       if (error) {
         console.error(`Error updating ${fieldType}:`, error);
         Alert.alert(
-          "Error",
+          "Check internet connection",
           `Failed to update ${fieldType}. Please try again.`
         );
       } else {
@@ -223,7 +223,7 @@ export default function Profile() {
       }
     } catch (error) {
       console.error(`${fieldType} update error:`, error);
-      Alert.alert("Error", `Failed to update ${fieldType}. Please try again.`);
+      Alert.alert("Check internet connection", `Failed to update ${fieldType}. Please try again.`);
     }
   };
 

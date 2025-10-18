@@ -275,7 +275,7 @@ export default function Page2() {
         {intakeError && (
           <View style={styles.errorContainer}>
             <Text style={styles.errorText}>
-              Error loading nutrition intake: {intakeError}
+              Error loading nutrition intake: Check Internet Connectivity
             </Text>
             <TouchableOpacity
               onPress={() => handleRetry("intake")}
@@ -290,7 +290,7 @@ export default function Page2() {
         {calendarError && (
           <View style={styles.errorContainer}>
             <Text style={styles.errorText}>
-              Error loading calendar data: {calendarError}
+              Error loading calendar data: Check Internet Connectivity
             </Text>
             <TouchableOpacity
               onPress={() => handleRetry("calendar")}

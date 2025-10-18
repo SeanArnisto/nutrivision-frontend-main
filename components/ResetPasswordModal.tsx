@@ -69,14 +69,14 @@ export default function ResetPasswordModal({ visible, onClose }: ResetPasswordMo
       const { error } = await resetPasswordInApp(newPassword);
 
       if (error) {
-        Alert.alert('Error', error.message);
+        Alert.alert('Check Internet Connection', 'Please try again later.');
       } else {
         // Don't show success alert here since it will be shown by the store
         // Just close the modal - the user will be logged out automatically
         handleClose();
       }
     } catch (error: any) {
-      Alert.alert('Error', 'Failed to change password. Please try again.');
+      Alert.alert('Check Internet Connection', 'Failed to change password. Please try again.');
     } finally {
       setLoading(false);
     }
