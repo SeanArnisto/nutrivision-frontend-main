@@ -471,7 +471,6 @@ export default function Camera() {
     console.log("Button clicked, starting enhanced image submission...");
 
     const photos = capturedPhotos;
-
     setSubmit(true);
     setLoading(true);
     setUploadProgress(0);
@@ -492,7 +491,6 @@ export default function Camera() {
       };
 
       const urlToSend = isLabelMode ? endpoints.labels : endpoints.fruits;
-
       console.log(
         `Submitting ${photos.length} photos to ${
           isLabelMode ? "labels" : "fruits"
@@ -500,7 +498,6 @@ export default function Camera() {
       );
 
       const formData = await submissionService.createFormData(photos);
-
       const headers = {
         Accept: "application/json",
         "Content-Type": "multipart/form-data",
@@ -527,34 +524,35 @@ export default function Camera() {
           0,
           onProgress
         );
-      }
 
-      console.log("🧾 Sodium raw:", JSON.stringify(response.data));
+        console.log("🧾 Sodium raw:", JSON.stringify(response.data));
 
-      if (isLabelMode) {
-        const combined = response.data.combined || {};
-        const { carbs_total, protein_total, sodium_total } = combined;
+        if (isLabelMode) {
+          const combined = response.data.combined || {};
+          const { carbs_total, protein_total, sodium_total } = combined;
 
-        setCarbs(parseFloat(carbs_total ?? 0));
-        setProtein(parseFloat(protein_total ?? 0));
-        setSodium(
-          parseFloat((parseFloat(sodium_total ?? 0) / 1000).toFixed(5))
-        );
+          if (carbs_total !== undefined) setCarbs(parseFloat(carbs_total??0));
+          if (protein_total !== undefined)
+            setProtein(parseFloat(protein_total??0));
+          if (sodium_total !== undefined)
+            setSodium(parseFloat(sodium_total??0) / 1000);
 
-        const detailedIntakes = response.data.items.map((intake, index) => ({
-          type: "label",
-          imageUrl: photos[index]?.uri || capturedPhotos[index]?.uri,
-          carbs: parseFloat(intake.raw_extracted.carbohydrates ?? 0),
-          protein: parseFloat(intake.raw_extracted.protein ?? 0),
-          sodium: parseFloat(
-            (parseFloat(intake.raw_extracted.sodium ?? 0) / 1000).toFixed(5)
-          ),
-          servings:
-            intake.servings_count ??
-            parseFloat(intake.final_extracted?.servings ?? 0),
-        }));
+          console.log(`SERVINGS: ${response.data.items.servings}`);
 
-        useDetailedNutrientStore.getState().setIntake(detailedIntakes);
+          const detailedIntakes = response.data.items.map((intake, index) => ({
+            type: "label",
+            imageUrl: photos[index]?.uri || capturedPhotos[index]?.uri,
+            carbs: parseFloat(intake.raw_extracted.carbohydrates??0) || 0,
+            protein: parseFloat(intake.raw_extracted.protein??0) || 0,
+            sodium: parseFloat(intake.raw_extracted.sodium??0) / 1000 || 0,
+            servings:
+              intake.servings_count ||
+              parseFloat(intake.final_extracted?.servings??0) ||
+              0,
+          }));
+
+          useDetailedNutrientStore.getState().setIntake(detailedIntakes);
+        }
       } else if (isBothMode) {
         console.log(
           "🔄 Submitting to both label and fruit (detailed) endpoints..."
@@ -580,45 +578,52 @@ export default function Camera() {
         console.log("✅ Label response:", labelResponse.data);
         console.log("✅ Fruit detailed response:", fruitDetailedResponse.data);
 
+        // Extract totals from label response
         const labelCombined = labelResponse.data.combined || {};
         const { carbs_total, protein_total, sodium_total } = labelCombined;
 
+        // Extract fruits data (array of detections)
         const fruitData = fruitDetailedResponse.data.data || [];
 
+        // Compute fruit totals
         const fruitTotals = fruitData.reduce(
           (totals, f) => ({
-            carbs: totals.carbs + (f.carbs ?? 0),
-            protein: totals.protein + (f.protein ?? 0),
-            sodium: totals.sodium + (f.sodium ?? 0),
+            carbs: totals.carbs + ((f.carbs ?? 0)|| 0),
+            protein: totals.protein + ((f.protein ?? 0) || 0),
+            sodium: totals.sodium + ((f.sodium ??0 )|| 0),
           }),
           { carbs: 0, protein: 0, sodium: 0 }
         );
 
-        const totalCarbs = parseFloat(carbs_total ?? 0) + fruitTotals.carbs;
+        // Combine both totals
+        const totalCarbs =
+          (parseFloat(carbs_total?? 0) || 0) + (fruitTotals.carbs || 0);
         const totalProtein =
-          parseFloat(protein_total ?? 0) + fruitTotals.protein;
+          (parseFloat(protein_total?? 0) || 0) + (fruitTotals.protein || 0);
         const totalSodium = parseFloat(
-          (parseFloat(sodium_total ?? 0) / 1000 + fruitTotals.sodium).toFixed(5)
+          (
+            (parseFloat(sodium_total?? 0) / 1000 || 0) + (fruitTotals.sodium || 0)
+          ).toFixed(5)
         );
 
+        // Update UI totals
         setCarbs(totalCarbs);
         setProtein(totalProtein);
         setSodium(totalSodium);
 
+        // Map detailed entries from both detections
         const labelIntakes = labelResponse.data.items
           .map((intake, index) => ({
             type: "label",
             imageUrl: photos[index]?.uri,
-            carbs: parseFloat(intake.raw_extracted.carbohydrates ?? 0),
-            protein: parseFloat(intake.raw_extracted.protein ?? 0),
-            sodium: parseFloat(
-              (parseFloat(intake.raw_extracted.sodium ?? 0) / 1000).toFixed(5)
-            ),
-            servings: parseFloat(intake.raw_extracted.servings ?? 0),
+            carbs: parseFloat(intake.raw_extracted.carbohydrates??0) || 0,
+            protein: parseFloat(intake.raw_extracted.protein??0) || 0,
+            sodium: parseFloat(intake.raw_extracted.sodium??0) / 1000 || 0,
+            servings: parseFloat(intake.raw_extracted.servings??0),
             hasData:
-              intake.raw_extracted.carbohydrates !== null ||
-              intake.raw_extracted.protein !== null ||
-              intake.raw_extracted.sodium !== null,
+              intake.carbs_total !== null ||
+              intake.protein_total !== null ||
+              intake.sodium_total !== null,
           }))
           .filter((intake) => intake.hasData)
           .map(({ hasData, ...intake }) => intake);
@@ -626,17 +631,17 @@ export default function Camera() {
         const fruitIntakes = fruitData.map((intake) => ({
           type: intake.type,
           imageUrl: photos[intake.imageIndex],
-          carbs: intake.carbs ?? 0,
-          protein: intake.protein ?? 0,
-          sodium: intake.sodium ?? 0,
+          carbs: intake.carbs??0,
+          protein: intake.protein??0,
+          sodium: intake.sodium??0,
         }));
 
         const detailedIntakes = [...labelIntakes, ...fruitIntakes];
-
         useDetailedNutrientStore.getState().setIntake(detailedIntakes);
 
         response = { data: { labelResponse, fruitDetailedResponse } };
       } else {
+        // Regular fruit detection (non-both mode)
         response = await submissionService.submitWithRetry(
           endpoints.fruits,
           formData,
@@ -644,13 +649,14 @@ export default function Camera() {
           0,
           onProgress
         );
-
         console.log("✅ Response from server:", response.data);
 
         const fruits = response.data.fruits || {};
-        setCarbs(fruits.total_carbs ?? 0);
-        setProtein(fruits.total_protein ?? 0);
-        setSodium(fruits.total_sodium ?? 0);
+        const { total_carbs, total_protein, total_sodium } = fruits;
+
+        if (total_carbs !== undefined) setCarbs(total_carbs??0);
+        if (total_protein !== undefined) setProtein(total_protein??0);
+        if (total_sodium !== undefined) setSodium(total_sodium??0);
 
         try {
           console.log("🔍 Fetching detailed detection data...");
@@ -673,9 +679,9 @@ export default function Camera() {
               (intake) => ({
                 type: intake.type,
                 imageUrl: photos[intake.imageIndex],
-                carbs: intake.carbs ?? 0,
-                protein: intake.protein ?? 0,
-                sodium: intake.sodium ?? 0,
+                carbs: intake.carbs??0,
+                protein: intake.protein??0,
+                sodium: intake.sodium??0,
               })
             );
 
