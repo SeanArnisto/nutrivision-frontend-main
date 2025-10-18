@@ -415,12 +415,12 @@ export default function Page6() {
           dailyTotals = {
             carbohydrates: carbs,
             protein: prot,
-            sodium: sod / 1000, // Convert mg to g
+            sodium: sod, // Convert mg to g
           };
         } else {
           // Use historical data for other days
           dailyTotals = getDailyNutritionTotals(currentDate);
-          dailyTotals.sodium = dailyTotals.sodium / 1000; // Convert mg to g
+          dailyTotals.sodium = dailyTotals.sodium; // Convert mg to g
         }
 
         // Ensure values are numbers and non-negative
