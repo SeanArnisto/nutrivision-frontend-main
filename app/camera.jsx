@@ -467,14 +467,17 @@ export default function Camera() {
   );
 
   // ENHANCED SUBMISSION FUNCTION (PROPERLY IMPLEMENTED)
-const handleSubmitPhoto = useCallback(async () => {
+  const handleSubmitPhoto = useCallback(async () => {
     console.log("Button clicked, starting enhanced image submission...");
 
     // Get fresh photos from the store instead of using stale closure reference
     const photos = usePhotosStore.getState().capturedPhotos;
-    
-    console.log("📸 Current photos being submitted:", photos.map(p => p.id));
-    
+
+    console.log(
+      "📸 Current photos being submitted:",
+      photos.map((p) => p.id)
+    );
+
     setSubmit(true);
     setLoading(true);
     setUploadProgress(0);
@@ -604,14 +607,14 @@ const handleSubmitPhoto = useCallback(async () => {
           } else {
             console.log("⚠️ total_carbs is undefined");
           }
-          
+
           if (total_protein !== undefined) {
             console.log("✅ Setting protein to:", parsedProtein);
             setProtein(parsedProtein);
           } else {
             console.log("⚠️ total_protein is undefined");
           }
-          
+
           if (total_sodium !== undefined) {
             console.log("✅ Setting sodium to:", parsedSodium);
             setSodium(parsedSodium);
@@ -622,7 +625,9 @@ const handleSubmitPhoto = useCallback(async () => {
           // Fetch detailed data for fruit mode
           try {
             console.log("🔍 Fetching detailed detection data...");
-            const detailedFormData = await submissionService.createFormData(photos);
+            const detailedFormData = await submissionService.createFormData(
+              photos
+            );
             const detailedResponse = await submissionService.submitWithRetry(
               endpoints.fruits_detailed,
               detailedFormData,
@@ -631,7 +636,10 @@ const handleSubmitPhoto = useCallback(async () => {
               null
             );
 
-            console.log("📊 Detailed response:", JSON.stringify(detailedResponse.data));
+            console.log(
+              "📊 Detailed response:",
+              JSON.stringify(detailedResponse.data)
+            );
 
             if (
               detailedResponse.data.success &&
@@ -678,7 +686,10 @@ const handleSubmitPhoto = useCallback(async () => {
         ]);
 
         console.log("✅ Label response:", JSON.stringify(labelResponse.data));
-        console.log("✅ Fruit detailed response:", JSON.stringify(fruitDetailedResponse.data));
+        console.log(
+          "✅ Fruit detailed response:",
+          JSON.stringify(fruitDetailedResponse.data)
+        );
 
         // Extract totals from label response
         const labelCombined = labelResponse.data.combined || {};
@@ -700,13 +711,20 @@ const handleSubmitPhoto = useCallback(async () => {
         console.log("🍎 Fruit totals computed:", fruitTotals);
 
         // Combine both totals
-        const totalCarbs =
-          parseFloat((parseFloat(carbs_total ?? 0) || 0) + (fruitTotals.carbs || 0).toFixed(5));
-        const totalProtein =
-          parseFloat((parseFloat(protein_total ?? 0) || 0) + (fruitTotals.protein || 0).toFixed(5));
+        const totalCarbs = parseFloat(
+          (
+            (parseFloat(carbs_total ?? 0) || 0) + (fruitTotals.carbs || 0)
+          ).toFixed(5)
+        );
+        const totalProtein = parseFloat(
+          (
+            (parseFloat(protein_total ?? 0) || 0) + (fruitTotals.protein || 0)
+          ).toFixed(5)
+        );
         const totalSodium = parseFloat(
           (
-            (parseFloat(sodium_total ?? 0) / 1000 || 0) + (fruitTotals.sodium || 0)
+            (parseFloat(sodium_total ?? 0) / 1000 || 0) +
+            (fruitTotals.sodium || 0)
           ).toFixed(5)
         );
 
