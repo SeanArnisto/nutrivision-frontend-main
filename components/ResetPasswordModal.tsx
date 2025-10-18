@@ -236,14 +236,14 @@ const styles = StyleSheet.create({
     padding: 8,
   },
   resetButton: {
-    backgroundColor: '#4A90E2',
+    backgroundColor: "#9AB106",
     paddingVertical: 16,
     borderRadius: 12,
     alignItems: 'center',
     marginTop: 16,
   },
   resetButtonText: {
-    color: '#9AB106',
+    color: "#fff",
     fontSize: 16,
     fontFamily: 'AlbertSans-Bold',
   },

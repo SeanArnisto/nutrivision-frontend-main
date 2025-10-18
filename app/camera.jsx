@@ -470,7 +470,7 @@ export default function Camera() {
   const handleSubmitPhoto = useCallback(async () => {
     console.log("Button clicked, starting enhanced image submission...");
 
-    const photos = capturedPhotos;
+    const photos = usePhotosStore.getState().capturedPhotos;
     setSubmit(true);
     setLoading(true);
     setUploadProgress(0);
@@ -704,7 +704,7 @@ export default function Camera() {
       setUploadProgress(0);
     }
   }, [
-    capturedPhotos,
+    
     isLabelMode,
     isFruitMode,
     isBothMode,

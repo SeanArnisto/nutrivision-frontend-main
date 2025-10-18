@@ -33,7 +33,7 @@
       [
         "expo-splash-screen",
         {
-          "image": "./assets/images/nutri-logo.png",
+          "image": "./assets/images/nutri_loading_logo.png",
           "resizeMode": "cover",
           "backgroundColor": "#BBCAA0"
         }
