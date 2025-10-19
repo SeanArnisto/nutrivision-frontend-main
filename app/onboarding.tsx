@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { View, StyleSheet, Animated } from "react-native";
+import { View, StyleSheet, Animated, Text,  } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { RootStackParamList } from "@/types/types";
@@ -14,6 +14,11 @@ import NumericInput from "@/components/NumericInput";
 import CustomTextInput from "@/components/CustomTextInput";
 import Toast, { ToastType } from "@/components/Toast";
 import ThankYouStep from "@/components/ThankYouStep";
+import DateTimePicker from '@react-native-community/datetimepicker';
+import { TouchableOpacity } from "react-native";
+import { Feather, Ionicons } from '@expo/vector-icons';
+import { Platform } from "react-native";
+import { Icon } from "react-native-screens";
 
 import { useAuthStore } from "@/stores/authStore";
 import { supabase } from "@/config/supabase";
@@ -456,14 +461,68 @@ interface AgeStepProps {
   onAgeChange: (age: string) => void;
 }
 
+interface AgeStepProps {
+  age: string;
+  onAgeChange: (age: string) => void;
+}
+
 function AgeStep({ age, onAgeChange }: AgeStepProps) {
   const minAge = 18;
   const maxAge = 120;
+  const [showPicker, setShowPicker] = useState(false);
+  const [selectedDate, setSelectedDate] = useState(new Date());
+
+  // Calculate min and max dates
+  const today = new Date();
+  const maxDate = new Date(today.getFullYear() - minAge, today.getMonth(), today.getDate());
+  const minDate = new Date(today.getFullYear() - maxAge, today.getMonth(), today.getDate());
+
+  // Initialize selectedDate from age prop if it exists
+  useEffect(() => {
+    if (age) {
+      const ageNum = parseInt(age);
+      if (!isNaN(ageNum)) {
+        const birthYear = today.getFullYear() - ageNum;
+        setSelectedDate(new Date(birthYear, today.getMonth(), today.getDate()));
+      }
+    }
+  }, []);
+
+  const calculateAge = (birthDate: Date): number => {
+    const today = new Date();
+    let age = today.getFullYear() - birthDate.getFullYear();
+    const monthDiff = today.getMonth() - birthDate.getMonth();
+    
+    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+      age--;
+    }
+    
+    return age;
+  };
+
+  const onDateChange = (event: any, date?: Date) => {
+    setShowPicker(false);
+    
+    if (date) {
+      const calculatedAge = calculateAge(date);
+      
+      // Validate age range
+      if (calculatedAge >= minAge && calculatedAge <= maxAge) {
+        setSelectedDate(date);
+        onAgeChange(calculatedAge.toString());
+      }
+    }
+  };
+
+  const formatDate = (date: Date): string => {
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    return `${months[date.getMonth()]} ${date.getDate()}, ${date.getFullYear()}`;
+  };
 
   return (
     <>
       <TitleSection
-        title="Choose your Age"
+        title="Select your Birthday"
         description="Age affects nutrient intake by changing metabolism, absorption, and dietary needs."
       />
 
@@ -473,15 +532,39 @@ function AgeStep({ age, onAgeChange }: AgeStepProps) {
         editable={false}
       />
 
-      <NumericInput
-        value={age}
-        onChangeText={onAgeChange}
-        placeholder="Enter your age"
-        minValue={minAge}
-        maxValue={maxAge}
-        unit="years"
-        onValidationChange={() => {}} // No real-time validation
-      />
+      <View style={styles.datePickerContainer}>
+  <TouchableOpacity 
+    style={styles.dateButton} 
+    onPress={() => setShowPicker(true)}
+    activeOpacity={0.7}
+  >
+    <View style={styles.dateButtonContent}>
+      <View style={styles.dateTextContainer}>
+        <Text style={styles.dateLabel}>Birthday</Text>
+        <Text style={[styles.dateValue, !age && styles.datePlaceholder]}>
+          {age ? `${formatDate(selectedDate)} (${age} years old)` : 'Select your birthday'}
+        </Text>
+      </View>
+      
+      {/* Pencil Icon */}
+      <Ionicons name="pencil-outline" size={20} color="#666666" />
+      {/* OR for Expo: */}
+      {/* <Feather name="edit-2" size={20} color="#666666" /> */}
+    </View>
+  </TouchableOpacity>
+
+  {showPicker && (
+    <DateTimePicker
+      value={selectedDate}
+      mode="date"
+      display={'spinner'}
+      onChange={onDateChange}
+      maximumDate={maxDate}
+      minimumDate={minDate}
+      testID="dateTimePicker"
+    />
+  )}
+</View>
     </>
   );
 }
@@ -593,5 +676,64 @@ const styles = StyleSheet.create({
   bottomContainer: {
     alignItems: "center",
     paddingBottom: 40,
+  },
+  datePickerContainer: {
+    flex: 1,
+    paddingTop: 20,
+    paddingHorizontal: 20,
+  },
+  dateButton: {
+    backgroundColor: '#F5F5F5',
+    borderRadius: 12,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
+    minHeight: 70,
+    justifyContent: 'center',
+  },
+  dateButtonContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  dateTextContainer: {
+    flex: 1,
+    marginRight: 12,
+  },
+  dateLabel: {
+    fontSize: 14,
+    color: '#000000',
+    marginBottom: 8,
+    fontWeight: '500',
+  },
+  dateValue: {
+    fontSize: 16,
+    color: '#000000',
+    fontWeight: '600',
+  },
+  datePlaceholder: {
+    color: '#666666',
+    fontWeight: '400',
+  },
+  // ✅ New styles for scrollable picker
+  pickerWrapper: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    marginTop: 16,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
+  },
+  doneButton: {
+    backgroundColor: '#007AFF',
+    borderRadius: 8,
+    padding: 12,
+    alignItems: 'center',
+    marginTop: 12,
+  },
+  doneButtonText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '600',
   },
 });
