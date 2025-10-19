@@ -13,4 +13,8 @@ export const nutrients = {
     icon: require("@/assets/images/Protein Icon.png"),
     tintColor: "#9ab106",
   },
+  calorie: {
+    icon: require("@/assets/images/calorie.png"),
+    tintColor: "#000000",
+  },
 };
