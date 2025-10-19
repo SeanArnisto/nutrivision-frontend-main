@@ -7,6 +7,7 @@ interface NutritionIntakeData {
   avg_carbs: number;
   avg_protein: number;
   avg_sodium: number;
+  avg_calories: number;
 }
 
 interface AverageIntakeData {
@@ -16,6 +17,8 @@ interface AverageIntakeData {
   maxSodium: number;
   minProtein: number;
   maxProtein: number;
+  minCalories: number;
+  maxCalories: number;
 }
 
 interface NutritionalRecord {
@@ -41,6 +44,7 @@ interface NutritionApiResponse {
     carbs: [number, number];
     protein: [number, number];
     sodium: [number, number];
+    calories: [number, number];
   };
 }
 
@@ -150,6 +154,8 @@ export const fetchNutritionAverage = create<AverageIntakeState>((set, get) => ({
         maxProtein: nutritionResponse.nutrition_range.protein[1],
         minSodium: nutritionResponse.nutrition_range.sodium[0],
         maxSodium: nutritionResponse.nutrition_range.sodium[1],
+        minCalories: nutritionResponse.nutrition_range.calories[0],
+        maxCalories: nutritionResponse.nutrition_range.calories[1]
       };
 
       set({
@@ -246,6 +252,8 @@ export const fetchNutritionAverage = create<AverageIntakeState>((set, get) => ({
         maxProtein: nutritionResponse.nutrition_range.protein[1],
         minSodium: nutritionResponse.nutrition_range.sodium[0],
         maxSodium: nutritionResponse.nutrition_range.sodium[1],
+        minCalories: nutritionResponse.nutrition_range.calories[0],
+        maxCalories: nutritionResponse.nutrition_range.calories[1]
       };
 
       const averageCarb =
@@ -333,14 +341,12 @@ export const useNutritionIntakeStore = create<NutritionIntakeState>(
           .single();
 
         if (existingIntake && !intakeError) {
-          set({
-            nutritionData: {
-              avg_carbs: existingIntake.avg_carbs,
-              avg_protein: existingIntake.avg_protein,
-              avg_sodium: existingIntake.avg_sodium,
-            },
-            isLoading: false,
-          });
+          // when reading existing intake
+          const { data: existingIntake, error: intakeError } = await supabase
+            .from("user_nutrition_intake")
+            .select("avg_carbs, avg_protein, avg_sodium, avg_calories")
+            .eq("user_id", user.id)
+            .single();
           return;
         }
 
@@ -398,6 +404,12 @@ export const useNutritionIntakeStore = create<NutritionIntakeState>(
           (nutritionResponse.nutrition_range.sodium[0] +
             nutritionResponse.nutrition_range.sodium[1]) /
           2;
+        
+        const avgCalories =
+          (nutritionResponse.nutrition_range.calories[0] +
+            nutritionResponse.nutrition_range.calories[1]) /
+          2;
+        
 
         const { data: savedData, error: saveError } = await supabase
           .from("user_nutrition_intake")
@@ -421,6 +433,7 @@ export const useNutritionIntakeStore = create<NutritionIntakeState>(
             avg_carbs: avgCarbs,
             avg_protein: avgProtein,
             avg_sodium: avgSodium,
+            avg_calories: avgCalories
           },
           isLoading: false,
         });

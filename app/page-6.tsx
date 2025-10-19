@@ -49,11 +49,13 @@ interface NutritionData {
     carbohydrate: { user: number; avg: number };
     sodium: { user: number; avg: number };
     protein: { user: number; avg: number };
+    calories: { user: number; avg: number };
   };
   values: {
     carbohydrate: { user: number; avg: number };
     sodium: { user: number; avg: number };
     protein: { user: number; avg: number };
+    calories: { user: number; avg: number };
   };
 }
 
@@ -148,11 +150,13 @@ export default function Page6() {
       carbohydrate: { user: 88, avg: 50 },
       sodium: { user: 33, avg: 50 },
       protein: { user: 45, avg: 50 },
+      calories: { user: 60, avg: 50 },
     },
     values: {
       carbohydrate: { user: 53, avg: 49 },
       sodium: { user: 15, avg: 11 },
       protein: { user: 180, avg: 147 },
+      calories: { user: 1800, avg: 2000 },
     },
   });
 
@@ -198,6 +202,10 @@ export default function Page6() {
             user: parseFloat(sod.toFixed(5)),
             avg: parseFloat((intakeData.avg_sodium / 1000).toFixed(5)),
           },
+                  calories: { // Add this
+          user: 1800, // Placeholder - replace with actual value when available
+          avg: parseFloat(intakeData.avg_calories?.toFixed(5) || "2000"),
+        },
         },
       }));
     } else if (intakeData) {
@@ -217,6 +225,10 @@ export default function Page6() {
             user: parseFloat((sod / 1000).toFixed(5)), // Convert mg to g
             avg: parseFloat((intakeData.avg_sodium / 1000).toFixed(5)), // Convert mg to g
           },
+           calories: { // Add this
+          user: 1800, // Placeholder
+          avg: parseFloat(intakeData.avg_calories?.toFixed(5) || "2000"),
+        },
         },
       }));
     } else if (averageData) {
@@ -240,6 +252,10 @@ export default function Page6() {
             user: parseFloat((sod / 1000).toFixed(5)), // Convert mg to g
             avg: parseFloat((sodiumAvg / 1000).toFixed(5)), // Convert mg to g
           },
+                  calories: { // Add this
+          user: 1800, // Placeholder
+          avg: 2000, // Placeholder
+        },
         },
       }));
     }
@@ -273,6 +289,12 @@ export default function Page6() {
           ),
           avg: 50, // Always 50 for average bar
         },
+        calories: { // Add this
+        user: parseFloat(
+          ((prev.values.calories.user / prev.values.calories.avg) * 50).toFixed(1)
+        ),
+        avg: 50,
+      },
       },
     }));
   }, [nutritionData.values]);
@@ -674,7 +696,54 @@ export default function Page6() {
                 </Text>
               </View>
             </View>
+            {/* Calories Row - ADD THIS */}
+        <View style={styles.nutrientRow}>
+          <View style={styles.nutrientLabel}>
+            <Text style={styles.nutrientText}>Calories</Text>
+            <Image
+              source={require("@/assets/images/calorie.png")} // You'll need to add this icon
+              style={styles.icon}
+            />
           </View>
+          <View style={styles.progressBars}>
+            <View style={styles.progressBarBackground}>
+              <View
+                style={[
+                  styles.progressBar,
+                  styles.userProgress,
+                  {
+                    width: toProgressWidth(
+                      nutritionData.progress.calories.user
+                    ),
+                  },
+                ]}
+              />
+            </View>
+            <View style={styles.progressBarBackground}>
+              <View
+                style={[
+                  styles.progressBar,
+                  styles.avgProgress,
+                  {
+                    width: toProgressWidth(
+                      nutritionData.progress.calories.avg
+                    ),
+                  },
+                ]}
+              />
+            </View>
+          </View>
+          <View style={styles.valueContainer}>
+            <Text style={styles.userValue}>
+              {formatValue(nutritionData.values.calories.user)}
+            </Text>
+            <Text style={styles.avgValue}>
+              {formatValue(nutritionData.values.calories.avg)}
+            </Text>
+          </View>
+        </View>
+          </View>
+          
 
           {/* Weekly Chart using BarChart component - Same implementation as statistics */}
           <BarChart
