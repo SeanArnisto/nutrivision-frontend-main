@@ -461,15 +461,15 @@ export default function Statistics() {
   }
 
   // Show error state if there's an error
-  if (averageError || historyError || intakeError) {
-    return (
-      <SafeAreaView style={SafeViewAndroid.AndroidSafeArea}>
-        <View style={styles.errorContainer}>
-          <Text>Error: {averageError || historyError || intakeError}</Text>
-        </View>
-      </SafeAreaView>
-    );
-  }
+  // if (averageError || historyError || intakeError) {
+  //   return (
+  //     <SafeAreaView style={SafeViewAndroid.AndroidSafeArea}>
+  //       <View style={styles.errorContainer}>
+  //         <Text>Error: {averageError || historyError || intakeError}</Text>
+  //       </View>
+  //     </SafeAreaView>
+  //   );
+  // }
 
   // IMPORTANT: No data fetching here - everything uses preloaded data!
   return (

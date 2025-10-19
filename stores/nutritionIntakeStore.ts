@@ -55,25 +55,25 @@ interface NutritionIntakeState {
   isHistoryLoading: boolean;
   error: string | null;
   historyError: string | null;
-  currentUserId: string | null; // Track current user
+  currentUserId: string | null;
 
   fetchNutritionIntake: () => Promise<void>;
   fetchNutritionalHistory: (days?: number) => Promise<void>;
   clearNutritionData: () => void;
   clearNutritionalHistory: () => void;
-  resetAllData: () => void; // Clear everything
+  resetAllData: () => void;
 }
 
 interface AverageIntakeState {
   nutritionDataAve: AverageIntakeData | null;
   isLoading: boolean;
   error: string | null;
-  currentUserId: string | null; // Track current user
+  currentUserId: string | null;
 
   fetchNutritionIntakeAve: () => Promise<void>;
   updateNutritionIntakeAve: () => Promise<void>;
   clearNutritionData: () => void;
-  resetAllData: () => void; // Clear everything
+  resetAllData: () => void;
 }
 
 export const fetchNutritionAverage = create<AverageIntakeState>((set, get) => ({
@@ -86,7 +86,14 @@ export const fetchNutritionAverage = create<AverageIntakeState>((set, get) => ({
     try {
       set({ isLoading: true, error: null });
 
-      const { user, profileComplete } = useAuthStore.getState();
+      // FIXED: Add null check for authStore
+      const authState = useAuthStore?.getState?.();
+      if (!authState) {
+        throw new Error("Auth store is not initialized");
+      }
+
+      const { user, profileComplete } = authState;
+      
       if (!user) {
         throw new Error("No authenticated user found");
       }
@@ -190,7 +197,13 @@ export const fetchNutritionAverage = create<AverageIntakeState>((set, get) => ({
     try {
       set({ isLoading: true, error: null });
 
-      const { user, profileComplete } = useAuthStore.getState();
+      // FIXED: Add null check for authStore
+      const authState = useAuthStore?.getState?.();
+      if (!authState) {
+        throw new Error("Auth store is not initialized");
+      }
+
+      const { user, profileComplete } = authState;
 
       if (!user || profileComplete === false) {
         console.log("❌ no authenticated user or user's profile isnt complete");
@@ -218,6 +231,7 @@ export const fetchNutritionAverage = create<AverageIntakeState>((set, get) => ({
           error:
             "User demographic is incomplete, please finish the onboarding first.",
         });
+        return;
       }
 
       const apiResponse = await fetch(
@@ -262,6 +276,8 @@ export const fetchNutritionAverage = create<AverageIntakeState>((set, get) => ({
         (nutritionDataAve.minSodium + nutritionDataAve.maxSodium) / 2;
       const averageProtein =
         (nutritionDataAve.minProtein + nutritionDataAve.maxProtein) / 2;
+      const averageCalories =
+        (nutritionDataAve.minCalories + nutritionDataAve.maxCalories) / 2;
 
       const { data, error } = await supabase
         .from("user_nutrition_intake")
@@ -269,17 +285,25 @@ export const fetchNutritionAverage = create<AverageIntakeState>((set, get) => ({
           avg_carbs: averageCarb,
           avg_sodium: averageSodium,
           avg_protein: averageProtein,
+          avg_calories: averageCalories,
         })
         .eq("user_id", user.id)
+        .select()
         .single();
 
       if (error) {
         console.log("❌ Failed updating in supabase", error);
+      } else {
+        console.log("✔️ user nutrition updated!");
       }
     } catch (error: any) {
       console.log("❗Update error", error);
+      set({
+        error: error.message || "Failed to update nutrition intake",
+        isLoading: false,
+      });
     } finally {
-      console.log("✔️ user nutrition updated!");
+      set({ isLoading: false });
     }
   },
 
@@ -314,7 +338,14 @@ export const useNutritionIntakeStore = create<NutritionIntakeState>(
       try {
         set({ isLoading: true, error: null });
 
-        const { user, profileComplete } = useAuthStore.getState();
+        // FIXED: Add null check for authStore
+        const authState = useAuthStore?.getState?.();
+        if (!authState) {
+          throw new Error("Auth store is not initialized");
+        }
+
+        const { user, profileComplete } = authState;
+        
         if (!user) {
           throw new Error("No authenticated user found");
         }
@@ -334,22 +365,28 @@ export const useNutritionIntakeStore = create<NutritionIntakeState>(
           return;
         }
 
+        // Check if user already has nutrition intake data
         const { data: existingIntake, error: intakeError } = await supabase
           .from("user_nutrition_intake")
-          .select("avg_carbs, avg_protein, avg_sodium")
+          .select("avg_carbs, avg_protein, avg_sodium, avg_calories")
           .eq("user_id", user.id)
           .single();
 
         if (existingIntake && !intakeError) {
-          // when reading existing intake
-          const { data: existingIntake, error: intakeError } = await supabase
-            .from("user_nutrition_intake")
-            .select("avg_carbs, avg_protein, avg_sodium, avg_calories")
-            .eq("user_id", user.id)
-            .single();
+          // User already has data, use it
+          set({
+            nutritionData: {
+              avg_carbs: existingIntake.avg_carbs,
+              avg_protein: existingIntake.avg_protein,
+              avg_sodium: existingIntake.avg_sodium,
+              avg_calories: existingIntake.avg_calories || 0,
+            },
+            isLoading: false,
+          });
           return;
         }
 
+        // Fetch user profile for calculation
         const { data: profile, error: profileError } = await supabase
           .from("profiles")
           .select("height, weight, age")
@@ -404,12 +441,10 @@ export const useNutritionIntakeStore = create<NutritionIntakeState>(
           (nutritionResponse.nutrition_range.sodium[0] +
             nutritionResponse.nutrition_range.sodium[1]) /
           2;
-        
         const avgCalories =
           (nutritionResponse.nutrition_range.calories[0] +
             nutritionResponse.nutrition_range.calories[1]) /
           2;
-        
 
         const { data: savedData, error: saveError } = await supabase
           .from("user_nutrition_intake")
@@ -418,6 +453,7 @@ export const useNutritionIntakeStore = create<NutritionIntakeState>(
             avg_carbs: avgCarbs,
             avg_protein: avgProtein,
             avg_sodium: avgSodium,
+            avg_calories: avgCalories,
           })
           .select()
           .single();
@@ -450,7 +486,14 @@ export const useNutritionIntakeStore = create<NutritionIntakeState>(
       try {
         set({ isHistoryLoading: true, historyError: null });
 
-        const { user } = useAuthStore.getState();
+        // FIXED: Add null check for authStore
+        const authState = useAuthStore?.getState?.();
+        if (!authState) {
+          throw new Error("Auth store is not initialized");
+        }
+
+        const { user } = authState;
+        
         if (!user) {
           throw new Error("No authenticated user found");
         }
