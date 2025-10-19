@@ -23,6 +23,10 @@ import DateDetailModal from "@/components/DateDetailModal";
 import SessionDetailModal from "@/components/SessionDetailModal";
 import { Ionicons } from "@expo/vector-icons";
 import CalorieCard from "@/components/CalorieCard";
+import BMICard from "@/components/BMICard";
+import BMIModal from "@/components/BMIModal";
+
+
 
 
 // Import the hooks and auth store
@@ -39,6 +43,7 @@ import CustomModal from "@/components/customModal";
 import { Custom } from "react-native-reanimated-carousel/lib/typescript/components/Pagination/Custom";
 import { withDecay } from "react-native-reanimated";
 
+
 type Page2ScreenNavigationProp = StackNavigationProp<
   RootStackParamList,
   "page-2"
@@ -53,6 +58,8 @@ export default function Page2() {
   const [selectedSession, setSelectedSession] = useState<Session | null>(null);
   const [sessionFoodEntries, setSessionFoodEntries] = useState<FoodEntry[]>([]);
   const [shouldRedirect, setShouldRedirect] = useState(false);
+  const [bmiModalVisible, setBmiModalVisible] = useState(false);
+
 
   // Use the auth store to get user info
   const { user, isAuthenticated, profileComplete } = useAuthStore();
@@ -111,6 +118,11 @@ export default function Page2() {
   if (!isAuthenticated || !user) {
     return null;
   }
+
+const userWeight = 65; // Get from user profile
+const userHeight = 170; // Get from user profile
+const userBMI = userWeight / Math.pow(userHeight / 100, 2);
+
 
   // Check if any of the errors are network-related
   // useEffect(() => {
@@ -196,6 +208,7 @@ export default function Page2() {
     ? nutritionData.avg_sodium / 1000
     : 0; // No division by 1000 if already in correct units
   const caloriesAvg = 2000
+  const bmiValue = 35;
   // Handle retry for different er  rors
   const handleRetry = (type: "calendar" | "intake") => {
     switch (type) {
@@ -212,7 +225,7 @@ export default function Page2() {
     
 
     <SafeAreaView style={SafeViewAndroid.AndroidSafeArea}>
-      <ScrollView>
+      <ScrollView style={styles.down}>
       <AppLogo />
       <ThemedView style={styles.container}>
         <View style={styles.headerContainer}>
@@ -282,7 +295,11 @@ export default function Page2() {
             index={2}
           />
         </View>
-
+        {/* BMI Card */}
+        <BMICard
+          bmiValue={bmiValue}
+          onInfoPress={() => setBmiModalVisible(true)}
+        />
         {/* Error handling for nutrition intake */}
         {intakeError && (
           <View style={styles.errorContainer}>
@@ -357,6 +374,14 @@ export default function Page2() {
           settings: "settings",
           profile: "profile",
         }}
+        
+      />
+      <BMIModal
+        visible={bmiModalVisible}
+        onClose={() => setBmiModalVisible(false)}
+        bmiValue={userBMI}
+        weight={userWeight}
+        height={userHeight}
       />
     </SafeAreaView>
     
@@ -412,5 +437,8 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     fontSize: 14,
   },
+  down:{
+    marginBottom: 60,
+  }
   
 });
