@@ -8,6 +8,7 @@ type NutrientIntake = {
   carbs: number;
   sodium: number;
   protein: number;
+  calories: number;
   servings?: number;
 };
 
@@ -139,6 +140,7 @@ export const useDetailedNutrientStore = create<store>((set, get) => ({
             type: intake.type,
             carbs: intake.carbs,
             protein: intake.protein,
+            calories: intake.calories,
             sodium: intake.sodium,
             image_url: uploadedImageUrl,
             image_order: i + 1,
@@ -198,6 +200,7 @@ export const getUserSessions = async (days: number = 30) => {
           type,
           carbs,
           protein,
+          calories,
           sodium,
           image_url,
           image_order
@@ -233,6 +236,7 @@ export const getSessionById = async (sessionId: number) => {
           id,
           type,
           carbs,
+          calories,
           protein,
           sodium,
           image_url,

@@ -9,6 +9,7 @@ export interface NutritionalRecord {
   carbohydrates: number | null;
   protein: number | null;
   sodium: number | null;
+  calories: number | null;
   total: number | null;
   created_at: string;
   updated_at: string;
@@ -32,6 +33,7 @@ export interface Session {
     carbohydrates: number;
     protein: number;
     sodium: number;
+    calories: number;
     total: number;
   };
 }
@@ -46,6 +48,7 @@ export interface NutritionSummary {
   carbs: number;
   sodium: number;
   protein: number;
+  calories: number;
   total: number;
 }
 
@@ -203,6 +206,7 @@ export const useNutritionCalendar = (): UseNutritionCalendarReturn => {
             carbohydrates: record.carbohydrates || 0,
             protein: record.protein || 0,
             sodium: record.sodium || 0,
+            calories: record.calories || 0,
             total: record.total || 0,
           },
         };
@@ -238,6 +242,7 @@ export const useNutritionCalendar = (): UseNutritionCalendarReturn => {
           : 0,
         sodium: record.sodium ? parseFloat(record.sodium.toFixed(5)) : 0, // Convert to grams
         protein: record.protein ? parseFloat(record.protein.toFixed(5)) : 0,
+        calories: record.calories ? parseFloat(record.calories.toFixed(5)) : 0,
         total: record.total || 0,
       };
     },
