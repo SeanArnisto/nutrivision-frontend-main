@@ -12,12 +12,14 @@ interface CalorieCardProps {
   value: number | string;
   fill?: number;
   maxCalories?: number;
+  tintColor?: string;
 }
 
 export default function CalorieCard({ 
   value,
   fill = 100,
-  maxCalories = 2000
+  maxCalories = 2000,
+  tintColor = "#000000"
 }: CalorieCardProps) {
   const [animatedFill, setAnimatedFill] = useState(0);
   
@@ -47,7 +49,7 @@ export default function CalorieCard({
             size={100}
             width={10}
             fill={animatedFill}
-            tintColor="#000000"
+            tintColor={tintColor}
             backgroundColor="#dddddd"
             duration={animationDuration}
             prefill={0}
