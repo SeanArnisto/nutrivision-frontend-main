@@ -48,6 +48,10 @@ export default function UserNutrientPage() {
   const setProtein = useNutrientsStore((state) => state.setProtein);
   const setSodium = useNutrientsStore((state) => state.setSodium);
 
+  const detailedNutrients = {
+    
+  }
+
   const [fontsLoaded] = useFonts({
     "SpaceMono-Regular": require("@/assets/fonts/SpaceMono-Regular.ttf"),
   });

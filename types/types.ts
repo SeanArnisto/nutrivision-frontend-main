@@ -15,18 +15,10 @@ export type RootStackParamList = {
   signup: undefined;
   otp: undefined;
   "photo-label-details": {
-    imageUri: string;
-    nutritionalData?: {
-      carbs: number;
-      sodium: number;
-      protein: number;
-      calories: number;
-      servings: number;
-    };
+    imageIndex: number;
   };
   'photo-fruit-details': {
-    imageUri: string;
-    nutritionalData?: { carbs: number; sodium: number; protein: number; calories: number, servings: number; };
+    imageIndex: number;
   };
   "forgot-email": undefined;
   "forgot-otp": { email: string };

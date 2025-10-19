@@ -6,13 +6,12 @@ import {
   Text,
   StyleSheet,
   TouchableOpacity,
-  Alert
+  Alert,
 } from "react-native";
-import { useNavigation } from '@react-navigation/native';
-import { StackNavigationProp } from '@react-navigation/stack';
-import { RootStackParamList } from '@/types/types'; // Import your types
-import { useDetailedNutrientStore } from '@/stores/useDetailedNutrientStore';
-
+import { useNavigation } from "@react-navigation/native";
+import { StackNavigationProp } from "@react-navigation/stack";
+import { RootStackParamList } from "@/types/types"; // Import your types
+import { useDetailedNutrientStore } from "@/stores/useDetailedNutrientStore";
 
 interface PhotoThumbnailGalleryProps {
   showHorizontalIndicator?: boolean;
@@ -39,60 +38,49 @@ export const PhotoThumbnailGallery: React.FC<PhotoThumbnailGalleryProps> = ({
   const handlePhotoPress = (intake: any, index: number) => {
     console.log(`Photo pressed at index: ${index}`, intake);
 
-    // If custom handler is provided, use it
     if (onPhotoPress) {
       onPhotoPress(intake, index);
       return;
     }
 
-    // Route to different pages based on image type
     try {
-      const nutritionalData = {
-        carbs: intake.carbs,
-        sodium: intake.sodium,
-        protein: intake.protein,
-        calories: intake.calories,
-        servings: intake.servings,
-        type: intake.type
-      };
+      // Determine navigation based on type
+      const isDetectedFruit =
+        intake.type && !["fruit", "label"].includes(intake.type);
 
-      // Get the image URI - handle both string and object formats
-      const imageUri = typeof intake.imageUrl === 'string'
-        ? intake.imageUrl
-        : (intake.imageUrl as any)?.uri || '';
-
-      // Determine navigation based on detected fruit type or image type
-      const isDetectedFruit = intake.type && !['fruit', 'label'].includes(intake.type);
-
-      if (isDetectedFruit || intake.type === 'fruit' || (intake.imageUrl as any)?.type === 'fruit') {
-        // Navigate to fruit details page
-        navigation.navigate('photo-fruit-details', {
-          imageUri,
-          nutritionalData
+      if (
+        isDetectedFruit ||
+        intake.type === "fruit" ||
+        (intake.imageUrl as any)?.type === "fruit"
+      ) {
+        // Navigate to fruit details page with index
+        navigation.navigate("photo-fruit-details", {
+          imageIndex: index, // Pass index instead of data
         });
-      } else if (intake.type === 'label' || (intake.imageUrl as any)?.type === 'label') {
-        // Navigate to label details page
-        navigation.navigate('photo-label-details', {
-          imageUri,
-          nutritionalData
+      } else if (
+        intake.type === "label" ||
+        (intake.imageUrl as any)?.type === "label"
+      ) {
+        // Navigate to label details page with index
+        navigation.navigate("photo-label-details", {
+          imageIndex: index, // Pass index instead of data
         });
       } else {
-        // Default behavior for unknown types - go to fruit page for detected items
-        console.warn(`Unknown photo type: ${intake.type}, defaulting to fruit page`);
-        navigation.navigate('photo-fruit-details', {
-          imageUri,
-          nutritionalData
+        console.warn(
+          `Unknown photo type: ${intake.type}, defaulting to fruit page`
+        );
+        navigation.navigate("photo-fruit-details", {
+          imageIndex: index,
         });
       }
     } catch (error) {
-      console.error('Navigation error:', error);
+      console.error("Navigation error:", error);
       Alert.alert(
-        'Navigation Error',
-        'Unable to open photo details. Please try again.'
+        "Navigation Error",
+        "Unable to open photo details. Please try again."
       );
     }
   };
-
   // Show message when no photos
   if (!intakes || intakes.length === 0) {
     return (
@@ -121,9 +109,10 @@ export const PhotoThumbnailGallery: React.FC<PhotoThumbnailGalleryProps> = ({
             >
               <Image
                 source={{
-                  uri: typeof intake.imageUrl === 'string'
-                    ? intake.imageUrl
-                    : (intake.imageUrl as any)?.uri || ''
+                  uri:
+                    typeof intake.imageUrl === "string"
+                      ? intake.imageUrl
+                      : (intake.imageUrl as any)?.uri || "",
                 }}
                 style={styles.thumbnail}
                 onError={() => handleImageError(index)}

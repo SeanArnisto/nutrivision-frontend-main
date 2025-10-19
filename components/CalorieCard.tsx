@@ -49,7 +49,7 @@ export default function CalorieCard({
             size={100}
             width={10}
             fill={animatedFill}
-            tintColor="#3E3E07"
+            tintColor={tintColor}
             backgroundColor="#dddddd"
             duration={animationDuration}
             prefill={0}

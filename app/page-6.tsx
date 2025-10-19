@@ -203,10 +203,11 @@ export default function Page6() {
             user: parseFloat(sod.toFixed(5)),
             avg: parseFloat((intakeData.avg_sodium / 1000).toFixed(5)),
           },
-                  calories: { // Add this
-          user: 1800, // Placeholder - replace with actual value when available
-          avg: parseFloat(intakeData.avg_calories?.toFixed(5) || "2000"),
-        },
+          calories: {
+            // Add this
+            user: 1800, // Placeholder - replace with actual value when available
+            avg: parseFloat(intakeData.avg_calories?.toFixed(5) || "2000"),
+          },
         },
       }));
     } else if (intakeData) {
@@ -226,10 +227,11 @@ export default function Page6() {
             user: parseFloat((sod / 1000).toFixed(5)), // Convert mg to g
             avg: parseFloat((intakeData.avg_sodium / 1000).toFixed(5)), // Convert mg to g
           },
-           calories: { // Add this
-          user: 1800, // Placeholder
-          avg: parseFloat(intakeData.avg_calories?.toFixed(5) || "2000"),
-        },
+          calories: {
+            // Add this
+            user: 1800, // Placeholder
+            avg: parseFloat(intakeData.avg_calories?.toFixed(5) || "2000"),
+          },
         },
       }));
     } else if (averageData) {
@@ -253,10 +255,11 @@ export default function Page6() {
             user: parseFloat((sod / 1000).toFixed(5)), // Convert mg to g
             avg: parseFloat((sodiumAvg / 1000).toFixed(5)), // Convert mg to g
           },
-                  calories: { // Add this
-          user: 1800, // Placeholder
-          avg: 2000, // Placeholder
-        },
+          calories: {
+            // Add this
+            user: 1800, // Placeholder
+            avg: 2000, // Placeholder
+          },
         },
       }));
     }
@@ -290,12 +293,16 @@ export default function Page6() {
           ),
           avg: 50, // Always 50 for average bar
         },
-        calories: { // Add this
-        user: parseFloat(
-          ((prev.values.calories.user / prev.values.calories.avg) * 50).toFixed(1)
-        ),
-        avg: 50,
-      },
+        calories: {
+          // Add this
+          user: parseFloat(
+            (
+              (prev.values.calories.user / prev.values.calories.avg) *
+              50
+            ).toFixed(1)
+          ),
+          avg: 50,
+        },
       },
     }));
   }, [nutritionData.values]);
@@ -347,7 +354,9 @@ export default function Page6() {
     ? Math.round(intakeData.avg_protein)
     : 0;
   const sodiumAvg = intakeData?.avg_sodium ? intakeData.avg_sodium / 1000 : 0;
-  const calorieAvg = intakeData?.avg_calories ? Math.round(intakeData.avg_calories) : 2000;
+  const calorieAvg = intakeData?.avg_calories
+    ? Math.round(intakeData.avg_calories)
+    : 2000;
 
   // Initialize date constants (same as statistics)
   const today = new Date();
@@ -491,69 +500,70 @@ export default function Page6() {
   };
 
   // Generate calorie data for each day of the week
-const generateWeeklyCalorieData = () => {
-  try {
-    const days = ["S", "M", "T", "W", "TH", "F", "S"];
-    const chartData = [];
+  const generateWeeklyCalorieData = () => {
+    try {
+      const days = ["S", "M", "T", "W", "TH", "F", "S"];
+      const chartData = [];
 
-    if (!startOfWeek) {
-      console.warn("startOfWeek is not defined");
+      if (!startOfWeek) {
+        console.warn("startOfWeek is not defined");
+        return [];
+      }
+
+      for (let i = 0; i < 7; i++) {
+        let currentDate;
+        try {
+          currentDate = addDays(startOfWeek, i);
+        } catch (e) {
+          console.warn(`Error adding days to startOfWeek: ${e}`);
+          currentDate = new Date();
+        }
+
+        let dailyCalories;
+
+        // Check if current date is today, use current nutrition values
+        if (currentDate.toDateString() === today.toDateString()) {
+          // Use the current calorie value from nutritionData state
+          dailyCalories = nutritionData.values.calories.user;
+        } else {
+          // Use historical data for other days
+          const targetDate = currentDate.toDateString();
+          const dayRecords =
+            nutritionalData?.filter((record) => {
+              try {
+                return (
+                  record &&
+                  record.created_at &&
+                  new Date(record.created_at).toDateString() === targetDate
+                );
+              } catch (e) {
+                return false;
+              }
+            }) || [];
+
+          // Sum up calories for the day
+          dailyCalories = dayRecords.reduce(
+            (total, record) => total + (Number(record?.calories) || 0),
+            0
+          );
+        }
+
+        chartData.push({
+          value: dailyCalories,
+          label: days[i],
+        });
+      }
+
+      return chartData;
+    } catch (error) {
+      console.error("Error in generateWeeklyCalorieData:", error);
       return [];
     }
-
-    for (let i = 0; i < 7; i++) {
-      let currentDate;
-      try {
-        currentDate = addDays(startOfWeek, i);
-      } catch (e) {
-        console.warn(`Error adding days to startOfWeek: ${e}`);
-        currentDate = new Date();
-      }
-
-      let dailyCalories;
-
-      // Check if current date is today, use current nutrition values
-      if (currentDate.toDateString() === today.toDateString()) {
-        // Use the current calorie value from nutritionData state
-        dailyCalories = nutritionData.values.calories.user;
-      } else {
-        // Use historical data for other days
-        const targetDate = currentDate.toDateString();
-        const dayRecords = nutritionalData?.filter((record) => {
-          try {
-            return (
-              record &&
-              record.created_at &&
-              new Date(record.created_at).toDateString() === targetDate
-            );
-          } catch (e) {
-            return false;
-          }
-        }) || [];
-
-        // Sum up calories for the day
-        dailyCalories = dayRecords.reduce(
-          (total, record) => total + (Number(record?.calories) || 0),
-          0
-        );
-      }
-
-      chartData.push({
-        value: dailyCalories,
-        label: days[i],
-      });
-    }
-
-    return chartData;
-  } catch (error) {
-    console.error("Error in generateWeeklyCalorieData:", error);
-    return [];
-  }
-};
+  };
 
   // Weekly data for the bar chart using actual values
   const weeklyChartData = generateWeeklyChartData();
-  const weeklyCalorieData = generateWeeklyCalorieData(); 
+  const weeklyCalorieData = generateWeeklyCalorieData();
 
   if (isLoading) {
     return <Loading />;
@@ -590,17 +600,18 @@ const generateWeeklyCalorieData = () => {
             <Text>
               This screen displays the label or fruit{" "}
               <Text style={{ fontWeight: "bold" }}>intake provided</Text> versus
-              your <Text style={{ fontWeight: "bold" }}>average daily intake</Text>
+              your{" "}
+              <Text style={{ fontWeight: "bold" }}>average daily intake</Text>
             </Text>
             <Text style={{ marginTop: 16 }}>
-              The bar graph shows how much your intake is compared to the average in terms of 
-              a horizontal line, in the right most the user can also see the comparison in terms of 
-              numerical data.
+              The bar graph shows how much your intake is compared to the
+              average in terms of a horizontal line, in the right most the user
+              can also see the comparison in terms of numerical data.
             </Text>
 
             <Text style={{ marginTop: 16 }}>
-              The weekly intake chart compares your current input intake
-              to the existing intakes saved for the current week.
+              The weekly intake chart compares your current input intake to the
+              existing intakes saved for the current week.
             </Text>
           </View>
         </CustomModal>
@@ -761,53 +772,52 @@ const generateWeeklyCalorieData = () => {
               </View>
             </View>
             {/* Calories Row - ADD THIS */}
-        <View style={styles.nutrientRow}>
-          <View style={styles.nutrientLabel}>
-            <Text style={styles.nutrientText}>Calories</Text>
-            <Image
-              source={require("@/assets/images/calorie.png")} // You'll need to add this icon
-              style={styles.icon}
-            />
-          </View>
-          <View style={styles.progressBars}>
-            <View style={styles.progressBarBackground}>
-              <View
-                style={[
-                  styles.progressBar,
-                  styles.userProgress,
-                  {
-                    width: toProgressWidth(
-                      nutritionData.progress.calories.user
-                    ),
-                  },
-                ]}
-              />
+            <View style={styles.nutrientRow}>
+              <View style={styles.nutrientLabel}>
+                <Text style={styles.nutrientText}>Calories</Text>
+                <Image
+                  source={require("@/assets/images/calorie.png")} // You'll need to add this icon
+                  style={styles.icon}
+                />
+              </View>
+              <View style={styles.progressBars}>
+                <View style={styles.progressBarBackground}>
+                  <View
+                    style={[
+                      styles.progressBar,
+                      styles.userProgress,
+                      {
+                        width: toProgressWidth(
+                          nutritionData.progress.calories.user
+                        ),
+                      },
+                    ]}
+                  />
+                </View>
+                <View style={styles.progressBarBackground}>
+                  <View
+                    style={[
+                      styles.progressBar,
+                      styles.avgProgress,
+                      {
+                        width: toProgressWidth(
+                          nutritionData.progress.calories.avg
+                        ),
+                      },
+                    ]}
+                  />
+                </View>
+              </View>
+              <View style={styles.valueContainer}>
+                <Text style={styles.userValue}>
+                  {formatValue(nutritionData.values.calories.user)}
+                </Text>
+                <Text style={styles.avgValue}>
+                  {formatValue(nutritionData.values.calories.avg)}
+                </Text>
+              </View>
             </View>
-            <View style={styles.progressBarBackground}>
-              <View
-                style={[
-                  styles.progressBar,
-                  styles.avgProgress,
-                  {
-                    width: toProgressWidth(
-                      nutritionData.progress.calories.avg
-                    ),
-                  },
-                ]}
-              />
-            </View>
           </View>
-          <View style={styles.valueContainer}>
-            <Text style={styles.userValue}>
-              {formatValue(nutritionData.values.calories.user)}
-            </Text>
-            <Text style={styles.avgValue}>
-              {formatValue(nutritionData.values.calories.avg)}
-            </Text>
-          </View>
-        </View>
-          </View>
-          
 
           {/* Weekly Chart using BarChart component - Same implementation as statistics */}
           <BarChart
@@ -952,17 +962,17 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   nutrientText: {
-    fontSize: 16,
+    fontSize: 14,
     color: "#333",
     marginRight: 2,
-    marginLeft: -3
+    marginLeft: -8,
   },
   icon: {
     width: 20,
     height: 20,
   },
   progressBars: {
-    flex: 2.9,
+    flex: 1.6,
   },
   progressBarBackground: {
     height: 4,
@@ -982,16 +992,17 @@ const styles = StyleSheet.create({
     backgroundColor: "#9AB106",
   },
   valueContainer: {
-    flex: 0.8,
+    flex: 1,
     alignItems: "flex-end",
   },
   userValue: {
-    fontSize: 11,
+    fontSize: 9,
     fontWeight: "bold",
     color: "#333",
+    
   },
   avgValue: {
-    fontSize: 11,
+    fontSize: 9,
     fontWeight: "bold",
     color: "#9AB106",
   },

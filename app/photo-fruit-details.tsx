@@ -1,4 +1,4 @@
-// photo-label-details.tsx - The main page component
+// photo-fruit-details.tsx - The main page component
 import React, { useRef, useState, useEffect } from "react";
 import {
   View,
@@ -10,20 +10,19 @@ import {
   Animated,
   StatusBar,
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
 import { useRoute, RouteProp } from "@react-navigation/native";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { useNavigation } from "@react-navigation/native";
-import { RootStackParamList } from "@/types/types"; // Import your existing types
+import { RootStackParamList } from "@/types/types";
 import ReturnButton from "@/components/ReturnButton";
 import AvgIntakeCard from "@/components/avgIntakeCard";
 import AmountSelector from "@/components/amount";
+import { useDetailedNutrientStore } from "@/stores/useDetailedNutrientStore";
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get("window");
 const BOTTOM_SHEET_MAX_HEIGHT = SCREEN_HEIGHT * 0.5;
 const BOTTOM_SHEET_MIN_HEIGHT = 120;
 
-// Use your existing RootStackParamList from types.ts
 type PhotoFruitDetailsRouteProp = RouteProp<
   RootStackParamList,
   "photo-fruit-details"
@@ -33,34 +32,47 @@ type PhotoFruitDetailsNavigationProp = StackNavigationProp<
   "photo-fruit-details"
 >;
 
-interface NutritionalData {
-  carbs: number;
-  sodium: number;
-  protein: number;
-  servings: number;
-  type: string;
-}
-
-interface PhotoFruitDetailsPageProps {
-  imageUri: string;
-  nutritionalData?: NutritionalData;
-}
-
 // Main Page Component
-function PhotoFruitDetailsPage({
-  imageUri = "placeholder",
-  nutritionalData = {
-    carbs: 18,
-    sodium: 1.8,
-    protein: 2,
+function PhotoFruitDetailsPage() {
+  const route = useRoute<PhotoFruitDetailsRouteProp>();
+  const navigation = useNavigation<PhotoFruitDetailsNavigationProp>();
+  
+  // Get data from Zustand store
+  const { intakes } = useDetailedNutrientStore();
+  
+  // Get the index from route params
+  const { imageIndex } = route.params || { imageIndex: 0 };
+  
+  // Get the specific intake data for this image
+  const currentIntake = intakes[imageIndex] || {
+    carbs: 0,
+    sodium: 0,
+    protein: 0,
+    calories: 0,
     servings: 1,
-    type: "large apple",
-  },
-}: PhotoFruitDetailsPageProps) {
+    type: "Fruit",
+    imageUrl: "placeholder"
+  };
+
   const translateY = useRef(new Animated.Value(0)).current;
   const [isExpanded, setIsExpanded] = useState(true);
   const currentY = useRef(0);
   const [amount, setAmount] = useState(1);
+
+  // Calculate nutrients based on amount
+  const nutrientPerServing = {
+    carbs: parseFloat((currentIntake.carbs * amount).toFixed(2)),
+    protein: parseFloat((currentIntake.protein * amount).toFixed(2)),
+    sodium: parseFloat((currentIntake.sodium * amount).toFixed(2)),
+  };
+
+  const handleIncrease = () => {
+    setAmount((prev) => prev + 1);
+  };
+
+  const handleDecrease = () => {
+    setAmount((prev) => Math.max(1, prev - 1));
+  };
 
   useEffect(() => {
     const listener = translateY.addListener(({ value }) => {
@@ -114,16 +126,14 @@ function PhotoFruitDetailsPage({
     extrapolate: "clamp",
   });
 
-  // Placeholder icons - replace these with your actual icon paths
-  // For now, comment these out to avoid errors until you add the icon files
   const carbsIcon = require("@/assets/images/Carbohydrate Icon.png");
   const sodiumIcon = require("@/assets/images/Sodium Icon.png");
   const proteinIcon = require("@/assets/images/Protein Icon.png");
 
-  // Temporary placeholders - replace with actual icons
-  // const carbsIcon = null;
-  // const sodiumIcon = null;
-  // const proteinIcon = null;
+  // Get image URI - handle both string and object formats
+  const imageUri = typeof currentIntake.imageUrl === 'string'
+    ? currentIntake.imageUrl
+    : (currentIntake.imageUrl as any)?.uri || 'placeholder';
 
   return (
     <View style={styles.container}>
@@ -169,11 +179,13 @@ function PhotoFruitDetailsPage({
         <View style={styles.contentContainer}>
           {/* Title */}
           <View style={styles.amountHeader}>
-            <Text style={styles.title}>{nutritionalData.type}</Text>
+            <Text style={styles.title}>
+              {currentIntake.type || "Fruit"}
+            </Text>
             <AmountSelector
               amount={amount}
-              onIncrease={() => setAmount((prev) => prev + 1)}
-              onDecrease={() => setAmount((prev) => prev - 1)}
+              onIncrease={handleIncrease}
+              onDecrease={handleDecrease}
             />
           </View>
 
@@ -184,7 +196,7 @@ function PhotoFruitDetailsPage({
                 iconSource={carbsIcon}
                 tintColor="#9AB206"
                 subtitle="Carbs"
-                value={nutritionalData.carbs}
+                value={nutrientPerServing.carbs}
                 fill={100}
               />
             </View>
@@ -194,7 +206,7 @@ function PhotoFruitDetailsPage({
                 iconSource={sodiumIcon}
                 tintColor="#9AB206"
                 subtitle="Sodium"
-                value={nutritionalData.sodium}
+                value={nutrientPerServing.sodium}
                 fill={100}
               />
             </View>
@@ -204,7 +216,7 @@ function PhotoFruitDetailsPage({
                 iconSource={proteinIcon}
                 tintColor="#9AB206"
                 subtitle="Protein"
-                value={nutritionalData.protein}
+                value={nutrientPerServing.protein}
                 fill={100}
               />
             </View>
@@ -220,29 +232,7 @@ function PhotoFruitDetailsPage({
 
 // Screen Component with Navigation
 export default function FruitScreen() {
-  const route = useRoute<PhotoFruitDetailsRouteProp>();
-  const navigation = useNavigation<PhotoFruitDetailsNavigationProp>();
-
-  // Get params from navigation safely (guard against undefined and incorrect typing)
-  const params = (route.params ?? {}) as Partial<{
-    imageUri?: string;
-    nutritionalData?: NutritionalData;
-  }>;
-  const { imageUri, nutritionalData } = params;
-
-  // Handle case where no params are passed (for testing)
-  if (!imageUri && __DEV__) {
-    console.warn(
-      "NutritionalLabelScreen: No imageUri provided in route params"
-    );
-  }
-
-  return (
-    <PhotoFruitDetailsPage
-      imageUri={imageUri ?? "placeholder"}
-      nutritionalData={nutritionalData}
-    />
-  );
+  return <PhotoFruitDetailsPage />;
 }
 
 const styles = StyleSheet.create({
@@ -408,85 +398,3 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
 });
-
-/* 
-ROUTING SETUP INSTRUCTIONS:
-
-1. Save this file as: /screens/photo-label-details.tsx
-
-2. Add this screen to your navigation stack in App.tsx or your main navigator:
-
-```tsx
-import { createStackNavigator } from '@react-navigation/stack';
-import PhotoLabelDetailsScreen from './screens/photo-label-details';
-import UserNutrientPage from './screens/UserNutrientPage'; // Your existing page
-
-const Stack = createStackNavigator();
-
-function AppNavigator() {
-  return (
-    <Stack.Navigator>
-      <Stack.Screen 
-        name="Camera" 
-        component={CameraScreen} 
-        options={{ headerShown: false }}
-      />
-      <Stack.Screen 
-        name="photo-label-details" 
-        component={PhotoLabelDetailsScreen}
-        options={{ headerShown: false }}
-      />
-      <Stack.Screen 
-        name="nutrient-page" 
-        component={UserNutrientPage}
-        options={{ headerShown: false }}
-      />
-      <Stack.Screen 
-        name="page-6" 
-        component={Page6Screen}
-        options={{ headerShown: false }}
-      />
-    </Stack.Navigator>
-  );
-}
-```
-
-3. Update your PhotoThumbnailGallery usage in UserNutrientPage.tsx:
-
-```tsx
-// In UserNutrientPage.tsx:
-<PhotoThumbnailGallery 
-  photos={capturedPhotos}
-  nutritionalData={{
-    carbs: carbohydrate,    // Use your existing state values
-    sodium: sodium,
-    protein: protein,
-    servings: 1
-  }}
-/>
-```
-
-4. The PhotoThumbnailGallery component is already updated to navigate to 'photo-label-details'
-
-5. File structure should be:
-```
-/screens/photo-label-details.tsx (this file)
-/screens/UserNutrientPage.tsx (your existing nutrient page)
-/components/ReturnButton.tsx (your existing component)
-/components/avgIntakeCard.tsx (your existing component)
-/components/PhotoThumbnailGallery.tsx (already updated)
-```
-
-6. FLOW:
-   - User is on nutrient-page.tsx
-   - User clicks photo in PhotoThumbnailGallery
-   - App navigates to photo-label-details.tsx
-   - Photo and nutritional data are displayed with swipe functionality
-
-7. Add icon files to avoid placeholder icons:
-```
-/assets/images/carbs-icon.png
-/assets/images/sodium-icon.png
-/assets/images/protein-icon.png
-```
-*/
