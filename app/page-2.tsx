@@ -5,6 +5,7 @@ import {
   SafeAreaView,
   Text,
   TouchableOpacity,
+  ScrollView,
 } from "react-native";
 import SafeViewAndroid from "@/components/SafeViewAndroid";
 import { ThemedView } from "@/components/ThemedView";
@@ -21,6 +22,8 @@ import Calendar from "@/components/Calendar";
 import DateDetailModal from "@/components/DateDetailModal";
 import SessionDetailModal from "@/components/SessionDetailModal";
 import { Ionicons } from "@expo/vector-icons";
+import CalorieCard from "@/components/CalorieCard";
+
 
 // Import the hooks and auth store
 import {
@@ -192,8 +195,8 @@ export default function Page2() {
   const sodiumAvg = nutritionData?.avg_sodium
     ? nutritionData.avg_sodium / 1000
     : 0; // No division by 1000 if already in correct units
-
-  // Handle retry for different errors
+  const caloriesAvg = 2000
+  // Handle retry for different er  rors
   const handleRetry = (type: "calendar" | "intake") => {
     switch (type) {
       case "calendar":
@@ -206,7 +209,10 @@ export default function Page2() {
   };
 
   return (
+    
+
     <SafeAreaView style={SafeViewAndroid.AndroidSafeArea}>
+      <ScrollView>
       <AppLogo />
       <ThemedView style={styles.container}>
         <View style={styles.headerContainer}>
@@ -241,8 +247,14 @@ export default function Page2() {
             </Text>
           </View>
         </CustomModal>
-
+          {/* Calorie Card - Full Width */}
+          <CalorieCard
+            value={isIntakeLoading ? "..." : caloriesAvg.toString()}
+            fill={100}
+            maxCalories={2000} // Optional: pass user's target calories
+          />
         <View style={styles.rowContainer}>
+        
           {/* Carbohydrate Card */}
           <AvgIntakeCard
             iconSource={nutrients.carbohydrate.icon}
@@ -334,6 +346,9 @@ export default function Page2() {
         />
       </ThemedView>
 
+      
+      
+      </ScrollView>
       <BottomNavBar
         onCameraPress={() => navigation.navigate("camera")}
         routeMapping={{
@@ -344,6 +359,8 @@ export default function Page2() {
         }}
       />
     </SafeAreaView>
+    
+    
   );
 }
 
@@ -395,4 +412,5 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     fontSize: 14,
   },
+  
 });
