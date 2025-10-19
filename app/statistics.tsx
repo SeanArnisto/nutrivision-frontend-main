@@ -26,6 +26,8 @@ import {
 import { useAuthStore } from "@/stores/authStore";
 import { getNutritionalHistory } from "@/hooks/store";
 import Loading from "./loading";
+import StatsCalorieCard from "@/components/StatsCalorieCard";
+
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 
@@ -71,6 +73,8 @@ function NutrientCard({
         return "#C0C0C0";
     }
   };
+
+
 
   const percentage = Math.min((value / target) * 100, 100);
 
@@ -202,6 +206,8 @@ export default function Statistics() {
   const sodiumAvg = nutritionData?.avg_sodium
     ? nutritionData.avg_sodium / 1000
     : 0;
+  const todaysCalories = 200;
+  const targetCalories = 2000;
 
   // Use preloaded nutritional history (with safety checks)
   const getTodaysRecords = () => {
@@ -533,6 +539,18 @@ export default function Statistics() {
             ))}
           </View>
 
+          {/* Calorie Card */}
+          {/* Calorie Card - will show placeholders */}
+          <View style={styles.margin}>
+          <StatsCalorieCard 
+          
+          value={todaysCalories || undefined}  // Pass undefined if no data
+          target={targetCalories || 2000}
+          iconSource={require("@/assets/images/calorie.png")}
+        /> 
+        </View>
+
+
           {/* Weekly Chart using preloaded data */}
           <BarChart
             key={`chart-${startStr}-${endStr}`}
@@ -689,4 +707,7 @@ const styles = StyleSheet.create({
     shadowRadius: 6,
     elevation: 4,
   },
+  margin : {
+    marginTop: 10,
+  }
 });
