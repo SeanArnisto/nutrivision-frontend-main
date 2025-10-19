@@ -29,6 +29,7 @@ import GoNext from "@/components/NextButton";
 import { usePhotosStore } from "@/stores/usePhotoStore";
 import { Ionicons } from "@expo/vector-icons";
 import CustomModal from "@/components/customModal";
+import { useDetailedNutrientStore } from "@/stores/useDetailedNutrientStore";
 
 // Helper Function
 const toPercentageText = (value: number): string => `${value}%`;

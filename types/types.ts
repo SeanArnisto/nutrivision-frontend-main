@@ -20,12 +20,13 @@ export type RootStackParamList = {
       carbs: number;
       sodium: number;
       protein: number;
+      calories: number;
       servings: number;
     };
   };
   'photo-fruit-details': {
     imageUri: string;
-    nutritionalData?: { carbs: number; sodium: number; protein: number; servings: number; };
+    nutritionalData?: { carbs: number; sodium: number; protein: number; calories: number, servings: number; };
   };
   "forgot-email": undefined;
   "forgot-otp": { email: string };

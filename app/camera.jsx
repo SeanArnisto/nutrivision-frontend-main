@@ -536,7 +536,7 @@ export default function Camera() {
 
         if (isLabelMode) {
           const combined = response.data.combined || {};
-          const { carbs_total, protein_total, sodium_total } = combined;
+          const { carbs_total, protein_total, sodium_total, calories_total } = combined;
 
           console.log("🔍 LABEL MODE - Extracted values:");
           console.log("  carbs_total:", carbs_total);
@@ -573,6 +573,7 @@ export default function Camera() {
             carbs: parseFloat(intake.raw_extracted.carbohydrates ?? 0) || 0,
             protein: parseFloat(intake.raw_extracted.protein ?? 0) || 0,
             sodium: parseFloat(intake.raw_extracted.sodium ?? 0) / 1000 || 0,
+            calories: parseFloat(intake.raw_extracted.calories ?? 0) || 0,
             servings:
               intake.servings_count ||
               parseFloat(intake.final_extracted?.servings ?? 0) ||
@@ -651,6 +652,7 @@ export default function Camera() {
                   imageUrl: photos[intake.imageIndex],
                   carbs: intake.carbs ?? 0,
                   protein: intake.protein ?? 0,
+                  calories: intake.calories ?? 0,
                   sodium: intake.sodium ?? 0,
                 })
               );

@@ -38,7 +38,9 @@ interface NutritionalData {
   carbs: number;
   sodium: number;
   protein: number;
+  calories: number;
   servings: number;
+  type?: string;
 }
 
 const calories = {
@@ -59,13 +61,31 @@ function PhotoLabelDetailsPage({
     carbs: 18,
     sodium: 1.8,
     protein: 2,
+    calories: 200,
     servings: 1,
+    type: "Nutritiona Label",
   },
 }: PhotoLabelDetailsPageProps) {
   const translateY = useRef(new Animated.Value(0)).current;
   const currentY = useRef(0);
   const [isExpanded, setIsExpanded] = useState(true);
   const [amount, setAmount] = useState(1);
+  const [servings, setServings] = useState(nutritionalData.servings);
+
+  const nutrientPerServing = {
+    carbs: parseFloat((nutritionalData.carbs * amount).toFixed(2)),
+    protein: parseFloat((nutritionalData.protein * amount).toFixed(2)),
+    sodium: parseFloat((nutritionalData.sodium * amount).toFixed(2)),
+    calories: parseFloat((nutritionalData.calories * amount).toFixed(2)),
+  };
+
+  const handleIncrease = () => {
+    setAmount((prev) => prev + 1);
+  };
+
+  const handleDecrease = () => {
+    setAmount((prev) => Math.max(1, prev - 1));
+  };
 
   useEffect(() => {
     const listener = translateY.addListener(({ value }) => {
@@ -173,13 +193,16 @@ function PhotoLabelDetailsPage({
             <AmountSelector
               amount={amount}
               label="Servings"
-              onIncrease={() => setAmount((prev) => prev + 1)}
-              onDecrease={() => setAmount((prev) => prev - 1)}
+              onIncrease={handleIncrease}
+              onDecrease={handleDecrease}
             />
           </View>
 
           <View style={styles.calorieContainer}>
-            <CalorieCard value={calories.value} tintColor="#9AB206" />
+            <CalorieCard
+              value={nutrientPerServing.calories}
+              tintColor="#9AB206"
+            />
           </View>
 
           {/* Nutritional Cards Row */}
@@ -190,7 +213,7 @@ function PhotoLabelDetailsPage({
                 iconSource={carbsIcon}
                 tintColor="#9AB206"
                 subtitle="Carbs"
-                value={nutritionalData.carbs}
+                value={nutrientPerServing.carbs}
                 fill={100}
               />
             </View>
@@ -200,7 +223,7 @@ function PhotoLabelDetailsPage({
                 iconSource={sodiumIcon}
                 tintColor="#9AB206"
                 subtitle="Sodium"
-                value={nutritionalData.sodium}
+                value={nutrientPerServing.sodium}
                 fill={100}
               />
             </View>
@@ -210,7 +233,7 @@ function PhotoLabelDetailsPage({
                 iconSource={proteinIcon}
                 tintColor="#9AB206"
                 subtitle="Protein"
-                value={nutritionalData.protein}
+                value={nutrientPerServing.protein}
                 fill={100}
               />
             </View>
@@ -375,83 +398,83 @@ const styles = StyleSheet.create({
 });
 
 /* 
-ROUTING SETUP INSTRUCTIONS:
+  ROUTING SETUP INSTRUCTIONS:
 
-1. Save this file as: /screens/photo-label-details.tsx
+  1. Save this file as: /screens/photo-label-details.tsx
 
-2. Add this screen to your navigation stack in App.tsx or your main navigator:
+  2. Add this screen to your navigation stack in App.tsx or your main navigator:
 
-```tsx
-import { createStackNavigator } from '@react-navigation/stack';
-import PhotoLabelDetailsScreen from './screens/photo-label-details';
-import UserNutrientPage from './screens/UserNutrientPage'; // Your existing page
+  ```tsx
+  import { createStackNavigator } from '@react-navigation/stack';
+  import PhotoLabelDetailsScreen from './screens/photo-label-details';
+  import UserNutrientPage from './screens/UserNutrientPage'; // Your existing page
 
-const Stack = createStackNavigator();
+  const Stack = createStackNavigator();
 
-function AppNavigator() {
-  return (
-    <Stack.Navigator>
-      <Stack.Screen 
-        name="Camera" 
-        component={CameraScreen} 
-        options={{ headerShown: false }}
-      />
-      <Stack.Screen 
-        name="photo-label-details" 
-        component={PhotoLabelDetailsScreen}
-        options={{ headerShown: false }}
-      />
-      <Stack.Screen 
-        name="nutrient-page" 
-        component={UserNutrientPage}
-        options={{ headerShown: false }}
-      />
-      <Stack.Screen 
-        name="page-6" 
-        component={Page6Screen}
-        options={{ headerShown: false }}
-      />
-    </Stack.Navigator>
-  );
-}
-```
+  function AppNavigator() {
+    return (
+      <Stack.Navigator>
+        <Stack.Screen 
+          name="Camera" 
+          component={CameraScreen} 
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen 
+          name="photo-label-details" 
+          component={PhotoLabelDetailsScreen}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen 
+          name="nutrient-page" 
+          component={UserNutrientPage}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen 
+          name="page-6" 
+          component={Page6Screen}
+          options={{ headerShown: false }}
+        />
+      </Stack.Navigator>
+    );
+  }
+  ```
 
-3. Update your PhotoThumbnailGallery usage in UserNutrientPage.tsx:
+  3. Update your PhotoThumbnailGallery usage in UserNutrientPage.tsx:
 
-```tsx
-// In UserNutrientPage.tsx:
-<PhotoThumbnailGallery 
-  photos={capturedPhotos}
-  nutritionalData={{
-    carbs: carbohydrate,    // Use your existing state values
-    sodium: sodium,
-    protein: protein,
-    servings: 1
-  }}
-/>
-```
+  ```tsx
+  // In UserNutrientPage.tsx:
+  <PhotoThumbnailGallery 
+    photos={capturedPhotos}
+    nutritionalData={{
+      carbs: carbohydrate,    // Use your existing state values
+      sodium: sodium,
+      protein: protein,
+      servings: 1
+    }}
+  />
+  ```
 
-4. The PhotoThumbnailGallery component is already updated to navigate to 'photo-label-details'
+  4. The PhotoThumbnailGallery component is already updated to navigate to 'photo-label-details'
 
-5. File structure should be:
-```
-/screens/photo-label-details.tsx (this file)
-/screens/UserNutrientPage.tsx (your existing nutrient page)
-/components/ReturnButton.tsx (your existing component)
-/components/avgIntakeCard.tsx (your existing component)
-/components/PhotoThumbnailGallery.tsx (already updated)
-```
+  5. File structure should be:
+  ```
+  /screens/photo-label-details.tsx (this file)
+  /screens/UserNutrientPage.tsx (your existing nutrient page)
+  /components/ReturnButton.tsx (your existing component)
+  /components/avgIntakeCard.tsx (your existing component)
+  /components/PhotoThumbnailGallery.tsx (already updated)
+  ```
 
-6. FLOW:
-   - User is on nutrient-page.tsx
-   - User clicks photo in PhotoThumbnailGallery
-   - App navigates to photo-label-details.tsx
-   - Photo and nutritional data are displayed with swipe functionality
+  6. FLOW:
+    - User is on nutrient-page.tsx
+    - User clicks photo in PhotoThumbnailGallery
+    - App navigates to photo-label-details.tsx
+    - Photo and nutritional data are displayed with swipe functionality
 
-7. Add icon files to avoid placeholder icons:
-```
-/assets/images/carbs-icon.png
-/assets/images/sodium-icon.png
-/assets/images/protein-icon.png
-```
-*/
+  7. Add icon files to avoid placeholder icons:
+  ```
+  /assets/images/carbs-icon.png
+  /assets/images/sodium-icon.png
+  /assets/images/protein-icon.png
+  ```
+  */

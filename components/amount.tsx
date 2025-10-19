@@ -165,7 +165,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
   },
   amountText: {
-    fontSize: 20,
+    fontSize: 18,
     fontWeight: 'bold',
     color: '#2c3e50',
     textAlign: 'center',
