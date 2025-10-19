@@ -21,6 +21,7 @@ import {
 } from "@/stores/nutritionIntakeStore";
 import { Ionicons } from "@expo/vector-icons";
 import BarChart from "@/components/Barchart";
+import CalorieBarChart from "@/components/CalorieBarchart";
 import { format, addDays } from "date-and-time";
 import { getNutritionalHistory } from "@/hooks/store";
 import AppLogo from "@/components/appLogo";
@@ -346,6 +347,7 @@ export default function Page6() {
     ? Math.round(intakeData.avg_protein)
     : 0;
   const sodiumAvg = intakeData?.avg_sodium ? intakeData.avg_sodium / 1000 : 0;
+  const calorieAvg = intakeData?.avg_calories ? Math.round(intakeData.avg_calories) : 2000;
 
   // Initialize date constants (same as statistics)
   const today = new Date();
@@ -488,8 +490,70 @@ export default function Page6() {
     }
   };
 
+  // Generate calorie data for each day of the week
+const generateWeeklyCalorieData = () => {
+  try {
+    const days = ["S", "M", "T", "W", "TH", "F", "S"];
+    const chartData = [];
+
+    if (!startOfWeek) {
+      console.warn("startOfWeek is not defined");
+      return [];
+    }
+
+    for (let i = 0; i < 7; i++) {
+      let currentDate;
+      try {
+        currentDate = addDays(startOfWeek, i);
+      } catch (e) {
+        console.warn(`Error adding days to startOfWeek: ${e}`);
+        currentDate = new Date();
+      }
+
+      let dailyCalories;
+
+      // Check if current date is today, use current nutrition values
+      if (currentDate.toDateString() === today.toDateString()) {
+        // Use the current calorie value from nutritionData state
+        dailyCalories = nutritionData.values.calories.user;
+      } else {
+        // Use historical data for other days
+        const targetDate = currentDate.toDateString();
+        const dayRecords = nutritionalData?.filter((record) => {
+          try {
+            return (
+              record &&
+              record.created_at &&
+              new Date(record.created_at).toDateString() === targetDate
+            );
+          } catch (e) {
+            return false;
+          }
+        }) || [];
+
+        // Sum up calories for the day
+        dailyCalories = dayRecords.reduce(
+          (total, record) => total + (Number(record?.calories) || 0),
+          0
+        );
+      }
+
+      chartData.push({
+        value: dailyCalories,
+        label: days[i],
+      });
+    }
+
+    return chartData;
+  } catch (error) {
+    console.error("Error in generateWeeklyCalorieData:", error);
+    return [];
+  }
+};
+
   // Weekly data for the bar chart using actual values
   const weeklyChartData = generateWeeklyChartData();
+  const weeklyCalorieData = generateWeeklyCalorieData(); 
 
   if (isLoading) {
     return <Loading />;
@@ -765,6 +829,21 @@ export default function Page6() {
               { color: "#000000", label: "Target" },
             ]}
           />
+
+          {/* Calorie Chart - ADD THIS */}
+          <View style={{ marginTop: 16 }}>
+            <CalorieBarChart
+              data={weeklyCalorieData}
+              title="Weekly Calorie Intake"
+              subtitle={`${startStr} - ${endStr}`}
+              dailyGoal={calorieAvg}
+              maxValue={3000}
+              stepValue={500}
+              height={160}
+              barWidth={10}
+              spacing={15}
+            />
+          </View>
         </View>
       </ScrollView>
 

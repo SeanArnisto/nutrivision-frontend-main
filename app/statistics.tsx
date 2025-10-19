@@ -27,6 +27,7 @@ import { useAuthStore } from "@/stores/authStore";
 import { getNutritionalHistory } from "@/hooks/store";
 import Loading from "./loading";
 import StatsCalorieCard from "@/components/StatsCalorieCard";
+import CalorieBarChart from "@/components/CalorieBarchart";
 
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
@@ -424,6 +425,59 @@ export default function Statistics() {
     }
   };
 
+  // Generate calorie data for each day of the week
+  const generateWeeklyCalorieData = () => {
+    try {
+      const days = ["S", "M", "T", "W", "TH", "F", "S"];
+      const chartData = [];
+
+      if (!startOfWeek) {
+        console.warn("startOfWeek is not defined");
+        return [];
+      }
+
+      for (let i = 0; i < 7; i++) {
+        let currentDate;
+        try {
+          currentDate = addDays(startOfWeek, i);
+        } catch (e) {
+          console.warn(`Error adding days to startOfWeek: ${e}`);
+          currentDate = new Date();
+        }
+
+        // Get daily records for this date
+        const targetDate = currentDate.toDateString();
+        const dayRecords = nutritionalHistory?.filter((record) => {
+          try {
+            return (
+              record &&
+              record.created_at &&
+              new Date(record.created_at).toDateString() === targetDate
+            );
+          } catch (e) {
+            return false;
+          }
+        }) || [];
+
+        // Sum up calories for the day
+        const dailyCalories = dayRecords.reduce(
+          (total, record) => total + (Number(record?.calories) || 0),
+          0
+        );
+
+        chartData.push({
+          value: dailyCalories,
+          label: days[i],
+        });
+      }
+
+      return chartData;
+    } catch (error) {
+      console.error("Error in generateWeeklyCalorieData:", error);
+      return [];
+    }
+  };
+
   // Sample data using preloaded values
   const nutrientData = [
     {
@@ -454,6 +508,7 @@ export default function Statistics() {
 
   // Weekly data for the bar chart using preloaded values
   const weeklyChartData = generateWeeklyChartData();
+  const weeklyCalorieData = generateWeeklyCalorieData();
 
   // Show loading state only if data is actually loading (shouldn't happen with preloading)
   if (averageLoading || isHistoryLoading) {
@@ -572,7 +627,24 @@ export default function Statistics() {
               { color: "#000000", label: "Target" },
             ]}
           />
+
+         {/* Calorie Chart */}
+          <View style={styles.margin}>
+            <CalorieBarChart
+              data={weeklyCalorieData}
+              title="Weekly Calorie Intake"
+              subtitle={`${startStr} - ${endStr}`}
+              dailyGoal={targetCalories}
+              maxValue={3000}
+              stepValue={500}
+              height={160}
+              barWidth={10}
+              spacing={2}
+            />
+          </View>
         </View>
+
+
       </ScrollView>
 
       <BottomNavBar
