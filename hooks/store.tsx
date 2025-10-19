@@ -6,6 +6,7 @@ type Nutrients = {
   carbs: number;
   protein: number;
   sodium: number;
+  calories: number;
 };
 
 type NutrientRecord = {
@@ -27,6 +28,7 @@ type store = {
   setCarbs: (nutrients: Nutrients["carbs"]) => void;
   setProtein: (nutrients: Nutrients["protein"]) => void;
   setSodium: (nutrients: Nutrients["sodium"]) => void;
+  setCalories: (nutrients: Nutrients["calories"]) => void;
   reset: () => void;
   saveToDatabase: (
     images?: ImageData[]
@@ -42,15 +44,17 @@ export const useNutrientsStore = create<Nutrients & store>((set, get) => ({
   carbs: 0,
   protein: 0,
   sodium: 0,
+  calories: 0,
   loading: false,
   error: null,
   setCarbs: (carbs) => set(() => ({ carbs })),
   setProtein: (protein) => set(() => ({ protein })),
   setSodium: (sodium) => set(() => ({ sodium })),
+  setCalories: (calories) => set(() => ({ calories })),
   reset: () => set({ carbs: 0, protein: 0, sodium: 0, error: null }),
 
   saveToDatabase: async (images: ImageData[] = []) => {
-    const { carbs, protein, sodium } = get();
+    const { carbs, protein, sodium, calories } = get();
 
     // Validate that we have at least some data
     if (carbs === 0 && protein === 0 && sodium === 0) {
@@ -317,6 +321,8 @@ type Recommendation = {
   maxProtein: number;
   minSodium: number;
   maxSodium: number;
+  minCalories: number;
+  maxCalories: number;
 };
 
 type RecommStore = {
@@ -326,6 +332,8 @@ type RecommStore = {
   setRecomMaxProtein: (protein: Recommendation["maxProtein"]) => void;
   setRecomMinSodium: (sodium: Recommendation["minSodium"]) => void;
   setRecomMaxSodium: (sodium: Recommendation["maxSodium"]) => void;
+  setRecomMinCalories: (calories: Recommendation["minCalories"]) => void;
+  setRecomMaxCalories: (calories: Recommendation["maxCalories"]) => void;
   calculateRecommendations: (userProfile: {
     weight: number;
     height: number;
@@ -346,6 +354,8 @@ export const useRecommStore = create<Recommendation & RecommStore>(
     maxProtein: 0,
     minSodium: 0,
     maxSodium: 0,
+    minCalories: 0,
+    maxCalories: 0,
     loading: false,
     error: null,
 
@@ -355,6 +365,8 @@ export const useRecommStore = create<Recommendation & RecommStore>(
     setRecomMaxCarb: (maxCarb) => set(() => ({ maxCarb })),
     setRecomMaxProtein: (maxProtein) => set(() => ({ maxProtein })),
     setRecomMaxSodium: (maxSodium) => set(() => ({ maxSodium })),
+    setRecomMaxCalories: (maxCalories) => set(() => ({ maxCalories })),
+    setRecomMinCalories: (minCalories) => set(() => ({minCalories})),
 
     calculateRecommendations: (userProfile) => {
       const { weight, height, age, gender } = userProfile;
