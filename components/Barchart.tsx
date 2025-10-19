@@ -126,7 +126,7 @@ const styles = StyleSheet.create({
   chartCard: {
     backgroundColor: '#fff',
     borderRadius: 16,
-    marginVertical: 20,
+
     padding: 20,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
