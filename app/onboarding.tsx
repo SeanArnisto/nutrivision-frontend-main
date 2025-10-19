@@ -19,6 +19,7 @@ import { TouchableOpacity } from "react-native";
 import { Feather, Ionicons } from '@expo/vector-icons';
 import { Platform } from "react-native";
 import { Icon } from "react-native-screens";
+import { ScrollView } from "react-native"; // ✅ Add this to your imports at the top
 
 import { useAuthStore } from "@/stores/authStore";
 import { supabase } from "@/config/supabase";
@@ -34,6 +35,11 @@ interface OnboardingData {
   age: string;
   height: string;
   weight: string;
+  hasHealthCondition: boolean;  
+  avgCarbs: string;  // ✅ Changed from customCarbs
+  avgSodium: string;  // ✅ Changed from customSodium
+  avgProtein: string;  // ✅ Changed from customProtein
+  avgCalories: string;  // ✅ Changed from customCalories
 }
 
 export default function OnboardingScreen() {
@@ -67,7 +73,12 @@ export default function OnboardingScreen() {
     age: "",
     height: "",
     weight: "",
-  });
+    hasHealthCondition: false,
+    avgCarbs: "",  // ✅ Changed from customCarbs
+    avgSodium: "",  // ✅ Changed from customSodium
+    avgProtein: "",  // ✅ Changed from customProtein
+    avgCalories: "",  // ✅ Changed from customCalories
+});
 
   const [toast, setToast] = useState<{
     visible: boolean;
@@ -81,7 +92,7 @@ export default function OnboardingScreen() {
     message: "",
   });
 
-  const totalSteps = 6; // Full Name, Gender, Age, Height, Weight, Thank You
+  const totalSteps = 8; // Full Name, Gender, Age, Height, Weight, Thank You, Sex tayo
 
   const showToast = (type: ToastType, title: string, message: string) => {
     // Don't show validation toasts during initialization (prevents Google OAuth validation issues)
@@ -98,71 +109,114 @@ export default function OnboardingScreen() {
   };
 
   const saveProfileToSupabase = async () => {
-    try {
-      setIsSubmitting(true);
-      const { user } = useAuthStore.getState();
+  try {
+    setIsSubmitting(true);
+    const { user } = useAuthStore.getState();
 
-      if (!user) {
-        showToast(
-          "error",
-          "Error!",
-          "User not found. Please try logging in again."
-        );
-        return false;
-      }
+    if (!user) {
+      showToast(
+        "error",
+        "Error!",
+        "User not found. Please try logging in again."
+      );
+      return false;
+    }
 
-      // Prepare the profile data
-      const profileData = {
-        id: user.id,
-        email: user.email,
-        name: formData.fullName.trim(),
-        gender: formData.gender,
-        age: parseInt(formData.age),
-        height: parseFloat(formData.height),
-        weight: parseFloat(formData.weight),
+    // Step 1: Save basic profile data to profiles table
+    const profileData = {
+      id: user.id,
+      email: user.email,
+      name: formData.fullName.trim(),
+      gender: formData.gender,
+      age: parseInt(formData.age),
+      height: parseFloat(formData.height),
+      weight: parseFloat(formData.weight),
+      updated_at: new Date().toISOString(),
+    };
+
+    const { data: profileResult, error: profileError } = await supabase
+      .from("profiles")
+      .upsert(profileData, {
+        onConflict: "id",
+        ignoreDuplicates: false,
+      })
+      .select()
+      .single();
+
+    if (profileError) {
+      console.error("Error saving profile:", profileError);
+      showToast(
+        "error",
+        "Check Internet Connection!",
+        "Failed to save profile. Please try again."
+      );
+      return false;
+    }
+
+    console.log("Profile saved successfully:", profileResult);
+
+    // Step 2: Save nutrition intake data ONLY if user has health condition
+    if (formData.hasHealthCondition) {
+      const nutritionData = {
+        user_id: user.id,
+        avg_calories: parseFloat(formData.avgCalories),
+        avg_carbs: parseFloat(formData.avgCarbs),
+        avg_protein: parseFloat(formData.avgProtein),
+        avg_sodium: parseFloat(formData.avgSodium),
         updated_at: new Date().toISOString(),
       };
 
-      // Insert or update profile in Supabase
-      const { data, error } = await supabase
-        .from("profiles")
-        .upsert(profileData, {
-          onConflict: "id",
+      const { data: nutritionResult, error: nutritionError } = await supabase
+        .from("user_nutrition_intake")
+        .upsert(nutritionData, {
+          onConflict: "user_id",
           ignoreDuplicates: false,
         })
         .select()
         .single();
 
-      if (error) {
-        console.error("Error saving profile:", error);
+      if (nutritionError) {
+        console.error("Error saving nutrition intake:", nutritionError);
         showToast(
           "error",
           "Check Internet Connection!",
-          "Failed to save profile. Please try again."
+          "Failed to save nutrition data. Please try again."
         );
         return false;
       }
 
-      console.log("Profile saved successfully:", data);
+      console.log("Nutrition intake saved successfully:", nutritionResult);
+    } else {
+      // If user selected "No", delete any existing nutrition intake data
+      const { error: deleteError } = await supabase
+        .from("user_nutrition_intake")
+        .delete()
+        .eq("user_id", user.id);
 
-      // Update the auth store to mark profile as complete
-      const { checkProfileComplete } = useAuthStore.getState();
-      await checkProfileComplete();
-
-      showToast("success", "Success!", "Profile saved successfully!");
-      return true;
-    } catch (error) {
-      console.error("Profile save error:", error);
-      showToast(
-        "error",
-        "Check Internet Connection!",
-        "An unexpected error occurred. Please try again."
-      );
-      return false;
-    } finally {
-      setIsSubmitting(false);
+      if (deleteError) {
+        console.error("Error deleting nutrition intake:", deleteError);
+        // Don't fail the whole process if delete fails
+      }
     }
-  };
+
+    // Update the auth store to mark profile as complete
+    const { checkProfileComplete } = useAuthStore.getState();
+    await checkProfileComplete();
+
+    showToast("success", "Success!", "Profile saved successfully!");
+    return true;
+  } catch (error) {
+    console.error("Profile save error:", error);
+    showToast(
+      "error",
+      "Check Internet Connection!",
+      "An unexpected error occurred. Please try again."
+    );
+    return false;
+  } finally {
+    setIsSubmitting(false);
+  }
+};
 
   const hideToast = () => {
     setToast((prev) => ({ ...prev, visible: false }));
@@ -177,98 +231,135 @@ export default function OnboardingScreen() {
   };
 
   const validateCurrentStep = () => {
-    switch (currentStep) {
-      case 1:
-        if (!formData.fullName.trim()) {
-          showToast("error", "Error!", "Please enter your full name");
-          return false;
-        }
-        if (!validateFullName(formData.fullName)) {
-          showToast(
-            "error",
-            "Error!",
-            "Please enter a valid full name (at least 2 characters, letters only)"
-          );
-          return false;
-        }
-        break;
+  switch (currentStep) {
+    case 1:
+      if (!formData.fullName.trim()) {
+        showToast("error", "Error!", "Please enter your full name");
+        return false;
+      }
+      if (!validateFullName(formData.fullName)) {
+        showToast(
+          "error",
+          "Error!",
+          "Please enter a valid full name (at least 2 characters, letters only)"
+        );
+        return false;
+      }
+      break;
 
-      case 2:
-        if (!formData.gender) {
-          showToast("error", "Error!", "Please select your gender");
-          return false;
-        }
-        break;
+    case 2:
+      if (!formData.gender) {
+        showToast("error", "Error!", "Please select your gender");
+        return false;
+      }
+      break;
 
-      case 3:
-        const ageValue = parseFloat(formData.age);
-        if (!formData.age || isNaN(ageValue)) {
-          showToast("error", "Error!", "Please enter a valid age");
-          return false;
-        }
-        if (ageValue < 18 || ageValue > 120) {
-          showToast(
-            "error",
-            "Error!",
-            "Users must only be 18 to 120 years old"
-          );
-          return false;
-        }
-        break;
+    case 3:
+      const ageValue = parseFloat(formData.age);
+      if (!formData.age || isNaN(ageValue)) {
+        showToast("error", "Error!", "Please enter a valid age");
+        return false;
+      }
+      if (ageValue < 18 || ageValue > 120) {
+        showToast(
+          "error",
+          "Error!",
+          "Users must only be 18 to 120 years old"
+        );
+        return false;
+      }
+      break;
 
-      case 4:
-        const heightValue = parseFloat(formData.height);
-        if (!formData.height || isNaN(heightValue)) {
-          showToast("error", "Error!", "Please enter a valid height");
-          return false;
-        }
-        if (heightValue < 140 || heightValue > 188) {
-          showToast("error", "Error!", "Height must be between 140-188 cm");
-          return false;
-        }
-        break;
+    case 4:
+      const heightValue = parseFloat(formData.height);
+      if (!formData.height || isNaN(heightValue)) {
+        showToast("error", "Error!", "Please enter a valid height");
+        return false;
+      }
+      if (heightValue < 140 || heightValue > 188) {
+        showToast("error", "Error!", "Height must be between 140-188 cm");
+        return false;
+      }
+      break;
 
-      case 5:
-        const weightValue = parseFloat(formData.weight);
-        if (!formData.weight || isNaN(weightValue)) {
-          showToast("error", "Error!", "Please enter a valid weight");
-          return false;
-        }
-        if (weightValue < 40 || weightValue > 120) {
-          showToast("error", "Error!", "Weight must be between 40-120 kg");
-          return false;
-        }
-        break;
+    case 5:
+      const weightValue = parseFloat(formData.weight);
+      if (!formData.weight || isNaN(weightValue)) {
+        showToast("error", "Error!", "Please enter a valid weight");
+        return false;
+      }
+      if (weightValue < 40 || weightValue > 120) {
+        showToast("error", "Error!", "Weight must be between 40-120 kg");
+        return false;
+      }
+      break;
+
+    case 6:  // ✅ Health condition validation
+      // Since we have a default value (false), this step is always valid
+      // User can choose either Yes or No
+      // No validation needed - user can proceed with either option
+      break;
+
+    case 7:  // Custom intake validation (only if hasHealthCondition is true)
+    if (formData.hasHealthCondition) {
+      const carbsValue = parseFloat(formData.avgCarbs);  // ✅ Changed
+      const sodiumValue = parseFloat(formData.avgSodium);  // ✅ Changed
+      const proteinValue = parseFloat(formData.avgProtein);  // ✅ Changed
+      const caloriesValue = parseFloat(formData.avgCalories);  // ✅ Changed
+
+      if (!formData.avgCalories || isNaN(caloriesValue) || caloriesValue <= 0) {  // ✅ Changed
+        showToast("error", "Error!", "Please enter a valid calorie intake");
+        return false;
+      }
+      if (!formData.avgCarbs || isNaN(carbsValue) || carbsValue <= 0) {  // ✅ Changed
+        showToast("error", "Error!", "Please enter a valid carbohydrate intake");
+        return false;
+      }
+      if (!formData.avgProtein || isNaN(proteinValue) || proteinValue <= 0) {  // ✅ Changed
+        showToast("error", "Error!", "Please enter a valid protein intake");
+        return false;
+      }
+      if (!formData.avgSodium || isNaN(sodiumValue) || sodiumValue <= 0) {  // ✅ Changed
+        showToast("error", "Error!", "Please enter a valid sodium intake");
+        return false;
+      }
     }
-    return true;
-  };
+    break;
+    }
+  return true;
+};
 
   const handleContinue = async () => {
-    // Validate current step only when Continue is clicked
-    if (!validateCurrentStep()) {
-      return;
+  // Validate current step only when Continue is clicked
+  if (!validateCurrentStep()) {
+    return;
+  }
+
+  if (currentStep < totalSteps) {
+    let nextStep = currentStep + 1;
+    
+    // ✅ Skip step 7 (custom intake) if user selected "No" for health condition
+    if (currentStep === 6 && formData.hasHealthCondition === false) {
+      nextStep = 8; // Skip to thank you step
     }
+    
+    setCurrentStep(nextStep);
+    animateProgress(nextStep);
 
-    if (currentStep < totalSteps) {
-      const nextStep = currentStep + 1;
-      setCurrentStep(nextStep);
-      animateProgress(nextStep);
-
-      if (currentStep < 5) {
-        // Don't show success toast on thank you step
-        showToast("success", "Success!", "Step completed successfully");
-      }
-    } else {
-      // This is the final step - save to Supabase before navigating
-      const saveSuccess = await saveProfileToSupabase();
-
-      if (saveSuccess) {
-        // Navigate to main app after successful save
-        navigation.navigate("page-2");
-      }
-      // If save fails, stay on current screen and show error (handled in saveProfileToSupabase)
+    if (nextStep < 8) {
+      // Don't show success toast on thank you step
+      showToast("success", "Success!", "Step completed successfully");
     }
-  };
+  } else {
+    // This is the final step - save to Supabase before navigating
+    const saveSuccess = await saveProfileToSupabase();
+
+    if (saveSuccess) {
+      // Navigate to main app after successful save
+      navigation.navigate("page-2");
+    }
+  }
+};
 
   const handleBackPress = () => {
     if (currentStep > 1) {
@@ -281,90 +372,128 @@ export default function OnboardingScreen() {
   };
 
   const getStepContent = () => {
-    switch (currentStep) {
-      case 1:
-        return (
-          <FullNameStep
-            fullName={formData.fullName}
-            onFullNameChange={(fullName) =>
-              setFormData((prev) => ({ ...prev, fullName }))
-            }
-          />
-        );
-      case 2:
-        return (
-          <GenderStep
-            selectedGender={formData.gender}
-            onGenderSelect={(gender) =>
-              setFormData((prev) => ({ ...prev, gender }))
-            }
-          />
-        );
-      case 3:
-        return (
-          <AgeStep
-            age={formData.age}
-            onAgeChange={(age) => setFormData((prev) => ({ ...prev, age }))}
-          />
-        );
-      case 4:
-        return (
-          <HeightStep
-            height={formData.height}
-            onHeightChange={(height) =>
-              setFormData((prev) => ({ ...prev, height }))
-            }
-          />
-        );
-      case 5:
-        return (
-          <WeightStep
-            weight={formData.weight}
-            onWeightChange={(weight) =>
-              setFormData((prev) => ({ ...prev, weight }))
-            }
-          />
-        );
-      case 6:
-        return <ThankYouStep />;
-      default:
-        return null;
-    }
-  };
+  switch (currentStep) {
+    case 1:
+      return (
+        <FullNameStep
+          fullName={formData.fullName}
+          onFullNameChange={(fullName) =>
+            setFormData((prev) => ({ ...prev, fullName }))
+          }
+        />
+      );
+    case 2:
+      return (
+        <GenderStep
+          selectedGender={formData.gender}
+          onGenderSelect={(gender) =>
+            setFormData((prev) => ({ ...prev, gender }))
+          }
+        />
+      );
+    case 3:
+      return (
+        <AgeStep
+          age={formData.age}
+          onAgeChange={(age) => setFormData((prev) => ({ ...prev, age }))}
+        />
+      );
+    case 4:
+      return (
+        <HeightStep
+          height={formData.height}
+          onHeightChange={(height) =>
+            setFormData((prev) => ({ ...prev, height }))
+          }
+        />
+      );
+    case 5:
+      return (
+        <WeightStep
+          weight={formData.weight}
+          onWeightChange={(weight) =>
+            setFormData((prev) => ({ ...prev, weight }))
+          }
+        />
+      );
+    case 6:  // ✅ New health condition step
+      return (
+        <HealthConditionStep
+          hasHealthCondition={formData.hasHealthCondition}
+          onHealthConditionSelect={(hasHealthCondition) =>
+            setFormData((prev) => ({ ...prev, hasHealthCondition }))
+          }
+        />
+      );
+    case 7:  // Custom intake step
+    return (
+      <CustomIntakeStep
+        avgCarbs={formData.avgCarbs}  // ✅ Changed
+        avgSodium={formData.avgSodium}  // ✅ Changed
+        avgProtein={formData.avgProtein}  // ✅ Changed
+        avgCalories={formData.avgCalories}  // ✅ Changed
+        onCarbsChange={(avgCarbs) =>  // ✅ Changed
+          setFormData((prev) => ({ ...prev, avgCarbs }))
+        }
+        onSodiumChange={(avgSodium) =>  // ✅ Changed
+          setFormData((prev) => ({ ...prev, avgSodium }))
+        }
+        onProteinChange={(avgProtein) =>  // ✅ Changed
+          setFormData((prev) => ({ ...prev, avgProtein }))
+        }
+        onCaloriesChange={(avgCalories) =>  // ✅ Changed
+          setFormData((prev) => ({ ...prev, avgCalories }))
+        }
+      />
+    );
+    case 8:  // ✅ Updated thank you step
+      return <ThankYouStep />;
+    default:
+      return null;
+  }
+};
 
   const getContinueButtonState = () => {
-    // Disable button if submitting
-    if (isSubmitting) return true;
+  // Disable button if submitting
+  if (isSubmitting) return true;
 
-    switch (currentStep) {
-      case 1:
-        return !formData.fullName.trim();
-      case 2:
-        return !formData.gender;
-      case 3:
-        return !formData.age;
-      case 4:
-        return !formData.height;
-      case 5:
-        return !formData.weight;
-      case 6:
-        return false; // Always enabled on thank you step (unless submitting)
-      default:
-        return true;
+  switch (currentStep) {
+    case 1:
+      return !formData.fullName.trim();
+    case 2:
+      return !formData.gender;
+    case 3:
+      return !formData.age;
+    case 4:
+      return !formData.height;
+    case 5:
+      return !formData.weight;
+    case 6:  // ✅ Always enabled since there's a default value
+      return false;
+    case 7:  // Custom intake step
+    if (formData.hasHealthCondition) {
+      return !formData.avgCarbs || !formData.avgSodium ||   // ✅ Changed
+            !formData.avgProtein || !formData.avgCalories;  // ✅ Changed
     }
-  };
+    return false;
+    case 8:
+      return false;
+    default:
+      return true;
+  }
+};
 
   const getContinueButtonText = () => {
-    if (isSubmitting) return "Saving...";
-    if (currentStep === 6) return "Complete Setup";
-    return "Continue";
-  };
+  if (isSubmitting) return "Saving...";
+  if (currentStep === 8) return "Complete Setup";  // ✅ Updated
+  return "Continue";
+};
 
   return (
     <ScreenContainer>
       <Header
         currentStep={currentStep}
-        totalSteps={currentStep === 6 ? 0 : 5} // Hide progress bar on thank you step
+        totalSteps={currentStep === 8 ? 0 : 7} // Hide progress bar on thank you step
         showBackButton={true} // Always show back button
         showLogo={true} // Always show logo
         onBackPress={handleBackPress}
@@ -393,7 +522,143 @@ export default function OnboardingScreen() {
 }
 
 // Step Components
+// ✅ New Health Condition Step Component
+interface HealthConditionStepProps {
+  hasHealthCondition: boolean | null;
+  onHealthConditionSelect: (hasHealthCondition: boolean) => void;
+}
 
+function HealthConditionStep({ 
+  hasHealthCondition, 
+  onHealthConditionSelect 
+}: HealthConditionStepProps) {
+  return (
+    <>
+      <TitleSection
+        title="Healthcare Professional Guidance"
+        description="Have you been given specific daily intake recommendations by a healthcare professional for carbohydrates, sodium, protein, and calories?"
+      />
+
+      <InfoCard
+        title="Important"
+        subtitle="This helps us provide personalized recommendations based on your health needs"
+        editable={false}
+      />
+
+      <View style={styles.selectionContainer}>
+        {/* ✅ "No" option moved to first position */}
+        <SelectionButton
+          title="No, I don't have specific recommendations"
+          selected={hasHealthCondition === false}
+          onPress={() => onHealthConditionSelect(false)}
+        />
+
+        <SelectionButton
+          title="Yes, I have specific recommendations"
+          selected={hasHealthCondition === true}
+          onPress={() => onHealthConditionSelect(true)}
+        />
+      </View>
+    </>
+  );
+}
+
+// ✅ New Custom Intake Step Component
+interface CustomIntakeStepProps {
+  avgCarbs: string;  // ✅ Changed
+  avgSodium: string;  // ✅ Changed
+  avgProtein: string;  // ✅ Changed
+  avgCalories: string;  // ✅ Changed
+  onCarbsChange: (value: string) => void;
+  onSodiumChange: (value: string) => void;
+  onProteinChange: (value: string) => void;
+  onCaloriesChange: (value: string) => void;
+}
+
+function CustomIntakeStep({
+  avgCarbs,  // ✅ Changed
+  avgSodium,  // ✅ Changed
+  avgProtein,  // ✅ Changed
+  avgCalories,  // ✅ Changed
+  onCarbsChange,
+  onSodiumChange,
+  onProteinChange,
+  onCaloriesChange,
+}: CustomIntakeStepProps) {
+  return (
+    <>
+      <TitleSection
+        title="Enter Your Daily Intake"
+        description="Please enter the daily intake values recommended by your healthcare professional."
+      />
+
+      <InfoCard
+        title="Professional Recommendations"
+        subtitle="Enter the exact values provided by your healthcare professional"
+        editable={false}
+      />
+
+      <ScrollView 
+        style={styles.customIntakeScrollView}
+        contentContainerStyle={styles.customIntakeContainer}
+        showsVerticalScrollIndicator={true}
+        keyboardShouldPersistTaps="handled"
+      >
+        <View style={styles.inputFieldWrapper}>
+          <Text style={styles.inputLabel}>Calories</Text>
+          <NumericInput
+            value={avgCalories}  // ✅ Changed
+            onChangeText={onCaloriesChange}
+            placeholder="Enter calories"
+            minValue={0}
+            maxValue={10000}
+            unit="kcal"
+            onValidationChange={() => {}}
+          />
+        </View>
+
+        <View style={styles.inputFieldWrapper}>
+          <Text style={styles.inputLabel}>Carbohydrates (grams)</Text>
+          <NumericInput
+            value={avgCarbs}  // ✅ Changed
+            onChangeText={onCarbsChange}
+            placeholder="Enter carbohydrates"
+            minValue={0}
+            maxValue={1000}
+            unit="g"
+            onValidationChange={() => {}}
+          />
+        </View>
+
+        <View style={styles.inputFieldWrapper}>
+          <Text style={styles.inputLabel}>Protein (grams)</Text>
+          <NumericInput
+            value={avgProtein}  // ✅ Changed
+            onChangeText={onProteinChange}
+            placeholder="Enter protein"
+            minValue={0}
+            maxValue={500}
+            unit="g"
+            onValidationChange={() => {}}
+          />
+        </View>
+
+        <View style={styles.inputFieldWrapper}>
+          <Text style={styles.inputLabel}>Sodium (milligrams)</Text>
+          <NumericInput
+            value={avgSodium}  // ✅ Changed
+            onChangeText={onSodiumChange}
+            placeholder="Enter sodium"
+            minValue={0}
+            maxValue={10000}
+            unit="mg"
+            onValidationChange={() => {}}
+          />
+        </View>
+      </ScrollView>
+    </>
+  );
+}
 interface FullNameStepProps {
   fullName: string;
   onFullNameChange: (fullName: string) => void;
@@ -715,7 +980,6 @@ const styles = StyleSheet.create({
     color: '#666666',
     fontWeight: '400',
   },
-  // ✅ New styles for scrollable picker
   pickerWrapper: {
     backgroundColor: '#FFFFFF',
     borderRadius: 12,
@@ -735,5 +999,23 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 16,
     fontWeight: '600',
+  },
+  // ✅ Updated custom intake styles with ScrollView
+  customIntakeScrollView: {
+    flex: 1,
+  },
+  customIntakeContainer: {
+    paddingTop: 20,
+    paddingHorizontal: 20,
+    paddingBottom: 20,  // ✅ Add bottom padding for better scrolling
+  },
+  inputFieldWrapper: {
+    marginBottom: 20,
+  },
+  inputLabel: {
+    fontSize: 14,
+    color: '#000000',
+    marginBottom: 8,
+    fontWeight: '500',
   },
 });
