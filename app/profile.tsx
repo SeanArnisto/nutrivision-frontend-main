@@ -95,6 +95,9 @@ export default function Profile() {
   // Add new state to track if user has health condition
   const [hasHealthCondition, setHasHealthCondition] = useState<boolean>(false);
 
+  // Track nutrition intake mode (manual or API-generated)
+  const [isManualNutrition, setIsManualNutrition] = useState<boolean | null>(null);
+
   // Redirect unauthenticated users to login
   useEffect(() => {
     if (!isAuthenticated) {
@@ -173,7 +176,7 @@ export default function Profile() {
     }
   };
 
-  // Fetch current nutrition intake values
+  // Fetch current nutrition intake values and is_manual status
   const fetchNutritionIntake = async () => {
     try {
       const { user } = useAuthStore.getState();
@@ -181,7 +184,7 @@ export default function Profile() {
 
       const { data, error } = await supabase
         .from("user_nutrition_intake")
-        .select("avg_carbs, avg_sodium, avg_protein, avg_calories")
+        .select("avg_carbs, avg_sodium, avg_protein, avg_calories, is_manual")
         .eq("user_id", user.id)
         .single();
 
@@ -194,6 +197,7 @@ export default function Profile() {
           avgProtein: "",
           avgCalories: "",
         });
+        setIsManualNutrition(null);
       } else if (data) {
         setNutrientValues({
           avgCarbs: data.avg_carbs?.toString() || "",
@@ -201,6 +205,7 @@ export default function Profile() {
           avgProtein: data.avg_protein?.toString() || "",
           avgCalories: data.avg_calories?.toString() || "",
         });
+        setIsManualNutrition(data.is_manual ?? false);
       }
     } catch (error) {
       console.error("Nutrition intake fetch error:", error);
@@ -596,6 +601,40 @@ export default function Profile() {
               />
             </View>
 
+            {/* Nutrition Mode Section */}
+            {isManualNutrition !== null && (
+              <View style={styles.nutritionModeSection}>
+                {/* Header */}
+                <View style={styles.nutritionModeHeader}>
+                  <Text style={styles.nutritionModeHeaderTitle}>
+                    Current Nutrition Mode
+                  </Text>                  
+                </View>
+
+                {/* Mode Indicator */}
+                <View style={styles.nutritionModeIndicator}>
+                  <Ionicons
+                    name={isManualNutrition ? "create-outline" : "analytics-outline"}
+                    size={20}
+                    color="#9AB206"
+                  />
+                  <Text style={styles.nutritionModeText}>
+                    {isManualNutrition ? "Manual Nutrients" : "API-Generated Nutrients"}
+                  </Text>
+                  <View
+                    style={[
+                      styles.nutritionModeStatus,
+                      isManualNutrition ? styles.manualStatus : styles.apiStatus,
+                    ]}
+                  >
+                    <Text style={styles.nutritionModeStatusText}>
+                      {isManualNutrition ? "MANUAL" : "AUTO"}
+                    </Text>
+                  </View>
+                </View>
+              </View>
+            )}
+
             {/* Nutrition Intake Section */}
             <NutritionIntakeSection onPress={handleNutritionIntakePress} />
 
@@ -730,5 +769,61 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     paddingBottom: 100,
+  },
+  nutritionModeSection: {
+    marginTop: 24,
+    marginBottom: 16,
+  },
+  nutritionModeHeader: {
+    marginBottom: 12,
+  },
+  nutritionModeHeaderTitle: {
+    fontSize: 18,
+    fontWeight: "bold",
+    color: "#333",
+    marginBottom: 4,
+  },
+  nutritionModeHeaderSubtitle: {
+    fontSize: 13,
+    color: "#666",
+    lineHeight: 18,
+  },
+  nutritionModeIndicator: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#fff",
+    borderRadius: 12,
+    padding: 16,
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 1,
+    },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  nutritionModeText: {
+    flex: 1,
+    fontSize: 15,
+    fontWeight: "600",
+    color: "#333",
+    marginLeft: 12,
+  },
+  nutritionModeStatus: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+  },
+  manualStatus: {
+    backgroundColor: "#FFF3E0",
+  },
+  apiStatus: {
+    backgroundColor: "#E8F5E9",
+  },
+  nutritionModeStatusText: {
+    fontSize: 12,
+    fontWeight: "bold",
+    color: "#9AB206",
   },
 });
