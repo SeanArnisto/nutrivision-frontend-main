@@ -78,12 +78,20 @@ function PhotoFruitDetailsPage() {
     calories: parseFloat((currentIntake.calories * amount).toFixed(2)),
   };
 
-  const handleIncrease = () => {
-    setPortionSize((prev) => prev + 1);
+  const handleFruitCutIncrease = () => {
+    setFruitCut((prev) => Math.min(prev + 1, fruitCutRange.maxAmount));
   };
 
-  const handleDecrease = () => {
-    setPortionSize((prev) => Math.max(1, prev - 1));
+  const handleFruitCutDecrease = () => {
+    setFruitCut((prev) => Math.max(prev - 1, fruitCutRange.minAmount));
+  };
+
+  const handleSlicesIncrease = () => {
+    setSlices((prev) => Math.min(prev + 1, slicesRange.maxAmount));
+  };
+
+  const handleSlicesDecrease = () => {
+    setSlices((prev) => Math.max(prev - 1, slicesRange.minAmount));
   };
 
   useEffect(() => {
@@ -135,10 +143,19 @@ function PhotoFruitDetailsPage() {
   ).current;
 
   const [disabled] = useState(false);
-  const [portionSize, setPortionSize] = useState(0);
-  const amountRange = { minAmount: 0, maxAmount: 10 };
-  const isDecreaseDisabled = disabled || amount <= amountRange.minAmount;
-  const isIncreaseDisabled = disabled || amount >= amountRange.maxAmount;
+  const [fruitCut, setFruitCut] = useState(1); // For halves (0-8)
+  const [slices, setSlices] = useState(1); // For slices
+
+  const fruitCutRange = { minAmount: 1, maxAmount: 15 };
+  const slicesRange = { minAmount: 0, maxAmount: 15 };
+
+  const isFruitCutDecreaseDisabled =
+    disabled || fruitCut <= fruitCutRange.minAmount;
+  const isFruitCutIncreaseDisabled =
+    disabled || fruitCut >= fruitCutRange.maxAmount;
+
+  const isSlicesDecreaseDisabled = disabled || slices <= slicesRange.minAmount;
+  const isSlicesIncreaseDisabled = disabled || slices >= slicesRange.maxAmount;
 
   const overlayOpacity = translateY.interpolate({
     inputRange: [0, BOTTOM_SHEET_MAX_HEIGHT - BOTTOM_SHEET_MIN_HEIGHT],
@@ -146,12 +163,25 @@ function PhotoFruitDetailsPage() {
     extrapolate: "clamp",
   });
 
-  const options = Array.from({ length: 99 }, (_, i) => ({
-    label: `${i + 1} ${i + 1 === 1 ? "serving" : "servings"}`,
+  // Generate options based on fruitCut value
+  const optionsLength = fruitCut === 1 ? 99 : fruitCut;
+  const dropdownLabel = fruitCut === 1 ? "Amount" : "Slices to eat";
+  const optionUnit = fruitCut === 1 ? "amount" : "slice";
+
+  const options = Array.from({ length: optionsLength }, (_, i) => ({
+    label: `${i + 1} ${i + 1 === 1 ? optionUnit : optionUnit + "s"}`,
     value: `${i + 1}`,
   }));
 
   const [selectedValue, setSelectedValue] = useState(options[0].value);
+
+  // Update selectedValue when fruitCut changes and current value exceeds new limit
+  useEffect(() => {
+    const currentValue = parseInt(selectedValue);
+    if (fruitCut > 1 && currentValue > fruitCut) {
+      setSelectedValue("1");
+    }
+  }, [fruitCut]);
   const carbsIcon = require("@/assets/images/Carbohydrate Icon.png");
   const sodiumIcon = require("@/assets/images/Sodium Icon.png");
   const proteinIcon = require("@/assets/images/Protein Icon.png");
@@ -215,7 +245,7 @@ function PhotoFruitDetailsPage() {
               value={selectedValue}
               options={options}
               onChange={(value) => setSelectedValue(value as string)}
-              label="Serving"
+              label={dropdownLabel}
               placeholder={options[0].label}
               onOpenChange={setIsDropdownOpen}
             />
@@ -261,23 +291,23 @@ function PhotoFruitDetailsPage() {
             </View>
           </View>
 
-          {/* Servings Card */}
+          {/* fruit cut */}
           <View style={styles.servingsCard}>
             <View style={styles.servingsCardContent}>
               <TouchableOpacity
                 style={[
                   styles.button,
                   styles.decreaseButton,
-                  isDecreaseDisabled && styles.disabledButton,
+                  isFruitCutDecreaseDisabled && styles.disabledButton,
                 ]}
-                onPress={handleDecrease}
-                disabled={disabled}
+                onPress={handleFruitCutDecrease}
+                disabled={isFruitCutDecreaseDisabled}
                 activeOpacity={0.7}
               >
                 <Text
                   style={[
                     styles.buttonText,
-                    isDecreaseDisabled && styles.disabledButtonText,
+                    isFruitCutDecreaseDisabled && styles.disabledButtonText,
                   ]}
                 >
                   −
@@ -285,68 +315,28 @@ function PhotoFruitDetailsPage() {
               </TouchableOpacity>
 
               <Text style={styles.servingsTitle}>
-                {portionSize} Whole Fruit
+                {fruitCut}{" "}
+                {fruitCut === 1
+                  ? "whole fruit"
+                  : fruitCut === 2
+                  ? "halves"
+                  : "portions"}
               </Text>
 
               <TouchableOpacity
                 style={[
                   styles.button,
                   styles.increaseButton,
-                  isIncreaseDisabled && styles.disabledButton,
+                  isFruitCutIncreaseDisabled && styles.disabledButton,
                 ]}
-                onPress={handleIncrease}
-                disabled={isIncreaseDisabled}
+                onPress={handleFruitCutIncrease}
+                disabled={isFruitCutIncreaseDisabled}
                 activeOpacity={0.7}
               >
                 <Text
                   style={[
                     styles.buttonText,
-                    isIncreaseDisabled && styles.disabledButtonText,
-                  ]}
-                >
-                  +
-                </Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-          <View style={styles.servingsCard}>
-            <View style={styles.servingsCardContent}>
-              <TouchableOpacity
-                style={[
-                  styles.button,
-                  styles.decreaseButton,
-                  isDecreaseDisabled && styles.disabledButton,
-                ]}
-                onPress={handleDecrease}
-                disabled={disabled}
-                activeOpacity={0.7}
-              >
-                <Text
-                  style={[
-                    styles.buttonText,
-                    isDecreaseDisabled && styles.disabledButtonText,
-                  ]}
-                >
-                  −
-                </Text>
-              </TouchableOpacity>
-
-              <Text style={styles.servingsTitle}>{portionSize} Slices</Text>
-
-              <TouchableOpacity
-                style={[
-                  styles.button,
-                  styles.increaseButton,
-                  isIncreaseDisabled && styles.disabledButton,
-                ]}
-                onPress={handleIncrease}
-                disabled={isIncreaseDisabled}
-                activeOpacity={0.7}
-              >
-                <Text
-                  style={[
-                    styles.buttonText,
-                    isIncreaseDisabled && styles.disabledButtonText,
+                    isFruitCutIncreaseDisabled && styles.disabledButtonText,
                   ]}
                 >
                   +
