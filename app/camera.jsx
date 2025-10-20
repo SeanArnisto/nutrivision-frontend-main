@@ -706,7 +706,7 @@ export default function Camera() {
           (totals, f) => ({
             carbs: totals.carbs + ((f.carbs ?? 0) || 0),
             protein: totals.protein + ((f.protein ?? 0) || 0),
-            sodium: totals.sodium + ((f.sodium ?? 0) || 0),
+            sodium: totals.sodium + ((f.sodium ?? 0) || 0),            
           }),
           { carbs: 0, protein: 0, sodium: 0 }
         );
@@ -750,11 +750,13 @@ export default function Camera() {
             carbs: parseFloat(intake.raw_extracted.carbohydrates ?? 0) || 0,
             protein: parseFloat(intake.raw_extracted.protein ?? 0) || 0,
             sodium: parseFloat(intake.raw_extracted.sodium ?? 0) / 1000 || 0,
+            calories: parseFloat(intake.raw_extracted.kcal ?? 0) || 0,
             servings: parseFloat(intake.raw_extracted.servings ?? 0),
             hasData:
               intake.carbs_total !== null ||
               intake.protein_total !== null ||
-              intake.sodium_total !== null,
+              intake.sodium_total !== null || 
+              intake.calories !== null,
           }))
           .filter((intake) => intake.hasData)
           .map(({ hasData, ...intake }) => intake);
@@ -765,6 +767,7 @@ export default function Camera() {
           carbs: intake.carbs ?? 0,
           protein: intake.protein ?? 0,
           sodium: intake.sodium ?? 0,
+          calories: intake.kcal ?? 0
         }));
 
         const detailedIntakes = [...labelIntakes, ...fruitIntakes];
