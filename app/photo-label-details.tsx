@@ -10,6 +10,7 @@ import {
   Animated,
   StatusBar,
   TouchableOpacity,
+  ScrollView,
 } from "react-native";
 import { useRoute, RouteProp } from "@react-navigation/native";
 import { StackNavigationProp } from "@react-navigation/stack";
@@ -220,77 +221,81 @@ function PhotoLabelDetailsPage() {
         </View>
 
         {/* Content Container */}
-        <View style={styles.contentContainer}>
-          {/* Title */}
-          <View style={styles.amountHeader}>
-            <Text style={styles.title}>
-              {currentIntake.type || "Nutritional Label"}
-            </Text>
-            <AmountSelector
-              amount={amount}
-              label="Servings"
-              onIncrease={handleIncrease}
-              onDecrease={handleDecrease}
-            />
-          </View>
-
-          <View style={styles.calorieContainer}>
-            <CalorieCard
-              value={nutrientPerServing.calories}
-              tintColor="#9AB206"
-            />
-          </View>
-
-          {/* Nutritional Cards Row */}
-          <View style={styles.cardsRow}>
-            <View style={styles.cardContainer}>
-              <AvgIntakeCard
-                iconSource={carbsIcon}
-                tintColor="#9AB206"
-                subtitle="Carbs"
-                value={nutrientPerServing.carbs}
-                fill={100}
+        <ScrollView>
+          <View style={styles.contentContainer}>
+            {/* Title */}
+            <View style={styles.amountHeader}>
+              <Text style={styles.title}>
+                {currentIntake.type || "Nutritional Label"}
+              </Text>
+              <AmountSelector
+                amount={amount}
+                label="Servings"
+                onIncrease={handleIncrease}
+                onDecrease={handleDecrease}
               />
             </View>
 
-            <View style={styles.cardContainer}>
-              <AvgIntakeCard
-                iconSource={sodiumIcon}
+            <View style={styles.calorieContainer}>
+              <CalorieCard
+                value={nutrientPerServing.calories}
                 tintColor="#9AB206"
-                subtitle="Sodium"
-                value={nutrientPerServing.sodium}
-                fill={100}
               />
             </View>
 
-            <View style={styles.cardContainer}>
-              <AvgIntakeCard
-                iconSource={proteinIcon}
-                tintColor="#9AB206"
-                subtitle="Protein"
-                value={nutrientPerServing.protein}
-                fill={100}
-              />
-            </View>
-          </View>
+            {/* Nutritional Cards Row */}
+            <View style={styles.cardsRow}>
+              <View style={styles.cardContainer}>
+                <AvgIntakeCard
+                  iconSource={carbsIcon}
+                  tintColor="#9AB206"
+                  subtitle="Carbs"
+                  value={nutrientPerServing.carbs}
+                  fill={100}
+                />
+              </View>
 
-          {/* Servings Container */}
-          <View style={styles.servingsCard}>
-            <Text style={styles.servingsTitle}>
-              Number of Servings in Package:{" "}
-              {currentIntake.originalServings || currentIntake.servings || 1}
-            </Text>
+              <View style={styles.cardContainer}>
+                <AvgIntakeCard
+                  iconSource={sodiumIcon}
+                  tintColor="#9AB206"
+                  subtitle="Sodium"
+                  value={nutrientPerServing.sodium}
+                  fill={100}
+                />
+              </View>
+
+              <View style={styles.cardContainer}>
+                <AvgIntakeCard
+                  iconSource={proteinIcon}
+                  tintColor="#9AB206"
+                  subtitle="Protein"
+                  value={nutrientPerServing.protein}
+                  fill={100}
+                />
+              </View>
+            </View>
+
+            {/* Servings Container */}
+            <View style={styles.servingsCard}>
+              <Text style={styles.servingsTitle}>
+                Number of Servings in Package:{" "}
+                {currentIntake.originalServings || currentIntake.servings || 1}
+              </Text>
+            </View>
+            {/* Confirm Button */}
+            <TouchableOpacity
+              style={styles.confirmButton}
+              onPress={() => navigation.goBack()}
+            >
+              <Text style={styles.confirmButtonText}>Confirm Intake</Text>
+            </TouchableOpacity>
           </View>
-          {/* Confirm Button */}
-          <TouchableOpacity style={styles.confirmButton} onPress={() => navigation.goBack()}>
-            <Text style={styles.confirmButtonText}>Confirm Intake</Text>
-          </TouchableOpacity>
-        </View>
+        </ScrollView>
       </Animated.View>
 
       {/* Return Button - positioned absolutely */}
       <ReturnButton position="top" />
-      
     </View>
   );
 }
