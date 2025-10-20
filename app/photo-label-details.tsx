@@ -42,7 +42,7 @@ function PhotoLabelDetailsPage() {
   const navigation = useNavigation<PhotoLabelDetailsNavigationProp>();
 
   // Get data from Zustand store
-  const { intakes, setIntake } = useDetailedNutrientStore();
+  const { intakes, updateIntakeByIndex } = useDetailedNutrientStore();
 
   // Get the index from route params
   const params = route.params as { imageIndex?: number };
@@ -62,23 +62,22 @@ function PhotoLabelDetailsPage() {
   const translateY = useRef(new Animated.Value(0)).current;
   const currentY = useRef(0);
   const [isExpanded, setIsExpanded] = useState(true);
-  const [amount, setAmount] = useState(currentIntake.servings || 1);
+  const [amount, setAmount] = useState(1);
+  const confirmedRef = useRef(false);
 
-  // Initialize originalServings if not set
+  // Restore servings from store on mount
   useEffect(() => {
-    if (!currentIntake.originalServings && intakes[imageIndex]) {
-      const updatedIntakes = [...intakes];
-      updatedIntakes[imageIndex] = {
-        ...updatedIntakes[imageIndex],
-        originalServings: currentIntake.servings || 1,
-      };
-      setIntake(updatedIntakes);
+    confirmedRef.current = false; // Reset on mount
+    if (currentIntake.servings !== undefined) {
+      setAmount(currentIntake.servings);
     }
-  }, [imageIndex]);
 
-  // Initialize amount from store only once when imageIndex changes
-  useEffect(() => {
-    setAmount(currentIntake.servings || 1);
+    // Cleanup: Log if user exits without confirming
+    return () => {
+      if (!confirmedRef.current) {
+        console.log(`⚠️ [Label Details] Exited without confirming - Store NOT updated`);
+      }
+    };
   }, [imageIndex]);
 
   const nutrientPerServing = {
@@ -89,33 +88,37 @@ function PhotoLabelDetailsPage() {
   };
 
   const handleIncrease = () => {
-    const newAmount = amount + 1;
-    setAmount(newAmount);
-
-    // Update the intake in the store
-    const updatedIntakes = [...intakes];
-    if (updatedIntakes[imageIndex]) {
-      updatedIntakes[imageIndex] = {
-        ...updatedIntakes[imageIndex],
-        servings: newAmount,
-      };
-      setIntake(updatedIntakes);
-    }
+    setAmount((prev) => {
+      console.log(`📊 [Label Details] Amount increased to ${prev + 1} (LOCAL STATE ONLY - not saved)`);
+      return prev + 1;
+    });
   };
 
   const handleDecrease = () => {
-    const newAmount = Math.max(1, amount - 1);
-    setAmount(newAmount);
+    setAmount((prev) => {
+      const newVal = Math.max(1, prev - 1);
+      console.log(`📊 [Label Details] Amount decreased to ${newVal} (LOCAL STATE ONLY - not saved)`);
+      return newVal;
+    });
+  };
 
-    // Update the intake in the store
-    const updatedIntakes = [...intakes];
-    if (updatedIntakes[imageIndex]) {
-      updatedIntakes[imageIndex] = {
-        ...updatedIntakes[imageIndex],
-        servings: newAmount,
-      };
-      setIntake(updatedIntakes);
-    }
+  const handleConfirmIntake = () => {
+    // Mark as confirmed to ensure store is updated
+    confirmedRef.current = true;
+
+    console.log(`✅ [Label Details] CONFIRM pressed - Saving servings=${amount} to store`);
+
+    // Only save the servings (not the calculated nutrients)
+    // Keep the original nutrient values so they can be recalculated
+    updateIntakeByIndex(imageIndex, {
+      servings: amount,
+    });
+
+    // Navigate back
+    navigation.reset({
+      index: 0,
+      routes: [{ name: 'nutrient-page'}]
+    });
   };
 
   useEffect(() => {
@@ -286,7 +289,7 @@ function PhotoLabelDetailsPage() {
             {/* Confirm Button */}
             <TouchableOpacity
               style={styles.confirmButton}
-              onPress={() => navigation.goBack()}
+              onPress={handleConfirmIntake}
             >
               <Text style={styles.confirmButtonText}>Confirm Intake</Text>
             </TouchableOpacity>

@@ -32,10 +32,12 @@ export const useDetailedNutrientStore = create<store>((set, get) => ({
   setIntake: (nutrientIntake: NutrientIntake[]) =>
     set(() => ({ intakes: nutrientIntake })),
   updateIntakeByIndex: (index: number, nutrients: Partial<NutrientIntake>) => {
+    console.log(`🔴 [STORE] updateIntakeByIndex called for index ${index}:`, nutrients);
     const currentIntakes = get().intakes;
     if (index >= 0 && index < currentIntakes.length) {
       const updatedIntakes = [...currentIntakes];
       updatedIntakes[index] = { ...updatedIntakes[index], ...nutrients };
+      console.log(`🔴 [STORE] Store updated! New intake:`, updatedIntakes[index]);
       set({ intakes: updatedIntakes });
     }
   },
