@@ -26,6 +26,7 @@ import { format, addDays } from "date-and-time";
 import { getNutritionalHistory } from "@/hooks/store";
 import AppLogo from "@/components/appLogo";
 import type { NutritionRequest } from "@/stores/useFeedbackStore";
+import { useDetailedNutrientStore } from "@/stores/useDetailedNutrientStore";
 import useFeedbackStore, {
   useFeedbackError,
   useFeedbackLoading,
@@ -75,11 +76,18 @@ interface NutritionalRecord {
 }
 
 export default function Page6() {
-  // Move all hooks to the top before any conditional returns
+  const { intakes, loading: detailedLoading, error: detailedError, saveToDatabase } = useDetailedNutrientStore();
+  const detailedCarbs = intakes.reduce((sum, intake) => sum + (intake.carbs * (intake.servings || 1)), 0);
+  const detailedProtein = intakes.reduce((sum, intake) => sum + (intake.protein * (intake.servings || 1)), 0);
+  const detailedSodium = intakes.reduce((sum, intake) => sum + (intake.sodium * (intake.servings || 1)), 0);
+  const detailedCalories = intakes.reduce((sum, intake) => sum + (intake.calories * (intake.servings || 1)), 0);
+
+  // Move all hooks to the top before any conditional retu
+  // rns
   const isLoading = useFeedbackLoading();
-  const carbs = useNutrientsStore((state) => state.carbs);
-  const prot = useNutrientsStore((state) => state.protein);
-  const sod = useNutrientsStore((state) => state.sodium);
+  const carbs = detailedCarbs;
+  const prot = detailedProtein;
+  const sod = detailedSodium;
   const minCarb = useRecommStore((state) => state.minCarb);
   const maxCarb = useRecommStore((state) => state.maxCarb);
   const minProtein = useRecommStore((state) => state.minProtein);

@@ -39,7 +39,7 @@ function PhotoLabelDetailsPage() {
   const navigation = useNavigation<PhotoLabelDetailsNavigationProp>();
 
   // Get data from Zustand store
-  const { intakes } = useDetailedNutrientStore();
+  const { intakes, setIntake } = useDetailedNutrientStore();
 
   // Get the index from route params
   const params = route.params as { imageIndex?: number };
@@ -59,7 +59,24 @@ function PhotoLabelDetailsPage() {
   const translateY = useRef(new Animated.Value(0)).current;
   const currentY = useRef(0);
   const [isExpanded, setIsExpanded] = useState(true);
-  const [amount, setAmount] = useState(1);
+  const [amount, setAmount] = useState(currentIntake.servings || 1);
+
+  // Initialize originalServings if not set
+  useEffect(() => {
+    if (!currentIntake.originalServings && intakes[imageIndex]) {
+      const updatedIntakes = [...intakes];
+      updatedIntakes[imageIndex] = {
+        ...updatedIntakes[imageIndex],
+        originalServings: currentIntake.servings || 1
+      };
+      setIntake(updatedIntakes);
+    }
+  }, [imageIndex]);
+
+  // Initialize amount from store only once when imageIndex changes
+  useEffect(() => {
+    setAmount(currentIntake.servings || 1);
+  }, [imageIndex]);
 
   const nutrientPerServing = {
     carbs: parseFloat((currentIntake.carbs * amount).toFixed(2)),
@@ -69,11 +86,33 @@ function PhotoLabelDetailsPage() {
   };
 
   const handleIncrease = () => {
-    setAmount((prev) => prev + 1);
+    const newAmount = amount + 1;
+    setAmount(newAmount);
+
+    // Update the intake in the store
+    const updatedIntakes = [...intakes];
+    if (updatedIntakes[imageIndex]) {
+      updatedIntakes[imageIndex] = {
+        ...updatedIntakes[imageIndex],
+        servings: newAmount
+      };
+      setIntake(updatedIntakes);
+    }
   };
 
   const handleDecrease = () => {
-    setAmount((prev) => Math.max(1, prev - 1));
+    const newAmount = Math.max(1, amount - 1);
+    setAmount(newAmount);
+
+    // Update the intake in the store
+    const updatedIntakes = [...intakes];
+    if (updatedIntakes[imageIndex]) {
+      updatedIntakes[imageIndex] = {
+        ...updatedIntakes[imageIndex],
+        servings: newAmount
+      };
+      setIntake(updatedIntakes);
+    }
   };
 
   useEffect(() => {
@@ -236,7 +275,7 @@ function PhotoLabelDetailsPage() {
           {/* Servings Container */}
           <View style={styles.servingsCard}>
             <Text style={styles.servingsTitle}>
-              Number of Servings in Package: {currentIntake.servings || 1}
+              Number of Servings in Package: {currentIntake.originalServings || currentIntake.servings || 1}
             </Text>
           </View>
         </View>

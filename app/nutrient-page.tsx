@@ -48,9 +48,14 @@ export default function UserNutrientPage() {
   const setProtein = useNutrientsStore((state) => state.setProtein);
   const setSodium = useNutrientsStore((state) => state.setSodium);
 
-  const detailedNutrients = {
-    
-  }
+  // Get detailed nutrient data from store
+  const { intakes, loading: detailedLoading, error: detailedError, saveToDatabase } = useDetailedNutrientStore();
+
+  // Calculate totals from intakes
+  const detailedCarbs = parseFloat(intakes.reduce((sum, intake) => sum + ((intake.carbs * (intake.servings || 1))), 0).toFixed(5));
+  const detailedProtein = parseFloat(intakes.reduce((sum, intake) => sum + (intake.protein * (intake.servings || 1)), 0).toFixed(5));
+  const detailedSodium = parseFloat(intakes.reduce((sum, intake) => sum + (intake.sodium * (intake.servings || 1)), 0).toFixed(5));
+  const detailedCalories = parseFloat(intakes.reduce((sum, intake) => sum + (intake.calories * (intake.servings || 1)), 0).toFixed(5));
 
   const [fontsLoaded] = useFonts({
     "SpaceMono-Regular": require("@/assets/fonts/SpaceMono-Regular.ttf"),
@@ -88,14 +93,14 @@ export default function UserNutrientPage() {
     },
   });
 
-  // Initialize from store values on mount
+  // Update nutrients when intakes change
   useEffect(() => {
     setNutrients({
-      carbohydrate: carbohydrate.toString(),
-      protein: protein.toString(),
-      sodium: sodium.toString(),
+      carbohydrate: detailedCarbs.toString(),
+      protein: detailedProtein.toString(),
+      sodium: detailedSodium.toString(),
     });
-  }, []); // Only run once on mount
+  }, [intakes, detailedCarbs, detailedProtein, detailedSodium]); // Update when intakes change
 
   // Update pie chart when store values change
   useEffect(() => {

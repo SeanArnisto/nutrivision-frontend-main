@@ -10,6 +10,7 @@ type NutrientIntake = {
   protein: number;
   calories: number;
   servings?: number;
+  originalServings?: number; // Store original servings from package
 };
 
 type store = {
