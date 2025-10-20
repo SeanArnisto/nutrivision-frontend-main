@@ -405,6 +405,7 @@ useEffect(() => {
               carbs: 0,
               sodium: 0,
               protein: 0,
+              calories: 0,
               total: 0,
             }
           }
