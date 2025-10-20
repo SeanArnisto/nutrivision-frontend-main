@@ -6,8 +6,10 @@ import {
   StyleSheet,
   Modal,
   FlatList,
-  ScrollView,
+  Dimensions,
 } from 'react-native';
+
+const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 
 interface DropdownOption {
   label: string;
@@ -47,8 +49,35 @@ export default function DropdownSelector({
 
   const handleSelect = (optionValue: string | number) => {
     onChange(optionValue);
-    setIsOpen(false);
+    handleOpenChange(false);
   };
+
+  const renderItem = ({ item }: { item: DropdownOption }) => (
+    <TouchableOpacity
+      style={[
+        styles.optionItem,
+        item.value === value && styles.selectedOption
+      ]}
+      onPress={() => handleSelect(item.value)}
+      activeOpacity={0.7}
+    >
+      <Text style={[
+        styles.optionText,
+        item.value === value && styles.selectedOptionText
+      ]}>
+        {item.label}
+      </Text>
+      {item.value === value && (
+        <Text style={styles.checkmark}>✓</Text>
+      )}
+    </TouchableOpacity>
+  );
+
+  const getItemLayout = (_: any, index: number) => ({
+    length: 56, // Height of each item (padding + text)
+    offset: 56 * index,
+    index,
+  });
 
   return (
     <View style={[styles.container, containerStyle]}>
@@ -94,7 +123,11 @@ export default function DropdownSelector({
           activeOpacity={1}
           onPress={() => handleOpenChange(false)}
         >
-          <View style={styles.modalContent}>
+          <TouchableOpacity 
+            activeOpacity={1}
+            style={styles.modalContent}
+            onPress={(e) => e.stopPropagation()}
+          >
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>{label}</Text>
               <TouchableOpacity
@@ -105,30 +138,20 @@ export default function DropdownSelector({
               </TouchableOpacity>
             </View>
             
-            <ScrollView style={styles.optionsList}>
-              {options.map((option) => (
-                <TouchableOpacity
-                  key={option.value}
-                  style={[
-                    styles.optionItem,
-                    option.value === value && styles.selectedOption
-                  ]}
-                  onPress={() => handleSelect(option.value)}
-                  activeOpacity={0.7}
-                >
-                  <Text style={[
-                    styles.optionText,
-                    option.value === value && styles.selectedOptionText
-                  ]}>
-                    {option.label}
-                  </Text>
-                  {option.value === value && (
-                    <Text style={styles.checkmark}>✓</Text>
-                  )}
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
-          </View>
+            <View style={styles.listContainer}>
+              <FlatList
+                data={options}
+                renderItem={renderItem}
+                keyExtractor={(item) => String(item.value)}
+                showsVerticalScrollIndicator={true}
+                initialNumToRender={20}
+                maxToRenderPerBatch={20}
+                windowSize={10}
+                getItemLayout={getItemLayout}
+                removeClippedSubviews={true}
+              />
+            </View>
+          </TouchableOpacity>
         </TouchableOpacity>
       </Modal>
     </View>
@@ -213,7 +236,7 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     width: '90%',
     maxWidth: 400,
-    maxHeight: '70%',
+    height: SCREEN_HEIGHT * 0.7,
     shadowColor: '#000',
     shadowOffset: {
       width: 0,
@@ -222,6 +245,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.3,
     shadowRadius: 8,
     elevation: 8,
+    overflow: 'hidden',
   },
   modalHeader: {
     flexDirection: 'row',
@@ -248,7 +272,10 @@ const styles = StyleSheet.create({
     fontWeight: '300',
   },
   optionsList: {
-    maxHeight: 400,
+    flex: 1,
+  },
+  listContainer: {
+    flex: 1,
   },
   optionItem: {
     flexDirection: 'row',
@@ -257,12 +284,13 @@ const styles = StyleSheet.create({
     padding: 16,
     borderBottomWidth: 1,
     borderBottomColor: '#f0f0f0',
+    minHeight: 56,
   },
   selectedOption: {
     backgroundColor: '#f8f9fa',
   },
   optionText: {
-    fontSize: 18,
+    fontSize: 16,
     color: '#2c3e50',
   },
   selectedOptionText: {

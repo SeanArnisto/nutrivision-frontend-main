@@ -10,6 +10,7 @@ import {
   Animated,
   StatusBar,
   TouchableOpacity,
+  ScrollView,
 } from "react-native";
 import { useRoute, RouteProp } from "@react-navigation/native";
 import { StackNavigationProp } from "@react-navigation/stack";
@@ -41,7 +42,7 @@ function PhotoFruitDetailsPage() {
   const navigation = useNavigation<PhotoFruitDetailsNavigationProp>();
 
   // Get data from Zustand store
-  const { intakes } = useDetailedNutrientStore();
+  const { intakes, updateIntakeByIndex } = useDetailedNutrientStore();
 
   // Get the index from route params
   const { imageIndex } = route.params || { imageIndex: 0 };
@@ -69,20 +70,82 @@ function PhotoFruitDetailsPage() {
     isDropdownOpenRef.current = isDropdownOpen;
   }, [isDropdownOpen]);
 
-  // Calculate nutrients based on amount
+  const [disabled] = useState(false);
+  const [fruitCut, setFruitCut] = useState(1);
+  const [slices, setSlices] = useState(1);
+
+  const fruitCutRange = { minAmount: 1, maxAmount: 15 };
+  const slicesRange = { minAmount: 0, maxAmount: 15 };
+
+  // Generate options based on fruitCut value
+  const optionsLength = fruitCut === 1 ? 99 : fruitCut;
+  const dropdownLabel = fruitCut === 1 ? "Amount" : "Slices to eat";
+  const optionUnit = fruitCut === 1 ? "amount" : "slice";
+
+  const options = Array.from({ length: optionsLength }, (_, i) => ({
+    label: `${i + 1} ${i + 1 === 1 ? optionUnit : optionUnit + "s"}`,
+    value: `${i + 1}`,
+  }));
+
+  const [selectedValue, setSelectedValue] = useState(options[0].value);
+
+  // Restore saved values from store on component mount
+  useEffect(() => {
+    if (currentIntake.fruitCut !== undefined) {
+      setFruitCut(currentIntake.fruitCut);
+    }
+    if (currentIntake.selectedAmount !== undefined) {
+      setSelectedValue(String(currentIntake.selectedAmount));
+    }
+  }, [imageIndex]);
+
+  // Update selectedValue when fruitCut changes and current value exceeds new limit
+  useEffect(() => {
+    const currentValue = parseInt(selectedValue);
+    if (fruitCut > 1 && currentValue > fruitCut) {
+      setSelectedValue("1");
+    }
+  }, [fruitCut]);
+
+  // Calculate nutrients based on fruitCut and selectedValue
+  const selectedAmount = parseInt(selectedValue) || 1;
+
+  // If fruitCut = 1: multiply by selectedAmount (whole fruits)
+  // If fruitCut > 1: divide by fruitCut (portion size), then multiply by selectedAmount (slices eaten)
+  const multiplier = fruitCut === 1 ? selectedAmount : (selectedAmount / fruitCut);
+
   const nutrientPerServing = {
-    carbs: parseFloat((currentIntake.carbs * amount).toFixed(2)),
-    protein: parseFloat((currentIntake.protein * amount).toFixed(2)),
-    sodium: parseFloat((currentIntake.sodium * amount).toFixed(4)),
-    calories: parseFloat((currentIntake.calories * amount).toFixed(2)),
+    carbs: parseFloat((currentIntake.carbs * multiplier).toFixed(2)),
+    protein: parseFloat((currentIntake.protein * multiplier).toFixed(2)),
+    sodium: parseFloat((currentIntake.sodium * multiplier).toFixed(4)),
+    calories: parseFloat((currentIntake.calories * multiplier).toFixed(2)),
   };
 
-  const handleIncrease = () => {
-    setAmount((prev) => prev + 1);
+  const handleFruitCutIncrease = () => {
+    setFruitCut((prev) => Math.min(prev + 1, fruitCutRange.maxAmount));
   };
 
-  const handleDecrease = () => {
-    setAmount((prev) => Math.max(1, prev - 1));
+  const handleFruitCutDecrease = () => {
+    setFruitCut((prev) => Math.max(prev - 1, fruitCutRange.minAmount));
+  };
+
+  const handleSlicesIncrease = () => {
+    setSlices((prev) => Math.min(prev + 1, slicesRange.maxAmount));
+  };
+
+  const handleSlicesDecrease = () => {
+    setSlices((prev) => Math.max(prev - 1, slicesRange.minAmount));
+  };
+
+  const handleConfirmIntake = () => {
+    // Only save the selection state (fruitCut and selectedAmount)
+    // Keep the original nutrient values so they can be recalculated
+    updateIntakeByIndex(imageIndex, {
+      fruitCut: fruitCut,
+      selectedAmount: selectedAmount,
+    });
+    // Navigate back
+    navigation.goBack();
   };
 
   useEffect(() => {
@@ -133,23 +196,19 @@ function PhotoFruitDetailsPage() {
     })
   ).current;
 
+  const isFruitCutDecreaseDisabled =
+    disabled || fruitCut <= fruitCutRange.minAmount;
+  const isFruitCutIncreaseDisabled =
+    disabled || fruitCut >= fruitCutRange.maxAmount;
+
+  const isSlicesDecreaseDisabled = disabled || slices <= slicesRange.minAmount;
+  const isSlicesIncreaseDisabled = disabled || slices >= slicesRange.maxAmount;
+
   const overlayOpacity = translateY.interpolate({
     inputRange: [0, BOTTOM_SHEET_MAX_HEIGHT - BOTTOM_SHEET_MIN_HEIGHT],
     outputRange: [0.4, 0],
     extrapolate: "clamp",
   });
-
-  const [selectedValue, setSelectedValue] = useState("option1");
-  const options = [
-    { label: "1 serving", value: "1 serving", },
-    { label: "2 servings", value: "2 servings" },
-    { label: "3 servings", value: "3 servings" },
-    { label: "4 servings", value: "4 servings" },
-    { label: "5 servings", value: "5 servings" },
-    { label: "6 servings", value: "6 servings" },
-    { label: "7 servings", value: "7 servings" },
-    { label: "8 servings", value: "8 servings" },
-  ];
 
   const carbsIcon = require("@/assets/images/Carbohydrate Icon.png");
   const sodiumIcon = require("@/assets/images/Sodium Icon.png");
@@ -194,15 +253,19 @@ function PhotoFruitDetailsPage() {
       {/* Bottom Sheet */}
       <Animated.View
         style={[styles.bottomSheet, { transform: [{ translateY }] }]}
-        {...panResponder.panHandlers}
       >
-        {/* Handle Bar */}
-        <View style={styles.handleContainer}>
+        {/* Handle Bar - Keep this outside ScrollView */}
+        <View style={styles.handleContainer} {...panResponder.panHandlers}>
           <View style={styles.handle} />
         </View>
 
-        {/* Content Container */}
-        <View style={styles.contentContainer}>
+        {/* Scrollable Content Container */}
+        <ScrollView
+          style={styles.scrollView}
+          contentContainerStyle={styles.contentContainer}
+          showsVerticalScrollIndicator={true}
+          bounces={true}
+        >
           {/* Title */}
           <View style={styles.amountHeader}>
             <Text style={styles.title}>{currentIntake.type || "Fruit"}</Text>
@@ -210,8 +273,8 @@ function PhotoFruitDetailsPage() {
               value={selectedValue}
               options={options}
               onChange={(value) => setSelectedValue(value as string)}
-              label="Serving"
-              placeholder="1 serving"
+              label={dropdownLabel}
+              placeholder={options[0].label}
               onOpenChange={setIsDropdownOpen}
             />
           </View>
@@ -256,19 +319,68 @@ function PhotoFruitDetailsPage() {
             </View>
           </View>
 
-          {/* Servings Card */}
+          {/* fruit cut */}
           <View style={styles.servingsCard}>
-            <Text style={styles.servingsTitle}>Portion</Text>
+            <View style={styles.servingsCardContent}>
+              <TouchableOpacity
+                style={[
+                  styles.button,
+                  styles.decreaseButton,
+                  isFruitCutDecreaseDisabled && styles.disabledButton,
+                ]}
+                onPress={handleFruitCutDecrease}
+                disabled={isFruitCutDecreaseDisabled}
+                activeOpacity={0.7}
+              >
+                <Text
+                  style={[
+                    styles.buttonText,
+                    isFruitCutDecreaseDisabled && styles.disabledButtonText,
+                  ]}
+                >
+                  −
+                </Text>
+              </TouchableOpacity>
+
+              <Text style={styles.servingsTitle}>
+                {fruitCut}{" "}
+                {fruitCut === 1
+                  ? "whole fruit"
+                  : fruitCut === 2
+                  ? "halves"
+                  : "portions"}
+              </Text>
+
+              <TouchableOpacity
+                style={[
+                  styles.button,
+                  styles.increaseButton,
+                  isFruitCutIncreaseDisabled && styles.disabledButton,
+                ]}
+                onPress={handleFruitCutIncrease}
+                disabled={isFruitCutIncreaseDisabled}
+                activeOpacity={0.7}
+              >
+                <Text
+                  style={[
+                    styles.buttonText,
+                    isFruitCutIncreaseDisabled && styles.disabledButtonText,
+                  ]}
+                >
+                  +
+                </Text>
+              </TouchableOpacity>
+            </View>
           </View>
 
           {/* Confirm Button */}
           <TouchableOpacity
             style={styles.confirmButton}
-            onPress={() => navigation.goBack()}
+            onPress={handleConfirmIntake}
           >
             <Text style={styles.confirmButtonText}>Confirm Intake</Text>
           </TouchableOpacity>
-        </View>
+        </ScrollView>
       </Animated.View>
 
       {/* Return Button - positioned absolutely */}
@@ -283,12 +395,44 @@ export default function FruitScreen() {
 }
 
 const styles = StyleSheet.create({
+  button: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "#f0f0f0",
+  },
+  decreaseButton: {
+    // No margin needed with space-between
+  },
+  increaseButton: {
+    // No margin needed with space-between
+  },
+  disabledButton: {
+    opacity: 0.4,
+  },
+  buttonText: {
+    fontSize: 20,
+    fontWeight: "600",
+    color: "#666",
+    lineHeight: 20,
+  },
+  disabledButtonText: {
+    color: "#ccc",
+  },
   amountHeader: {
     display: "flex",
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "flex-end",
     marginBottom: 15,
+  },
+  servingsCardContent: {
+    display: "flex",
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
   },
   container: {
     flex: 1,
@@ -337,7 +481,7 @@ const styles = StyleSheet.create({
     shadowColor: "#000",
     shadowOffset: {
       width: 0,
-      height: -4,
+      height: 2,
     },
     shadowOpacity: 0.25,
     shadowRadius: 16,
@@ -346,7 +490,7 @@ const styles = StyleSheet.create({
   handleContainer: {
     alignItems: "center",
     paddingTop: 12,
-    paddingBottom: 8,
+    paddingBottom: 24,
   },
   handle: {
     width: 40,
@@ -354,8 +498,10 @@ const styles = StyleSheet.create({
     backgroundColor: "#d1d5db",
     borderRadius: 2,
   },
-  contentContainer: {
+  scrollView: {
     flex: 1,
+  },
+  contentContainer: {
     paddingHorizontal: 20,
     paddingTop: 16,
     paddingBottom: 40,
@@ -427,7 +573,7 @@ const styles = StyleSheet.create({
   servingsCard: {
     backgroundColor: "white",
     borderRadius: 12,
-    padding: 20,
+    padding: 16,
     marginTop: 22,
     shadowColor: "#000",
     shadowOffset: {

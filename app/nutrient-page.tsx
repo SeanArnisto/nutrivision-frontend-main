@@ -52,10 +52,34 @@ export default function UserNutrientPage() {
   const { intakes, loading: detailedLoading, error: detailedError, saveToDatabase } = useDetailedNutrientStore();
 
   // Calculate totals from intakes
-  const detailedCarbs = parseFloat(intakes.reduce((sum, intake) => sum + ((intake.carbs * (intake.servings || 1))), 0).toFixed(5));
-  const detailedProtein = parseFloat(intakes.reduce((sum, intake) => sum + (intake.protein * (intake.servings || 1)), 0).toFixed(5));
-  const detailedSodium = parseFloat(intakes.reduce((sum, intake) => sum + (intake.sodium * (intake.servings || 1)), 0).toFixed(5));
-  const detailedCalories = parseFloat(intakes.reduce((sum, intake) => sum + (intake.calories * (intake.servings || 1)), 0).toFixed(5));
+  // Use fruitCut and selectedAmount if available, otherwise fall back to servings
+  const detailedCarbs = parseFloat(intakes.reduce((sum, intake) => {
+    const multiplier = (intake.fruitCut !== undefined && intake.selectedAmount !== undefined)
+      ? (intake.fruitCut === 1 ? intake.selectedAmount : (intake.selectedAmount / intake.fruitCut))
+      : (intake.servings || 1);
+    return sum + (intake.carbs * multiplier);
+  }, 0).toFixed(5));
+
+  const detailedProtein = parseFloat(intakes.reduce((sum, intake) => {
+    const multiplier = (intake.fruitCut !== undefined && intake.selectedAmount !== undefined)
+      ? (intake.fruitCut === 1 ? intake.selectedAmount : (intake.selectedAmount / intake.fruitCut))
+      : (intake.servings || 1);
+    return sum + (intake.protein * multiplier);
+  }, 0).toFixed(5));
+
+  const detailedSodium = parseFloat(intakes.reduce((sum, intake) => {
+    const multiplier = (intake.fruitCut !== undefined && intake.selectedAmount !== undefined)
+      ? (intake.fruitCut === 1 ? intake.selectedAmount : (intake.selectedAmount / intake.fruitCut))
+      : (intake.servings || 1);
+    return sum + (intake.sodium * multiplier);
+  }, 0).toFixed(5));
+
+  const detailedCalories = parseFloat(intakes.reduce((sum, intake) => {
+    const multiplier = (intake.fruitCut !== undefined && intake.selectedAmount !== undefined)
+      ? (intake.fruitCut === 1 ? intake.selectedAmount : (intake.selectedAmount / intake.fruitCut))
+      : (intake.servings || 1);
+    return sum + (intake.calories * multiplier);
+  }, 0).toFixed(5));
 
   const [fontsLoaded] = useFonts({
     "SpaceMono-Regular": require("@/assets/fonts/SpaceMono-Regular.ttf"),
