@@ -23,7 +23,7 @@ import WarningModal from "@/components/WarningModal";
 import NutrientInputModal from "@/components/NutrientInputModal";
 import ConfirmationModal from "@/components/ConfirmationModal";
 import NutritionIntakeSection from "@/components/NutritionIntakeSection";
-import { fetchNutritionAverage } from "@/stores/nutritionIntakeStore";
+import { fetchNutritionAverage, useNutritionIntakeStore } from "@/stores/nutritionIntakeStore";
 
 import { useAuthStore } from "@/stores/authStore";
 import { supabase } from "@/config/supabase";
@@ -358,15 +358,37 @@ export default function Profile() {
   // Handle confirmation modal for average intake
   const handleConfirmationYes = async () => {
     setConfirmationModalVisible(false);
+    const { user } = useAuthStore.getState();
+    if (!user) return;
 
     try {
-      // Update and fetch the recommended intake
+      console.log("🔄 Switching to API-generated nutrition intake (is_manual: false)");
+
+      // First, set is_manual to false to allow the update
+      const { error: updateError } = await supabase
+        .from("user_nutrition_intake")
+        .update({ is_manual: false })
+        .eq("user_id", user.id);
+
+      if (updateError) {
+        console.error("Error setting is_manual to false:", updateError);
+        throw new Error("Failed to update nutrition mode");
+      }
+
+      console.log("✅ Set is_manual to false, now updating with API values");
+
+      // Now update with API-generated values (this will work since is_manual is now false)
       await fetchRecommendedIntake.updateNutritionIntakeAve();
+
+      // Fetch the updated ranges
       await fetchRecommendedIntake.fetchNutritionIntakeAve();
+
+      // Refresh nutrition intake data to show updated values
+      fetchNutritionIntake();
 
       Alert.alert(
         "Success",
-        "Your recommended nutrient intake has been updated based on your profile.",
+        "Your recommended nutrient intake has been updated based on your profile. The system will now use API-generated values.",
         [{ text: "OK" }]
       );
     } catch (error) {
@@ -411,12 +433,15 @@ export default function Profile() {
     if (!user) return;
 
     try {
+      console.log("🔄 Switching to manual nutrition intake (is_manual: true)");
+
       const updateData = {
         user_id: user.id,
         avg_carbs: parseFloat(values.avgCarbs),
         avg_protein: parseFloat(values.avgProtein),
         avg_sodium: parseFloat(values.avgSodium),
         avg_calories: parseFloat(values.avgCalories),
+        is_manual: true, // 🔥 Mark as manually entered
         updated_at: new Date().toISOString(),
       };
 
@@ -438,10 +463,10 @@ export default function Profile() {
         setNutrientValues(values);
         Alert.alert(
           "Success",
-          "Your daily nutrient intake has been updated successfully."
+          "Your daily nutrient intake has been updated successfully. The system will now use your custom values."
         );
-        // Refresh nutrition intake data
-        fetchRecommendedIntake.updateNutritionIntakeAve();
+        // Refresh nutrition intake data to show manual values
+        fetchNutritionIntake();
         fetchRecommendedIntake.fetchNutritionIntakeAve();
       }
     } catch (error) {
