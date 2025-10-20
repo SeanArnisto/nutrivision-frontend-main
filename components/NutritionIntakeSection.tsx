@@ -8,11 +8,17 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 
 interface NutritionIntakeSectionProps {
+  title?: "Manuel Terrence"
+  description?: "Customize your daily nutritional goals"
+  icon?: "nutrition"
   onPress: () => void;
 }
 
 const NutritionIntakeSection: React.FC<NutritionIntakeSectionProps> = ({
   onPress,
+  icon,
+  title,
+  description,
 }) => {
   return (
     <View style={styles.container}>
@@ -22,13 +28,13 @@ const NutritionIntakeSection: React.FC<NutritionIntakeSectionProps> = ({
         activeOpacity={0.7}
       >
         <View style={styles.iconContainer}>
-          <Ionicons name="nutrition" size={32} color="#4CAF50" />
+          <Ionicons name={icon} size={32} color="#4CAF50" />
         </View>
 
         <View style={styles.content}>
-          <Text style={styles.title}>Manual Nutrient Intake</Text>
+          <Text style={styles.title}>{title}</Text>
           <Text style={styles.description}>
-            Customize your daily nutritional goals
+            {description}
           </Text>
         </View>
 
