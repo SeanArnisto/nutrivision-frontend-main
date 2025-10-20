@@ -980,7 +980,7 @@ const styles = StyleSheet.create({
     height: 20,
   },
   progressBars: {
-    flex: 1.6,
+    flex: 2.7,
   },
   progressBarBackground: {
     height: 4,

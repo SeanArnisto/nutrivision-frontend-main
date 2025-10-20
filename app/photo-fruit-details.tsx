@@ -10,6 +10,7 @@ import {
   Animated,
   StatusBar,
   TouchableOpacity,
+  ScrollView,
 } from "react-native";
 import { useRoute, RouteProp } from "@react-navigation/native";
 import { StackNavigationProp } from "@react-navigation/stack";
@@ -78,11 +79,11 @@ function PhotoFruitDetailsPage() {
   };
 
   const handleIncrease = () => {
-    setAmount((prev) => prev + 1);
+    setPortionSize((prev) => prev + 1);
   };
 
   const handleDecrease = () => {
-    setAmount((prev) => Math.max(1, prev - 1));
+    setPortionSize((prev) => Math.max(1, prev - 1));
   };
 
   useEffect(() => {
@@ -133,24 +134,24 @@ function PhotoFruitDetailsPage() {
     })
   ).current;
 
+  const [disabled] = useState(false);
+  const [portionSize, setPortionSize] = useState(0);
+  const amountRange = { minAmount: 0, maxAmount: 10 };
+  const isDecreaseDisabled = disabled || amount <= amountRange.minAmount;
+  const isIncreaseDisabled = disabled || amount >= amountRange.maxAmount;
+
   const overlayOpacity = translateY.interpolate({
     inputRange: [0, BOTTOM_SHEET_MAX_HEIGHT - BOTTOM_SHEET_MIN_HEIGHT],
     outputRange: [0.4, 0],
     extrapolate: "clamp",
   });
 
-  const [selectedValue, setSelectedValue] = useState("option1");
-  const options = [
-    { label: "1 serving", value: "1 serving", },
-    { label: "2 servings", value: "2 servings" },
-    { label: "3 servings", value: "3 servings" },
-    { label: "4 servings", value: "4 servings" },
-    { label: "5 servings", value: "5 servings" },
-    { label: "6 servings", value: "6 servings" },
-    { label: "7 servings", value: "7 servings" },
-    { label: "8 servings", value: "8 servings" },
-  ];
+  const options = Array.from({ length: 99 }, (_, i) => ({
+    label: `${i + 1} ${i + 1 === 1 ? "serving" : "servings"}`,
+    value: `${i + 1}`,
+  }));
 
+  const [selectedValue, setSelectedValue] = useState(options[0].value);
   const carbsIcon = require("@/assets/images/Carbohydrate Icon.png");
   const sodiumIcon = require("@/assets/images/Sodium Icon.png");
   const proteinIcon = require("@/assets/images/Protein Icon.png");
@@ -194,15 +195,19 @@ function PhotoFruitDetailsPage() {
       {/* Bottom Sheet */}
       <Animated.View
         style={[styles.bottomSheet, { transform: [{ translateY }] }]}
-        {...panResponder.panHandlers}
       >
-        {/* Handle Bar */}
-        <View style={styles.handleContainer}>
+        {/* Handle Bar - Keep this outside ScrollView */}
+        <View style={styles.handleContainer} {...panResponder.panHandlers}>
           <View style={styles.handle} />
         </View>
 
-        {/* Content Container */}
-        <View style={styles.contentContainer}>
+        {/* Scrollable Content Container */}
+        <ScrollView
+          style={styles.scrollView}
+          contentContainerStyle={styles.contentContainer}
+          showsVerticalScrollIndicator={true}
+          bounces={true}
+        >
           {/* Title */}
           <View style={styles.amountHeader}>
             <Text style={styles.title}>{currentIntake.type || "Fruit"}</Text>
@@ -211,7 +216,7 @@ function PhotoFruitDetailsPage() {
               options={options}
               onChange={(value) => setSelectedValue(value as string)}
               label="Serving"
-              placeholder="1 serving"
+              placeholder={options[0].label}
               onOpenChange={setIsDropdownOpen}
             />
           </View>
@@ -258,7 +263,96 @@ function PhotoFruitDetailsPage() {
 
           {/* Servings Card */}
           <View style={styles.servingsCard}>
-            <Text style={styles.servingsTitle}>Portion</Text>
+            <View style={styles.servingsCardContent}>
+              <TouchableOpacity
+                style={[
+                  styles.button,
+                  styles.decreaseButton,
+                  isDecreaseDisabled && styles.disabledButton,
+                ]}
+                onPress={handleDecrease}
+                disabled={disabled}
+                activeOpacity={0.7}
+              >
+                <Text
+                  style={[
+                    styles.buttonText,
+                    isDecreaseDisabled && styles.disabledButtonText,
+                  ]}
+                >
+                  −
+                </Text>
+              </TouchableOpacity>
+
+              <Text style={styles.servingsTitle}>
+                {portionSize} Whole Fruit
+              </Text>
+
+              <TouchableOpacity
+                style={[
+                  styles.button,
+                  styles.increaseButton,
+                  isIncreaseDisabled && styles.disabledButton,
+                ]}
+                onPress={handleIncrease}
+                disabled={isIncreaseDisabled}
+                activeOpacity={0.7}
+              >
+                <Text
+                  style={[
+                    styles.buttonText,
+                    isIncreaseDisabled && styles.disabledButtonText,
+                  ]}
+                >
+                  +
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+          <View style={styles.servingsCard}>
+            <View style={styles.servingsCardContent}>
+              <TouchableOpacity
+                style={[
+                  styles.button,
+                  styles.decreaseButton,
+                  isDecreaseDisabled && styles.disabledButton,
+                ]}
+                onPress={handleDecrease}
+                disabled={disabled}
+                activeOpacity={0.7}
+              >
+                <Text
+                  style={[
+                    styles.buttonText,
+                    isDecreaseDisabled && styles.disabledButtonText,
+                  ]}
+                >
+                  −
+                </Text>
+              </TouchableOpacity>
+
+              <Text style={styles.servingsTitle}>{portionSize} Slices</Text>
+
+              <TouchableOpacity
+                style={[
+                  styles.button,
+                  styles.increaseButton,
+                  isIncreaseDisabled && styles.disabledButton,
+                ]}
+                onPress={handleIncrease}
+                disabled={isIncreaseDisabled}
+                activeOpacity={0.7}
+              >
+                <Text
+                  style={[
+                    styles.buttonText,
+                    isIncreaseDisabled && styles.disabledButtonText,
+                  ]}
+                >
+                  +
+                </Text>
+              </TouchableOpacity>
+            </View>
           </View>
 
           {/* Confirm Button */}
@@ -268,7 +362,7 @@ function PhotoFruitDetailsPage() {
           >
             <Text style={styles.confirmButtonText}>Confirm Intake</Text>
           </TouchableOpacity>
-        </View>
+        </ScrollView>
       </Animated.View>
 
       {/* Return Button - positioned absolutely */}
@@ -283,12 +377,44 @@ export default function FruitScreen() {
 }
 
 const styles = StyleSheet.create({
+  button: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "#f0f0f0",
+  },
+  decreaseButton: {
+    // No margin needed with space-between
+  },
+  increaseButton: {
+    // No margin needed with space-between
+  },
+  disabledButton: {
+    opacity: 0.4,
+  },
+  buttonText: {
+    fontSize: 20,
+    fontWeight: "600",
+    color: "#666",
+    lineHeight: 20,
+  },
+  disabledButtonText: {
+    color: "#ccc",
+  },
   amountHeader: {
     display: "flex",
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "flex-end",
     marginBottom: 15,
+  },
+  servingsCardContent: {
+    display: "flex",
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
   },
   container: {
     flex: 1,
@@ -337,7 +463,7 @@ const styles = StyleSheet.create({
     shadowColor: "#000",
     shadowOffset: {
       width: 0,
-      height: -4,
+      height: 2,
     },
     shadowOpacity: 0.25,
     shadowRadius: 16,
@@ -346,7 +472,7 @@ const styles = StyleSheet.create({
   handleContainer: {
     alignItems: "center",
     paddingTop: 12,
-    paddingBottom: 8,
+    paddingBottom: 24,
   },
   handle: {
     width: 40,
@@ -354,8 +480,10 @@ const styles = StyleSheet.create({
     backgroundColor: "#d1d5db",
     borderRadius: 2,
   },
-  contentContainer: {
+  scrollView: {
     flex: 1,
+  },
+  contentContainer: {
     paddingHorizontal: 20,
     paddingTop: 16,
     paddingBottom: 40,
@@ -427,7 +555,7 @@ const styles = StyleSheet.create({
   servingsCard: {
     backgroundColor: "white",
     borderRadius: 12,
-    padding: 20,
+    padding: 16,
     marginTop: 22,
     shadowColor: "#000",
     shadowOffset: {
