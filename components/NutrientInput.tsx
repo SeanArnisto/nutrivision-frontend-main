@@ -59,31 +59,36 @@ const NutrientInputRow: React.FC<NutrientInputRowProps> = ({
       <Image source={iconSource} style={styles.icon} />
       <Text style={styles.nutrientText}>{label}</Text>
       <View style={styles.divider} />
-      <View style={styles.inputBox}>
-        {isEditing ? (
-          <TextInput
-            style={styles.input}
-            value={value}
-            onChangeText={onChangeText}
-            autoFocus
-            onBlur={onEndEditing}
-            keyboardType="decimal-pad"
-            textAlign="center"
-            returnKeyType="done"
-            maxLength={10}
-          />
-        ) : (
-          <>
-            <Text style={styles.inputText}>{displayValue}</Text>
-            <TouchableOpacity style={styles.editButtonInside} onPress={onEdit}>
+      <TouchableOpacity 
+        style={styles.inputBoxTouchable} 
+        onPress={onEdit}
+        activeOpacity={0.7}
+        disabled={isEditing}
+      >
+        <View style={styles.inputBox}>
+          {isEditing ? (
+            <TextInput
+              style={styles.input}
+              value={value}
+              onChangeText={onChangeText}
+              autoFocus
+              onBlur={onEndEditing}
+              keyboardType="decimal-pad"
+              textAlign="center"
+              returnKeyType="done"
+              maxLength={10}
+            />
+          ) : (
+            <>
+              <Text style={styles.inputText}>{displayValue}</Text>
               <Image
                 source={require("@/assets/images/Edit Icon.png")}
                 style={styles.editIcon}
               />
-            </TouchableOpacity>
-          </>
-        )}
-      </View>
+            </>
+          )}
+        </View>
+      </TouchableOpacity>
     </View>
   );
 };
@@ -199,12 +204,19 @@ const styles = StyleSheet.create({
   editIcon: {
     width: 13,
     height: 13,
+    position: "absolute",
+    right: 8,
+    top: "50%",
+    transform: [{ translateY: -6.5 }],
   },
   editButtonInside: {
     position: "absolute",
     right: 5,
     top: "50%",
     transform: [{ translateY: -8 }],
+  },
+  inputBoxTouchable: {
+    borderRadius: 8,
   },
   inputBox: {
     backgroundColor: "#F0F0F0",
