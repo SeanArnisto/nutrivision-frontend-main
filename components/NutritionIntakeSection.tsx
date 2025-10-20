@@ -8,17 +8,17 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 
 interface NutritionIntakeSectionProps {
-  title?: "Manuel Terrence"
-  description?: "Customize your daily nutritional goals"
-  icon?: "nutrition"
+  title?: string;
+  description?: string
+  icon?: keyof typeof Ionicons.glyphMap
   onPress: () => void;
 }
 
 const NutritionIntakeSection: React.FC<NutritionIntakeSectionProps> = ({
   onPress,
-  icon,
-  title,
-  description,
+  icon = "nutrition",
+  title = "Manual Nutrient Intake",
+  description =  "Customize your daily nutritional goals",
 }) => {
   return (
     <View style={styles.container}>
@@ -50,7 +50,6 @@ const NutritionIntakeSection: React.FC<NutritionIntakeSectionProps> = ({
 const styles = StyleSheet.create({
   container: {
     marginTop: 24,
-    marginBottom: 20,
   },
   card: {
     flexDirection: 'row',
