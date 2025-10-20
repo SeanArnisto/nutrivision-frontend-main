@@ -42,6 +42,9 @@ import { useAccountCreationDate } from "@/hooks/useAccountCreationDate";
 import CustomModal from "@/components/customModal";
 import { Custom } from "react-native-reanimated-carousel/lib/typescript/components/Pagination/Custom";
 import { withDecay } from "react-native-reanimated";
+import { useUserProfileStore } from "@/stores/userProfileStore";
+
+
 
 
 type Page2ScreenNavigationProp = StackNavigationProp<
@@ -91,6 +94,31 @@ export default function Page2() {
     error: profileError,
   } = useAccountCreationDate();
 
+
+  const {
+  profile,
+  fetchUserProfile,
+  calculateBMI,
+} = useUserProfileStore();
+
+useEffect(() => {
+  if (isAuthenticated && user) {
+    fetchUserProfile();
+  }
+}, [isAuthenticated, user, fetchUserProfile]);
+
+
+
+const userBMI = calculateBMI();
+const userWeight = profile?.weight ?? 0;
+const userHeight = profile?.height ?? 0;
+
+useEffect(() => {
+  if (!isProfileLoading) {
+    console.log("✅ Profile loaded - BMI:", userBMI, "Weight:", userWeight, "Height:", userHeight);
+  }
+}, [userBMI, isProfileLoading, userWeight, userHeight]);
+
   // Fetch nutrition intake data on component mount
   useEffect(() => {
     if (isAuthenticated && user && profileComplete === true) {
@@ -119,9 +147,11 @@ export default function Page2() {
     return null;
   }
 
-const userWeight = 65; // Get from user profile
-const userHeight = 170; // Get from user profile
-const userBMI = userWeight / Math.pow(userHeight / 100, 2);
+
+
+
+
+
 
 
   // Check if any of the errors are network-related
@@ -198,18 +228,21 @@ const userBMI = userWeight / Math.pow(userHeight / 100, 2);
   };
 
   // Calculate averages from nutrition intake data (from user_nutrition_intake table)
-  const carbAvg = nutritionData?.avg_carbs
-    ? Math.round(nutritionData.avg_carbs)
-    : 0;
-  const proteinAvg = nutritionData?.avg_protein
-    ? Math.round(nutritionData.avg_protein)
-    : 0;
-  const sodiumAvg = nutritionData?.avg_sodium
-    ? nutritionData.avg_sodium / 1000
-    : 0; // No division by 1000 if already in correct units
-  const caloriesAvg = 2000
-  const bmiValue = 20;
-  // Handle retry for different er  rors
+    const carbAvg = nutritionData?.avg_carbs
+      ? Math.round(nutritionData.avg_carbs)
+      : 0;
+    const proteinAvg = nutritionData?.avg_protein
+      ? Math.round(nutritionData.avg_protein)
+      : 0;
+    const sodiumAvg = nutritionData?.avg_sodium
+      ? nutritionData.avg_sodium / 1000
+      : 0; // No division by 1000 if already in correct units
+    // Calories average (fallback to 0 if not available)
+    const caloriesAvg = nutritionData?.avg_calories
+      ? Math.round(nutritionData.avg_calories)
+      : 0;
+    // const bmiValue = 35;
+    // Handle retry for different er  rors
   const handleRetry = (type: "calendar" | "intake") => {
     switch (type) {
       case "calendar":
@@ -296,10 +329,25 @@ const userBMI = userWeight / Math.pow(userHeight / 100, 2);
           />
         </View>
         {/* BMI Card */}
-        <BMICard
-          bmiValue={bmiValue}
-          onInfoPress={() => setBmiModalVisible(true)}
-        />
+<BMICard
+  bmiValue={isProfileLoading ? 0 : Math.round(userBMI || 0)}
+  onInfoPress={() => setBmiModalVisible(true)}
+/>
+      {/* Show loading skeleton while fetching profile */}
+{isProfileLoading && (
+  <View style={styles.skeletonContainer}>
+    <Text style={styles.skeletonText}>Loading profile...</Text>
+  </View>
+)}
+
+{/* Show error if fetch fails */}
+{profileError && (
+  <View style={styles.errorContainer}>
+    <Text style={styles.errorText}>
+      Error loading profile: {profileError}
+    </Text>
+  </View>
+)}
         {/* Error handling for nutrition intake */}
         {intakeError && (
           <View style={styles.errorContainer}>
@@ -376,13 +424,13 @@ const userBMI = userWeight / Math.pow(userHeight / 100, 2);
         }}
         
       />
-      <BMIModal
-        visible={bmiModalVisible}
-        onClose={() => setBmiModalVisible(false)}
-        bmiValue={userBMI}
-        weight={userWeight}
-        height={userHeight}
-      />
+<BMIModal
+  visible={bmiModalVisible}
+  onClose={() => setBmiModalVisible(false)}
+  bmiValue={isProfileLoading ? 0 : Math.round(userBMI || 0)}
+  weight={userWeight}
+  height={userHeight}
+/>
     </SafeAreaView>
     
     
@@ -439,6 +487,21 @@ const styles = StyleSheet.create({
   },
   down:{
     marginBottom: 60,
-  }
+  },
+
+  skeletonContainer: {
+    backgroundColor: "#e0e0e0",
+    borderRadius: 8,
+    padding: 15,
+    marginTop: 10,
+    alignItems: "center",
+    justifyContent: "center",
+    minHeight: 60,
+  },
+  skeletonText: {
+    fontSize: 14,
+    color: "#666666",
+    fontStyle: "italic",
+  },
   
 });
