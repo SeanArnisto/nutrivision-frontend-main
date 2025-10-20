@@ -76,11 +76,40 @@ interface NutritionalRecord {
 }
 
 export default function Page6() {
-  const { intakes, loading: detailedLoading, error: detailedError, saveToDatabase } = useDetailedNutrientStore();
-  const detailedCarbs = intakes.reduce((sum, intake) => sum + (intake.carbs * (intake.servings || 1)), 0);
-  const detailedProtein = intakes.reduce((sum, intake) => sum + (intake.protein * (intake.servings || 1)), 0);
-  const detailedSodium = intakes.reduce((sum, intake) => sum + (intake.sodium * (intake.servings || 1)), 0);
-  const detailedCalories = intakes.reduce((sum, intake) => sum + (intake.calories * (intake.servings || 1)), 0);
+  const {
+    intakes,
+    loading: detailedLoading,
+    error: detailedError,
+    saveToDatabase,
+  } = useDetailedNutrientStore();
+  // Use fruitCut and selectedAmount if available, otherwise fall back to servings
+  const detailedCarbs = intakes.reduce((sum, intake) => {
+    const multiplier = (intake.fruitCut !== undefined && intake.selectedAmount !== undefined)
+      ? (intake.fruitCut === 1 ? intake.selectedAmount : (intake.selectedAmount / intake.fruitCut))
+      : (intake.servings || 1);
+    return sum + (intake.carbs * multiplier);
+  }, 0);
+
+  const detailedProtein = intakes.reduce((sum, intake) => {
+    const multiplier = (intake.fruitCut !== undefined && intake.selectedAmount !== undefined)
+      ? (intake.fruitCut === 1 ? intake.selectedAmount : (intake.selectedAmount / intake.fruitCut))
+      : (intake.servings || 1);
+    return sum + (intake.protein * multiplier);
+  }, 0);
+
+  const detailedSodium = intakes.reduce((sum, intake) => {
+    const multiplier = (intake.fruitCut !== undefined && intake.selectedAmount !== undefined)
+      ? (intake.fruitCut === 1 ? intake.selectedAmount : (intake.selectedAmount / intake.fruitCut))
+      : (intake.servings || 1);
+    return sum + (intake.sodium * multiplier);
+  }, 0);
+
+  const detailedCalories = intakes.reduce((sum, intake) => {
+    const multiplier = (intake.fruitCut !== undefined && intake.selectedAmount !== undefined)
+      ? (intake.fruitCut === 1 ? intake.selectedAmount : (intake.selectedAmount / intake.fruitCut))
+      : (intake.servings || 1);
+    return sum + (intake.calories * multiplier);
+  }, 0);
 
   // Move all hooks to the top before any conditional retu
   // rns
@@ -88,12 +117,15 @@ export default function Page6() {
   const carbs = detailedCarbs;
   const prot = detailedProtein;
   const sod = detailedSodium;
+  const cal = detailedCalories;
   const minCarb = useRecommStore((state) => state.minCarb);
   const maxCarb = useRecommStore((state) => state.maxCarb);
   const minProtein = useRecommStore((state) => state.minProtein);
   const maxProtein = useRecommStore((state) => state.maxProtein);
   const minSodium = useRecommStore((state) => state.minSodium);
   const maxSodium = useRecommStore((state) => state.maxSodium);
+  const minCalories = useRecommStore((state) => state.minCalories);
+  const maxCalories = useRecommStore((state) => state.maxCalories);
   const { nutritionData: intakeData, fetchNutritionIntake } =
     useNutritionIntakeStore();
   const {
@@ -133,6 +165,14 @@ export default function Page6() {
         nutritionDataAve && maxProtein === 0
           ? nutritionDataAve.maxProtein
           : maxProtein,
+      caloriesMin:
+        nutritionDataAve && minCalories === 0
+          ? nutritionDataAve.minCalories
+          : minCalories,
+      caloriesMax:
+        nutritionDataAve && maxCalories === 0
+          ? nutritionDataAve.maxCalories
+          : maxCalories,
     }),
     [
       nutritionDataAve,
@@ -142,6 +182,8 @@ export default function Page6() {
       maxSodium,
       minProtein,
       maxProtein,
+      minCalories,
+      maxCalories
     ]
   );
 
@@ -213,8 +255,8 @@ export default function Page6() {
           },
           calories: {
             // Add this
-            user: 1800, // Placeholder - replace with actual value when available
-            avg: parseFloat(intakeData.avg_calories?.toFixed(5) || "2000"),
+            user: parseFloat((cal.toFixed(5) ?? 0) || "0"), // Placeholder - replace with actual value when available
+            avg: parseFloat(intakeData.avg_calories?.toFixed(5) || "0"),
           },
         },
       }));
@@ -247,6 +289,7 @@ export default function Page6() {
       const carbAvg = (averageData.minCarbs + averageData.maxCarbs) / 2;
       const proteinAvg = (averageData.minProtein + averageData.maxProtein) / 2;
       const sodiumAvg = (averageData.minSodium + averageData.maxSodium) / 2;
+      const calorieAvg = (averageData.minCalories + averageData.maxCalories) /2;
 
       setNutritionData((prev) => ({
         ...prev,
@@ -265,8 +308,8 @@ export default function Page6() {
           },
           calories: {
             // Add this
-            user: 1800, // Placeholder
-            avg: 2000, // Placeholder
+            user: parseFloat(cal.toFixed(5)), // actual data
+            avg: parseFloat((calorieAvg.toFixed(5))), //actual data
           },
         },
       }));
@@ -328,6 +371,7 @@ export default function Page6() {
         carbs_total: carbs,
         protein_total: prot,
         sodium_total: sod * 1000, // Convert g to mg like in original code
+        calories_total: cal,
         recommended_carbs: [
           recommendationValues.carbsMin,
           recommendationValues.carbsMax,
@@ -339,6 +383,10 @@ export default function Page6() {
         recommended_protein: [
           recommendationValues.proteinMin,
           recommendationValues.proteinMax,
+        ] as [number, number],
+        recommended_calories:  [
+          recommendationValues.caloriesMin,
+          recommendationValues.caloriesMax
         ] as [number, number],
       };
 
@@ -364,7 +412,7 @@ export default function Page6() {
   const sodiumAvg = intakeData?.avg_sodium ? intakeData.avg_sodium / 1000 : 0;
   const calorieAvg = intakeData?.avg_calories
     ? Math.round(intakeData.avg_calories)
-    : 2000;
+    : 0;
 
   // Initialize date constants (same as statistics)
   const today = new Date();
@@ -1007,7 +1055,6 @@ const styles = StyleSheet.create({
     fontSize: 9,
     fontWeight: "bold",
     color: "#333",
-    
   },
   avgValue: {
     fontSize: 9,

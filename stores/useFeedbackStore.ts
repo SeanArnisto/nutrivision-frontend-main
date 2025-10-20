@@ -11,9 +11,11 @@ interface NutritionRequest {
   carbs_total: number;
   sodium_total: number;
   protein_total: number;
+  calories_total: number;
   recommended_carbs: [number, number];
   recommended_sodium: [number, number];
   recommended_protein: [number, number];
+  recommended_calories: [number, number];
 }
 
 interface NutritionFeedbackState {
