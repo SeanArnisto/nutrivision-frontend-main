@@ -67,24 +67,49 @@ export const useDetailedNutrientStore = create<store>((set, get) => ({
         throw new Error("User not authenticated");
       }
 
-      // Step 1: Create a user session first
-      const { data: sessionData, error: sessionError } = await supabase
-        .from("user_session")
-        .insert({
-          uuid: user.id,
-        })
-        .select("session_id")
-        .single();
+      // Calculate total adjusted values for all intakes
+      let totalCarbs = 0;
+      let totalProtein = 0;
+      let totalSodium = 0;
+      let totalCalories = 0;
 
-      if (sessionError) {
-        throw new Error(`Failed to create session: ${sessionError.message}`);
+      for (const intake of intakes) {
+        const multiplier = (intake.fruitCut !== undefined && intake.selectedAmount !== undefined)
+          ? (intake.fruitCut === 1 ? intake.selectedAmount : (intake.selectedAmount / intake.fruitCut))
+          : (intake.servings || 1);
+
+        totalCarbs += intake.carbs * multiplier;
+        totalProtein += intake.protein * multiplier;
+        totalSodium += intake.sodium * multiplier;
+        totalCalories += intake.calories * multiplier;
       }
 
-      const sessionId = sessionData.session_id;
+      // Calculate total (all nutrients are in grams)
+      const total = totalCarbs + totalProtein + totalSodium;
+      const localNow = new Date();
 
-      // Step 2: Insert nutrient intakes with uploaded images
-      const nutrientIntakeIds: number[] = [];
+      // Step 1: Insert nutritional record
+      const { data: recordData, error: recordError } = await supabase
+        .from("nutritional_records")
+        .insert([
+          {
+            user_id: user.id,
+            carbohydrates: totalCarbs,
+            protein: totalProtein,
+            sodium: totalSodium,
+            calories: totalCalories,
+            total: total,
+            created_at: localNow.toISOString(),
+          },
+        ])
+        .select()
+        .single();
 
+      if (recordError) {
+        throw new Error(`Failed to create record: ${recordError.message}`);
+      }
+
+      // Step 2: Upload and save images
       for (let i = 0; i < intakes.length; i++) {
         const intake = intakes[i];
         let uploadedImageUrl = intake.imageUrl;
@@ -95,11 +120,12 @@ export const useDetailedNutrientStore = create<store>((set, get) => ({
             // Check if file exists
             const fileInfo = await FileSystem.getInfoAsync(intake.imageUrl);
             if (!fileInfo.exists) {
-              throw new Error("Image file not found");
+              console.warn(`Image file not found: ${intake.imageUrl}`);
+              continue; // Skip this image but continue with others
             }
 
             // Generate unique filename
-            const fileName = `intake_${sessionId}_${i + 1}_${Date.now()}.jpg`;
+            const fileName = `record_${recordData.id}_${i + 1}_${Date.now()}.jpg`;
 
             // Create FormData for file upload
             const formData = new FormData();
@@ -110,11 +136,10 @@ export const useDetailedNutrientStore = create<store>((set, get) => ({
             } as any);
 
             console.log("Uploading image:", fileName);
-            console.log("Image URI:", intake.imageUrl);
 
             const { data: uploadData, error: uploadError } =
               await supabase.storage
-                .from("single_images")
+                .from("nutrition-images")
                 .upload(`${user.id}/${fileName}`, formData, {
                   cacheControl: "3600",
                   upsert: false,
@@ -122,62 +147,45 @@ export const useDetailedNutrientStore = create<store>((set, get) => ({
 
             if (uploadError) {
               console.error("Upload error:", uploadError);
-              throw new Error(
-                `Failed to upload image ${i + 1}: ${uploadError.message}`
-              );
+              continue; // Skip this image but continue with others
             }
 
             // Get public URL
             const {
               data: { publicUrl },
             } = supabase.storage
-              .from("single_images")
+              .from("nutrition-images")
               .getPublicUrl(uploadData.path);
 
             uploadedImageUrl = publicUrl;
             console.log("Image uploaded successfully:", fileName);
+
+            // Save image record to database
+            const { error: imageError } = await supabase
+              .from("nutritional_images")
+              .insert([
+                {
+                  nutritional_record_id: recordData.id,
+                  image_url: uploadedImageUrl,
+                  image_order: i + 1,
+                  created_at: localNow.toISOString(),
+                },
+              ]);
+
+            if (imageError) {
+              console.error("Image record error:", imageError);
+            }
           } catch (uploadError: any) {
             console.error("Error processing image:", uploadError);
-            throw new Error(
-              `Failed to process image ${i + 1}: ${uploadError.message}`
-            );
+            // Continue with other images
           }
-        }
-
-        // Insert nutrient intake linked to the session
-        const { data: nutrientData, error: nutrientError } = await supabase
-          .from("nutrient_intake")
-          .insert({
-            session_id: sessionId, // Link to session
-            type: intake.type,
-            carbs: intake.carbs,
-            protein: intake.protein,
-            calories: intake.calories,
-            sodium: intake.sodium,
-            image_url: uploadedImageUrl,
-            image_order: i + 1,
-          })
-          .select("id")
-          .single();
-
-        if (nutrientError) {
-          throw new Error(
-            `Failed to save nutrient intake ${i + 1}: ${nutrientError.message}`
-          );
-        }
-
-        if (nutrientData) {
-          nutrientIntakeIds.push(nutrientData.id);
         }
       }
 
       set({ loading: false });
       return {
         success: true,
-        data: {
-          sessionId,
-          nutrientIntakeIds,
-        },
+        data: recordData,
       };
     } catch (error: any) {
       const errorMessage = error.message || "Unknown error occurred";
@@ -187,7 +195,7 @@ export const useDetailedNutrientStore = create<store>((set, get) => ({
   },
 }));
 
-// Utility function to retrieve sessions with all nutrient intakes
+// Utility function to retrieve nutritional records with images
 export const getUserSessions = async (days: number = 30) => {
   try {
     const {
@@ -202,24 +210,17 @@ export const getUserSessions = async (days: number = 30) => {
     startDate.setDate(startDate.getDate() - days);
 
     const { data, error } = await supabase
-      .from("user_session")
+      .from("nutritional_records")
       .select(
         `
-        session_id,
-        created_at,
-        nutrient_intake (
-          id,
-          type,
-          carbs,
-          protein,
-          calories,
-          sodium,
+        *,
+        nutritional_images (
           image_url,
           image_order
         )
       `
       )
-      .eq("uuid", user.id)
+      .eq("user_id", user.id)
       .gte("created_at", startDate.toISOString())
       .order("created_at", { ascending: false });
 
@@ -235,28 +236,21 @@ export const getUserSessions = async (days: number = 30) => {
   }
 };
 
-// Utility function to get a specific session with all its intakes
-export const getSessionById = async (sessionId: number) => {
+// Utility function to get a specific nutritional record with images
+export const getSessionById = async (recordId: string) => {
   try {
     const { data, error } = await supabase
-      .from("user_session")
+      .from("nutritional_records")
       .select(
         `
-        session_id,
-        created_at,
-        nutrient_intake (
-          id,
-          type,
-          carbs,
-          calories,
-          protein,
-          sodium,
+        *,
+        nutritional_images (
           image_url,
           image_order
         )
       `
       )
-      .eq("session_id", sessionId)
+      .eq("id", recordId)
       .single();
 
     if (error) {

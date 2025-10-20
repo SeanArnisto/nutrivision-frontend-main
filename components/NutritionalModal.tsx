@@ -157,6 +157,7 @@ interface NutritionalModalProps {
     carbs: number;
     sodium: number;
     protein: number;
+    calories: number;
   };
   recommendations: {
     carbsMin: number;
@@ -165,6 +166,8 @@ interface NutritionalModalProps {
     sodiumMax: number;
     proteinMin: number;
     proteinMax: number;
+    caloriesMin: number;
+    caloriesMax: number;
   };
   loading?: boolean;
 }

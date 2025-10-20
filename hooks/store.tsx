@@ -185,7 +185,7 @@ export const useNutrientsStore = create<Nutrients & store>((set, get) => ({
   saveWithPhotos: async (
     photos: { uri: string; type: string; orientation: string }[]
   ) => {
-    const { carbs, protein, sodium } = get();
+    const { carbs, protein, sodium, calories } = get();
 
     // Validate that we have at least some data
     if (carbs === 0 && protein === 0 && sodium === 0) {
@@ -218,6 +218,7 @@ export const useNutrientsStore = create<Nutrients & store>((set, get) => ({
             user_id: user.id,
             carbohydrates: carbs,
             protein: protein,
+            calories: calories,
             sodium: sodium,
             total: total,
             created_at: localNow.toISOString(),

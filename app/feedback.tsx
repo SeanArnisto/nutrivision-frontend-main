@@ -10,7 +10,6 @@ import {
   TouchableOpacity,
   Platform,
   ScrollView,
-  SafeAreaView,
   KeyboardAvoidingView,
   Alert,
   ActivityIndicator,
@@ -20,17 +19,20 @@ import { StackNavigationProp } from "@react-navigation/stack";
 import { RootStackParamList } from "@/types/types";
 import * as MediaLibrary from "expo-media-library";
 import { useRecommStore, useNutrientsStore } from "@/hooks/store";
-import {
-  useNutritionAverage
-} from "@/stores/nutritionIntakeStore";
+import { useNutritionAverage } from "@/stores/nutritionIntakeStore";
 import { Ionicons } from "@expo/vector-icons";
 import AppLogo from "@/components/appLogo";
 import NutritionalModal from "@/components/NutritionalModal"; // ADD THIS IMPORT
 import { useNutritionIntakeStore } from "@/stores/nutritionIntakeStore";
 import { usePhotosStore, Photo } from "@/stores/usePhotoStore";
-import {useComparisonAnalysis, useHealthImplication, useFeedbackLoading} from "@/stores/useFeedbackStore";
+import {
+  useComparisonAnalysis,
+  useHealthImplication,
+  useFeedbackLoading,
+} from "@/stores/useFeedbackStore";
 import BatteryIndicator from "@/components/BatteryIndicator";
-
+import { useDetailedNutrientStore } from "@/stores/useDetailedNutrientStore";
+import { SafeAreaView } from "react-native-safe-area-context"
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 
@@ -163,16 +165,65 @@ const SpoonVisualization = React.memo(
 );
 
 function Feedback() {
-  const carbs = useNutrientsStore((state) => state.carbs);
-  const prot = useNutrientsStore((state) => state.protein);
-  const sod = useNutrientsStore((state) => state.sodium);
 
+  const {
+    intakes,
+    loading: detailedLoading,
+    error: detailedError,
+    saveToDatabase,
+  } = useDetailedNutrientStore();
+  // Use fruitCut and selectedAmount if available, otherwise fall back to servings
+  const detailedCarbs = intakes.reduce((sum, intake) => {
+    const multiplier =
+      intake.fruitCut !== undefined && intake.selectedAmount !== undefined
+        ? intake.fruitCut === 1
+          ? intake.selectedAmount
+          : intake.selectedAmount / intake.fruitCut
+        : intake.servings || 1;
+    return sum + intake.carbs * multiplier;
+  }, 0);
+
+  const detailedProtein = intakes.reduce((sum, intake) => {
+    const multiplier =
+      intake.fruitCut !== undefined && intake.selectedAmount !== undefined
+        ? intake.fruitCut === 1
+          ? intake.selectedAmount
+          : intake.selectedAmount / intake.fruitCut
+        : intake.servings || 1;
+    return sum + intake.protein * multiplier;
+  }, 0);
+
+  const detailedSodium = intakes.reduce((sum, intake) => {
+    const multiplier =
+      intake.fruitCut !== undefined && intake.selectedAmount !== undefined
+        ? intake.fruitCut === 1
+          ? intake.selectedAmount
+          : intake.selectedAmount / intake.fruitCut
+        : intake.servings || 1;
+    return sum + intake.sodium * multiplier;
+  }, 0);
+
+  const detailedCalories = intakes.reduce((sum, intake) => {
+    const multiplier =
+      intake.fruitCut !== undefined && intake.selectedAmount !== undefined
+        ? intake.fruitCut === 1
+          ? intake.selectedAmount
+          : intake.selectedAmount / intake.fruitCut
+        : intake.servings || 1;
+    return sum + intake.calories * multiplier;
+  }, 0);
+  const carbs = parseFloat(detailedCarbs.toFixed(5));
+  const prot = parseFloat(detailedProtein.toFixed(5));
+  const sod = parseFloat(detailedSodium.toFixed(5));
+  const cal = detailedCalories;
   const minCarb = useRecommStore((state) => state.minCarb);
   const maxCarb = useRecommStore((state) => state.maxCarb);
   const minProtein = useRecommStore((state) => state.minProtein);
   const maxProtein = useRecommStore((state) => state.maxProtein);
   const minSodium = useRecommStore((state) => state.minSodium);
   const maxSodium = useRecommStore((state) => state.maxSodium);
+  const minCalories = useRecommStore((state) => state.minCalories);
+  const maxCalories = useRecommStore((state) => state.maxCalories);
 
   const loadUserRecommendations = useRecommStore(
     (state) => state.loadUserRecommendations
@@ -217,11 +268,11 @@ function Feedback() {
         nutritionDataAve && maxCarb === 0 ? nutritionDataAve.maxCarbs : maxCarb,
       sodiumMin:
         nutritionDataAve && minSodium === 0
-          ? (nutritionDataAve.minSodium / 1000)
+          ? nutritionDataAve.minSodium / 1000
           : minSodium,
       sodiumMax:
         nutritionDataAve && maxSodium === 0
-          ? (nutritionDataAve.maxSodium / 1000)
+          ? nutritionDataAve.maxSodium / 1000
           : maxSodium,
       proteinMin:
         nutritionDataAve && minProtein === 0
@@ -230,7 +281,15 @@ function Feedback() {
       proteinMax:
         nutritionDataAve && maxProtein === 0
           ? nutritionDataAve.maxProtein
-          : maxProtein,
+          : maxProtein,      
+      caloriesMin:
+        nutritionDataAve && minCalories === 0
+          ? nutritionDataAve.minCalories
+          : minCalories,
+      caloriesMax:
+        nutritionDataAve && maxCalories === 0
+          ? nutritionDataAve.maxCalories
+          : maxCalories,
     }),
     [
       nutritionDataAve,
@@ -240,6 +299,8 @@ function Feedback() {
       maxSodium,
       minProtein,
       maxProtein,
+      minCalories,
+      maxCalories
     ]
   );
 
@@ -299,8 +360,6 @@ function Feedback() {
   const reset = useNutrientsStore((state) => state.reset);
   const calories = useNutrientsStore((state) => state.calories) || 1800; // PLACEHOLDER: use 1500 for testing
 
-
-
   const deleteAllCapturedPhotos = useCallback(
     async (photos: Photo[]) => {
       console.log("🗑️ Starting cleanup of captured photos...");
@@ -340,11 +399,13 @@ function Feedback() {
 
   // UPDATED: Show modal instead of directly saving
   const handleSaveToDatabase = () => {
-    // Validate that we have nutrition data
-    if (carbohydrate === 0 && protein === 0 && sodium === 0) {
-      Alert.alert("No Internet Connection", "Please check internet connection before saving.", [
-        { text: "OK" },
-      ]);
+    // Validate that we have nutrition data from detailed store
+    if (intakes.length === 0 || (carbs === 0 && prot === 0 && sod === 0)) {
+      Alert.alert(
+        "No nutritional data",
+        "Please scan some items before saving.",
+        [{ text: "OK" }]
+      );
       return;
     }
 
@@ -356,7 +417,8 @@ function Feedback() {
   const handleModalSave = async () => {
     setModalLoading(true);
     try {
-      const result = await saveWithPhotos(capturedPhotos);
+      // Use saveToDatabase from useDetailedNutrientStore instead of useNutrientsStore
+      const result = await saveToDatabase(intakes);
 
       if (result.success) {
         // IMPORTANT: Refresh the nutritional history in the store after saving
@@ -365,7 +427,7 @@ function Feedback() {
         console.log("✅ Nutritional history refreshed");
 
         // Keep spinner visible for a moment before closing modal
-        await new Promise(resolve => setTimeout(resolve, 500));
+        await new Promise((resolve) => setTimeout(resolve, 500));
 
         setModalLoading(false);
         setModalVisible(false);
@@ -381,7 +443,7 @@ function Feedback() {
                 clearAllPhotos();
                 navigation.reset({
                   index: 0,
-                  routes: [{name: 'page-2'}]
+                  routes: [{ name: "page-2" }],
                 });
               },
             },
@@ -390,7 +452,10 @@ function Feedback() {
         await deleteAllCapturedPhotos(capturedPhotos);
       } else {
         setModalLoading(false);
-        Alert.alert("No Internet connection", result.error || "Failed to save data");
+        Alert.alert(
+          "No Internet connection",
+          result.error || "Failed to save data"
+        );
       }
     } catch (error) {
       setModalLoading(false);
@@ -455,9 +520,9 @@ function Feedback() {
               </View>
             </View>
             {/* Battery/Calories Indicator */}
-            <BatteryIndicator 
-              calories={calories}
-              averageCalories={2000} // PLACEHOLDER
+            <BatteryIndicator
+              calories={cal}
+              averageCalories={20} // PLACEHOLDER
             />
             {/* Legend */}
             <View style={styles.legendContainer}>
@@ -602,7 +667,7 @@ function Feedback() {
         {isLoading ? (
           <ActivityIndicator color="#fff" size="small" />
         ) : (
-          <Ionicons name="home-outline" size={28} color='#9AB206'/>
+          <Ionicons name="home-outline" size={28} color="#9AB206" />
         )}
       </TouchableOpacity>
 
@@ -612,9 +677,10 @@ function Feedback() {
         onClose={handleModalClose}
         onSave={handleModalSave}
         nutritionData={{
-          carbs: carbohydrate,
-          sodium: sodium,
-          protein: protein,
+          carbs: carbs,
+          sodium: sod,
+          protein: prot,
+          calories: cal
         }}
         recommendations={{
           carbsMin: recommendationValues.carbsMin,
@@ -623,6 +689,8 @@ function Feedback() {
           sodiumMax: recommendationValues.sodiumMax,
           proteinMin: recommendationValues.proteinMin,
           proteinMax: recommendationValues.proteinMax,
+          caloriesMin: recommendationValues.caloriesMin,
+          caloriesMax: recommendationValues.caloriesMax
         }}
         loading={modalLoading}
       />

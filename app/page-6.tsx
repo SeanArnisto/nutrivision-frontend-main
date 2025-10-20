@@ -274,7 +274,7 @@ export default function Page6() {
             avg: parseFloat(intakeData.avg_protein.toFixed(5)),
           },
           sodium: {
-            user: parseFloat((sod / 1000).toFixed(5)), // Convert mg to g
+            user: parseFloat(sod.toFixed(5)), // Already in grams
             avg: parseFloat((intakeData.avg_sodium / 1000).toFixed(5)), // Convert mg to g
           },
           calories: {
@@ -303,7 +303,7 @@ export default function Page6() {
             avg: parseFloat(proteinAvg.toFixed(5)),
           },
           sodium: {
-            user: parseFloat((sod / 1000).toFixed(5)), // Convert mg to g
+            user: parseFloat(sod.toFixed(5)), // Already in grams
             avg: parseFloat((sodiumAvg / 1000).toFixed(5)), // Convert mg to g
           },
           calories: {
