@@ -19,6 +19,9 @@ import ProfileField from "@/components/ProfileField";
 import ProfileBox from "@/components/ProfileBox";
 import TextInputModal from "@/components/TextInputModal";
 import GenderSelectionModal from "@/components/GenderSelectionModal";
+import WarningModal from "@/components/WarningModal";
+import NutrientInputModal from "@/components/NutrientInputModal";
+import NutritionIntakeSection from "@/components/NutritionIntakeSection";
 import { fetchNutritionAverage } from "@/stores/nutritionIntakeStore";
 
 import { useAuthStore } from "@/stores/authStore";
@@ -42,6 +45,13 @@ interface UserProfile {
   email?: string;
 }
 
+interface NutrientValues {
+  avgCarbs: string;
+  avgSodium: string;
+  avgProtein: string;
+  avgCalories: string;
+}
+
 type ProfileScreenNavigationProp = StackNavigationProp<
   RootStackParamList,
   "profile"
@@ -59,6 +69,9 @@ export default function Profile() {
   // Modal state
   const [modalVisible, setModalVisible] = useState(false);
   const [genderModalVisible, setGenderModalVisible] = useState(false);
+  const [warningModalVisible, setWarningModalVisible] = useState(false);
+  const [nutrientModalVisible, setNutrientModalVisible] = useState(false);
+  
   const [modalConfig, setModalConfig] = useState({
     title: "",
     placeholder: "",
@@ -66,6 +79,16 @@ export default function Profile() {
     initialValue: "",
     fieldType: "" as "name" | "age" | "weight" | "height",
   });
+
+  const [nutrientValues, setNutrientValues] = useState<NutrientValues>({
+    avgCarbs: "",
+    avgSodium: "",
+    avgProtein: "",
+    avgCalories: "",
+  });
+
+  // Add new state to track if user has health condition
+  const [hasHealthCondition, setHasHealthCondition] = useState<boolean>(false);
 
   // Redirect unauthenticated users to login
   useEffect(() => {
@@ -83,6 +106,7 @@ export default function Profile() {
     }
   }, [isAuthenticated, navigation]);
 
+  // Fetch user profile and health condition status
   const fetchUserProfile = async () => {
     try {
       setIsLoading(true);
@@ -92,6 +116,16 @@ export default function Profile() {
         console.log("No user found");
         return;
       }
+
+      // First check if user has nutrition intake data
+      const { data: nutritionData } = await supabase
+        .from("user_nutrition_intake")
+        .select("*")
+        .eq("user_id", user.id)
+        .single();
+
+      // If nutrition data exists, user has health condition
+      setHasHealthCondition(!!nutritionData);
 
       // Get profile data from Supabase
       const { data: profile, error } = await supabase
@@ -134,9 +168,44 @@ export default function Profile() {
     }
   };
 
+  // Fetch current nutrition intake values
+  const fetchNutritionIntake = async () => {
+    try {
+      const { user } = useAuthStore.getState();
+      if (!user) return;
+
+      const { data, error } = await supabase
+        .from("user_nutrition_intake")
+        .select("avg_carbs, avg_sodium, avg_protein, avg_calories")
+        .eq("user_id", user.id)
+        .single();
+
+      if (error) {
+        console.error("Error fetching nutrition intake:", error);
+        // Set default values if no record exists
+        setNutrientValues({
+          avgCarbs: "",
+          avgSodium: "",
+          avgProtein: "",
+          avgCalories: "",
+        });
+      } else if (data) {
+        setNutrientValues({
+          avgCarbs: data.avg_carbs?.toString() || "",
+          avgSodium: data.avg_sodium?.toString() || "",
+          avgProtein: data.avg_protein?.toString() || "",
+          avgCalories: data.avg_calories?.toString() || "",
+        });
+      }
+    } catch (error) {
+      console.error("Nutrition intake fetch error:", error);
+    }
+  };
+
   // useEffect to load profile data when component mounts:
   useEffect(() => {
     fetchUserProfile();
+    fetchNutritionIntake();
   }, []);
 
   // Validation functions
@@ -259,6 +328,78 @@ export default function Profile() {
     setGenderModalVisible(false);
   };
 
+  // Handle nutrition intake section press
+  const handleNutritionIntakePress = () => {
+    if (!hasHealthCondition) {
+      Alert.alert(
+        "Not Available",
+        "Custom nutrition intake is only available for users with specific healthcare recommendations.",
+        [{ text: "OK" }]
+      );
+      return;
+    }
+    setWarningModalVisible(true);
+  };
+
+  // Handle warning modal confirmation
+  const handleWarningConfirm = () => {
+    setWarningModalVisible(false);
+    setNutrientModalVisible(true);
+  };
+
+  const handleWarningCancel = () => {
+    setWarningModalVisible(false);
+  };
+
+  // Handle nutrient values submission
+  const handleNutrientSubmit = async (values: NutrientValues) => {
+    const { user } = useAuthStore.getState();
+    if (!user) return;
+
+    try {
+      const updateData = {
+        user_id: user.id,
+        avg_carbs: parseFloat(values.avgCarbs),
+        avg_protein: parseFloat(values.avgProtein),
+        avg_sodium: parseFloat(values.avgSodium),
+        avg_calories: parseFloat(values.avgCalories),
+        updated_at: new Date().toISOString(),
+      };
+
+      // Use upsert to insert or update
+      const { error } = await supabase
+        .from("user_nutrition_intake")
+        .upsert(updateData, {
+          onConflict: "user_id",
+        });
+
+      if (error) {
+        console.error("Error updating nutrition intake:", error);
+        Alert.alert(
+          "Error",
+          "Failed to update nutrition intake. Please check your internet connection and try again."
+        );
+      } else {
+        setNutrientModalVisible(false);
+        setNutrientValues(values);
+        Alert.alert(
+          "Success",
+          "Your daily nutrient intake has been updated successfully."
+        );
+        // Refresh nutrition intake data
+        fetchRecommendedIntake.updateNutritionIntakeAve();
+        fetchRecommendedIntake.fetchNutritionIntakeAve();
+      }
+    } catch (error) {
+      console.error("Nutrient update error:", error);
+      Alert.alert("Error", "An unexpected error occurred. Please try again.");
+    }
+  };
+
+  const handleNutrientCancel = () => {
+    setNutrientModalVisible(false);
+  };
+
   const handleEditName = () => {
     setModalConfig({
       title: "Edit Name",
@@ -307,7 +448,11 @@ export default function Profile() {
     setGenderModalVisible(true);
   };
 
-  return (
+  // Replace your return statement in Profile.tsx with this:
+
+return (
+  <>
+    {/* Main Profile Content */}
     <SafeAreaView style={SafeViewAndroid.AndroidSafeArea}>
       <ScrollView
         style={styles.container}
@@ -371,6 +516,9 @@ export default function Profile() {
               style={styles.lastField}
             />
           </View>
+
+          {/* Nutrition Intake Section */}
+          <NutritionIntakeSection onPress={handleNutritionIntakePress} />
         </View>
       </ScrollView>
 
@@ -383,25 +531,48 @@ export default function Profile() {
           profile: "profile",
         }}
       />
-
-      <TextInputModal
-        visible={modalVisible}
-        title={modalConfig.title}
-        placeholder={modalConfig.placeholder}
-        initialValue={modalConfig.initialValue}
-        keyboardType={modalConfig.keyboardType}
-        onSubmit={handleModalSubmit}
-        onCancel={handleModalCancel}
-      />
-
-      <GenderSelectionModal
-        visible={genderModalVisible}
-        title="Select Gender"
-        onSelect={handleGenderSelect}
-        onCancel={handleGenderModalCancel}
-      />
     </SafeAreaView>
-  );
+
+    {/* ✅ Modals rendered OUTSIDE SafeAreaView - This fixes the overlay issue! */}
+    <TextInputModal
+      visible={modalVisible}
+      title={modalConfig.title}
+      placeholder={modalConfig.placeholder}
+      initialValue={modalConfig.initialValue}
+      keyboardType={modalConfig.keyboardType}
+      onSubmit={handleModalSubmit}
+      onCancel={handleModalCancel}
+    />
+
+    <GenderSelectionModal
+      visible={genderModalVisible}
+      title="Select Gender"
+      onSelect={handleGenderSelect}
+      onCancel={handleGenderModalCancel}
+    />
+
+    {/* Only render modals if user has health condition */}
+    {hasHealthCondition && (
+      <>
+        <WarningModal
+          visible={warningModalVisible}
+          title="Healthcare Consultation Required"
+          message="Changing your daily nutrient intake values should be done under the guidance of a qualified healthcare professional. Have you consulted with a healthcare provider about these changes?"
+          onConfirm={handleWarningConfirm}
+          onCancel={handleWarningCancel}
+        />
+
+        <NutrientInputModal
+          visible={nutrientModalVisible}
+          title="Edit Nutrient Intake"
+          initialValues={nutrientValues}
+          onSubmit={handleNutrientSubmit}
+          onCancel={handleNutrientCancel}
+        />
+      </>
+    )}
+  </>
+);
 }
 
 const styles = StyleSheet.create({
@@ -416,10 +587,9 @@ const styles = StyleSheet.create({
   },
   profileBoxContainer: {
     marginBottom: 20,
-    
   },
   customProfileBox: {
-    width: 205, // Wider for "Personal Profile Information"
+    width: 205,
   },
   container: {
     flex: 1,
@@ -449,7 +619,7 @@ const styles = StyleSheet.create({
   fieldsContainer: {
     backgroundColor: "#fff",
     borderRadius: 12,
-    marginHorizontal: 0, // Removed marginHorizontal as it's now in mainContainer
+    marginHorizontal: 0,
     shadowColor: "#000",
     shadowOffset: {
       width: 0,
@@ -459,12 +629,11 @@ const styles = StyleSheet.create({
     shadowRadius: 2,
     elevation: 2,
     overflow: "hidden",
-    marginBottom: 120, // Extra space for bottom nav
   },
   lastField: {
     borderBottomWidth: 0,
   },
   scrollContent: {
-    paddingBottom: 100, // Add padding to prevent content hiding under navigation bar
+    paddingBottom: 100,
   },
 });
