@@ -29,6 +29,8 @@ import NutritionalModal from "@/components/NutritionalModal"; // ADD THIS IMPORT
 import { useNutritionIntakeStore } from "@/stores/nutritionIntakeStore";
 import { usePhotosStore, Photo } from "@/stores/usePhotoStore";
 import {useComparisonAnalysis, useHealthImplication, useFeedbackLoading} from "@/stores/useFeedbackStore";
+import BatteryIndicator from "@/components/BatteryIndicator";
+
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 
@@ -295,6 +297,9 @@ function Feedback() {
   const sodium = useNutrientsStore((state) => state.sodium);
   const saveWithPhotos = useNutrientsStore((state) => state.saveWithPhotos);
   const reset = useNutrientsStore((state) => state.reset);
+  const calories = useNutrientsStore((state) => state.calories) || 1800; // PLACEHOLDER: use 1500 for testing
+
+
 
   const deleteAllCapturedPhotos = useCallback(
     async (photos: Photo[]) => {
@@ -449,7 +454,11 @@ function Feedback() {
                 )}
               </View>
             </View>
-
+            {/* Battery/Calories Indicator */}
+            <BatteryIndicator 
+              calories={calories}
+              averageCalories={2000} // PLACEHOLDER
+            />
             {/* Legend */}
             <View style={styles.legendContainer}>
               <View style={styles.textLegendContainer}>
@@ -675,6 +684,7 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   thumbnailSection: {
+    width: SCREEN_WIDTH * 0.9,
     backgroundColor: "white",
     borderRadius: 12,
     padding: 15,

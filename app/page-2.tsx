@@ -208,7 +208,7 @@ const userBMI = userWeight / Math.pow(userHeight / 100, 2);
     ? nutritionData.avg_sodium / 1000
     : 0; // No division by 1000 if already in correct units
   const caloriesAvg = 2000
-  const bmiValue = 35;
+  const bmiValue = 20;
   // Handle retry for different er  rors
   const handleRetry = (type: "calendar" | "intake") => {
     switch (type) {
