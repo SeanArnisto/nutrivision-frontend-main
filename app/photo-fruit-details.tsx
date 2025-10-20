@@ -42,7 +42,7 @@ function PhotoFruitDetailsPage() {
   const navigation = useNavigation<PhotoFruitDetailsNavigationProp>();
 
   // Get data from Zustand store
-  const { intakes } = useDetailedNutrientStore();
+  const { intakes, updateIntakeByIndex } = useDetailedNutrientStore();
 
   // Get the index from route params
   const { imageIndex } = route.params || { imageIndex: 0 };
@@ -89,6 +89,16 @@ function PhotoFruitDetailsPage() {
 
   const [selectedValue, setSelectedValue] = useState(options[0].value);
 
+  // Restore saved values from store on component mount
+  useEffect(() => {
+    if (currentIntake.fruitCut !== undefined) {
+      setFruitCut(currentIntake.fruitCut);
+    }
+    if (currentIntake.selectedAmount !== undefined) {
+      setSelectedValue(String(currentIntake.selectedAmount));
+    }
+  }, [imageIndex]);
+
   // Update selectedValue when fruitCut changes and current value exceeds new limit
   useEffect(() => {
     const currentValue = parseInt(selectedValue);
@@ -125,6 +135,17 @@ function PhotoFruitDetailsPage() {
 
   const handleSlicesDecrease = () => {
     setSlices((prev) => Math.max(prev - 1, slicesRange.minAmount));
+  };
+
+  const handleConfirmIntake = () => {
+    // Only save the selection state (fruitCut and selectedAmount)
+    // Keep the original nutrient values so they can be recalculated
+    updateIntakeByIndex(imageIndex, {
+      fruitCut: fruitCut,
+      selectedAmount: selectedAmount,
+    });
+    // Navigate back
+    navigation.goBack();
   };
 
   useEffect(() => {
@@ -355,7 +376,7 @@ function PhotoFruitDetailsPage() {
           {/* Confirm Button */}
           <TouchableOpacity
             style={styles.confirmButton}
-            onPress={() => navigation.goBack()}
+            onPress={handleConfirmIntake}
           >
             <Text style={styles.confirmButtonText}>Confirm Intake</Text>
           </TouchableOpacity>

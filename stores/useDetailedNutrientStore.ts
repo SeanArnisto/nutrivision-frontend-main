@@ -11,11 +11,14 @@ type NutrientIntake = {
   calories: number;
   servings?: number;
   originalServings?: number; // Store original servings from package
+  fruitCut?: number; // How many portions the fruit is cut into (1 = whole)
+  selectedAmount?: number; // Amount or slices selected
 };
 
 type store = {
   intakes: NutrientIntake[];
   setIntake: (nutrientIntake: NutrientIntake[]) => void;
+  updateIntakeByIndex: (index: number, nutrients: Partial<NutrientIntake>) => void;
   saveToDatabase: (
     intakes: NutrientIntake[]
   ) => Promise<{ success: boolean; data?: any; error?: string }>;
@@ -28,6 +31,14 @@ export const useDetailedNutrientStore = create<store>((set, get) => ({
   intakes: [],
   setIntake: (nutrientIntake: NutrientIntake[]) =>
     set(() => ({ intakes: nutrientIntake })),
+  updateIntakeByIndex: (index: number, nutrients: Partial<NutrientIntake>) => {
+    const currentIntakes = get().intakes;
+    if (index >= 0 && index < currentIntakes.length) {
+      const updatedIntakes = [...currentIntakes];
+      updatedIntakes[index] = { ...updatedIntakes[index], ...nutrients };
+      set({ intakes: updatedIntakes });
+    }
+  },
   loading: false,
   error: null,
   reset: () => set({ intakes: [] }),
