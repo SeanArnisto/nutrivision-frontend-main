@@ -119,7 +119,7 @@ export const fetchNutritionAverage = create<AverageIntakeState>((set, get) => ({
 
       const { data: profile, error: profileError } = await supabase
         .from("profiles")
-        .select("height, weight, age")
+        .select("height, weight, age, gender")
         .eq("id", user.id)
         .single();
 
@@ -133,20 +133,22 @@ export const fetchNutritionAverage = create<AverageIntakeState>((set, get) => ({
         );
       }
 
-      const apiResponse = await fetch(
-        "https://pel1-recommendation.hf.space/get-nutrition-range",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            height: profile.height,
-            weight: profile.weight,
-            age: profile.age,
-          }),
-        }
-      );
+      const endpoint =
+        profile.gender === "male"
+          ? "https://pel1-recommendation.hf.space/get-nutrition-range" // male endpoint
+          : "https://leidanielaguila-female-recommendation.hf.space/get-nutrition-range"; // female endpoint
+
+      const apiResponse = await fetch(endpoint, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          height: profile.height,
+          weight: profile.weight,
+          age: profile.age,
+        }),
+      });
 
       if (!apiResponse.ok) {
         throw new Error(`API request failed: ${apiResponse.status}`);
@@ -170,7 +172,7 @@ export const fetchNutritionAverage = create<AverageIntakeState>((set, get) => ({
         minSodium: nutritionResponse.nutrition_range.sodium?.[0] ?? 0,
         maxSodium: nutritionResponse.nutrition_range.sodium?.[1] ?? 0,
         minCalories: nutritionResponse.nutrition_range.calories?.[0] ?? 0,
-        maxCalories: nutritionResponse.nutrition_range.calories?.[1] ?? 0
+        maxCalories: nutritionResponse.nutrition_range.calories?.[1] ?? 0,
       };
 
       set({
@@ -232,14 +234,15 @@ export const fetchNutritionAverage = create<AverageIntakeState>((set, get) => ({
         console.log("⚠️ Cannot update - user has manual nutrition data");
         set({
           isLoading: false,
-          error: "Cannot update manually entered nutrition data. Please update manually in settings."
+          error:
+            "Cannot update manually entered nutrition data. Please update manually in settings.",
         });
         return;
       }
 
       const { data: profile, error: profileError } = await supabase
         .from("profiles")
-        .select("height, weight, age")
+        .select("height, weight, age, gender")
         .eq("id", user.id)
         .single();
 
@@ -259,21 +262,22 @@ export const fetchNutritionAverage = create<AverageIntakeState>((set, get) => ({
         });
         return;
       }
+      const endpoint =
+        profile.gender === "male"
+          ? "https://pel1-recommendation.hf.space/get-nutrition-range" // male endpoint
+          : "https://leidanielaguila-female-recommendation.hf.space/get-nutrition-range"; // female endpoint
 
-      const apiResponse = await fetch(
-        "https://pel1-recommendation.hf.space/get-nutrition-range",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            height: profile.height,
-            weight: profile.weight,
-            age: profile.age,
-          }),
-        }
-      );
+      const apiResponse = await fetch(endpoint, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          height: profile.height,
+          weight: profile.weight,
+          age: profile.age,
+        }),
+      });
 
       if (!apiResponse.ok) {
         throw new Error(`API request failed: ${apiResponse.status}`);
@@ -297,7 +301,7 @@ export const fetchNutritionAverage = create<AverageIntakeState>((set, get) => ({
         minSodium: nutritionResponse.nutrition_range.sodium?.[0] ?? 0,
         maxSodium: nutritionResponse.nutrition_range.sodium?.[1] ?? 0,
         minCalories: nutritionResponse.nutrition_range.calories?.[0] ?? 0,
-        maxCalories: nutritionResponse.nutrition_range.calories?.[1] ?? 0
+        maxCalories: nutritionResponse.nutrition_range.calories?.[1] ?? 0,
       };
 
       const averageCarb =
@@ -317,7 +321,7 @@ export const fetchNutritionAverage = create<AverageIntakeState>((set, get) => ({
           avg_sodium: averageSodium,
           avg_protein: averageProtein,
           avg_calories: averageCalories,
-          is_manual: false,  // 🔥 Ensure it's marked as calculated
+          is_manual: false, // 🔥 Ensure it's marked as calculated
         })
         .eq("user_id", user.id)
         .select()
@@ -410,8 +414,14 @@ export const useNutritionIntakeStore = create<NutritionIntakeState>(
           .single();
 
         // 🔥 PROTECTION: If data is manually entered, NEVER recalculate
-        if (existingIntake && !intakeError && existingIntake.is_manual === true) {
-          console.log("✅ Manual nutrition data detected - protecting from recalculation");
+        if (
+          existingIntake &&
+          !intakeError &&
+          existingIntake.is_manual === true
+        ) {
+          console.log(
+            "✅ Manual nutrition data detected - protecting from recalculation"
+          );
           set({
             nutritionData: {
               avg_carbs: existingIntake.avg_carbs,
@@ -441,10 +451,10 @@ export const useNutritionIntakeStore = create<NutritionIntakeState>(
 
         // No existing data - calculate from profile
         console.log("📊 No nutrition data found - calculating from profile");
-        
+
         const { data: profile, error: profileError } = await supabase
           .from("profiles")
-          .select("height, weight, age")
+          .select("height, weight, age, gender")
           .eq("id", user.id)
           .single();
 
@@ -458,20 +468,22 @@ export const useNutritionIntakeStore = create<NutritionIntakeState>(
           );
         }
 
-        const apiResponse = await fetch(
-          "https://pel1-recommendation.hf.space/get-nutrition-range",
-          {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-              height: profile.height,
-              weight: profile.weight,
-              age: profile.age,
-            }),
-          }
-        );
+        const endpoint =
+          profile.gender === "male"
+            ? "https://pel1-recommendation.hf.space/get-nutrition-range" // male endpoint
+            : "https://leidanielaguila-female-recommendation.hf.space/get-nutrition-range"; // female endpoint
+
+        const apiResponse = await fetch(endpoint, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            height: profile.height,
+            weight: profile.weight,
+            age: profile.age,
+          }),
+        });
 
         if (!apiResponse.ok) {
           throw new Error(`API request failed: ${apiResponse.status}`);
@@ -510,7 +522,7 @@ export const useNutritionIntakeStore = create<NutritionIntakeState>(
             avg_protein: avgProtein,
             avg_sodium: avgSodium,
             avg_calories: avgCalories,
-            is_manual: false,  // 🔥 Mark as calculated (not manual)
+            is_manual: false, // 🔥 Mark as calculated (not manual)
           })
           .select()
           .single();
@@ -528,7 +540,7 @@ export const useNutritionIntakeStore = create<NutritionIntakeState>(
             avg_carbs: avgCarbs,
             avg_protein: avgProtein,
             avg_sodium: avgSodium,
-            avg_calories: avgCalories
+            avg_calories: avgCalories,
           },
           isLoading: false,
         });

@@ -388,7 +388,7 @@ export default function Profile() {
 
       Alert.alert(
         "Success",
-        "Your recommended nutrient intake has been updated based on your profile. The system will now use API-generated values.",
+        "Your recommended nutrient intake has been updated based on your demographic data.",        
         [{ text: "OK" }]
       );
     } catch (error) {
