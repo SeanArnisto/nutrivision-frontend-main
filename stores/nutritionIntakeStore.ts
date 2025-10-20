@@ -86,16 +86,20 @@ export const fetchNutritionAverage = create<AverageIntakeState>((set, get) => ({
     try {
       set({ isLoading: true, error: null });
 
-      // FIXED: Add null check for authStore
-      const authState = useAuthStore?.getState?.();
+      // Get auth state
+      const authState = useAuthStore.getState();
       if (!authState) {
-        throw new Error("Auth store is not initialized");
+        console.log("Auth store not initialized");
+        set({ isLoading: false, error: null });
+        return;
       }
 
       const { user, profileComplete } = authState;
-      
+
       if (!user) {
-        throw new Error("No authenticated user found");
+        console.log("No authenticated user found");
+        set({ isLoading: false, error: null });
+        return;
       }
 
       // Check if user changed
@@ -154,15 +158,19 @@ export const fetchNutritionAverage = create<AverageIntakeState>((set, get) => ({
         throw new Error("API returned unsuccessful status");
       }
 
+      if (!nutritionResponse.nutrition_range) {
+        throw new Error("API response missing nutrition_range");
+      }
+
       const nutritionDataAve: AverageIntakeData = {
-        minCarbs: nutritionResponse.nutrition_range.carbs[0],
-        maxCarbs: nutritionResponse.nutrition_range.carbs[1],
-        minProtein: nutritionResponse.nutrition_range.protein[0],
-        maxProtein: nutritionResponse.nutrition_range.protein[1],
-        minSodium: nutritionResponse.nutrition_range.sodium[0],
-        maxSodium: nutritionResponse.nutrition_range.sodium[1],
-        minCalories: nutritionResponse.nutrition_range.calories[0],
-        maxCalories: nutritionResponse.nutrition_range.calories[1]
+        minCarbs: nutritionResponse.nutrition_range.carbs?.[0] ?? 0,
+        maxCarbs: nutritionResponse.nutrition_range.carbs?.[1] ?? 0,
+        minProtein: nutritionResponse.nutrition_range.protein?.[0] ?? 0,
+        maxProtein: nutritionResponse.nutrition_range.protein?.[1] ?? 0,
+        minSodium: nutritionResponse.nutrition_range.sodium?.[0] ?? 0,
+        maxSodium: nutritionResponse.nutrition_range.sodium?.[1] ?? 0,
+        minCalories: nutritionResponse.nutrition_range.calories?.[0] ?? 0,
+        maxCalories: nutritionResponse.nutrition_range.calories?.[1] ?? 0
       };
 
       set({
@@ -197,10 +205,12 @@ export const fetchNutritionAverage = create<AverageIntakeState>((set, get) => ({
     try {
       set({ isLoading: true, error: null });
 
-      // FIXED: Add null check for authStore
-      const authState = useAuthStore?.getState?.();
+      // Get auth state
+      const authState = useAuthStore.getState();
       if (!authState) {
-        throw new Error("Auth store is not initialized");
+        console.log("Auth store not initialized");
+        set({ isLoading: false, error: null });
+        return;
       }
 
       const { user, profileComplete } = authState;
@@ -259,15 +269,19 @@ export const fetchNutritionAverage = create<AverageIntakeState>((set, get) => ({
         throw new Error("API returned unsuccessful status");
       }
 
+      if (!nutritionResponse.nutrition_range) {
+        throw new Error("API response missing nutrition_range");
+      }
+
       const nutritionDataAve: AverageIntakeData = {
-        minCarbs: nutritionResponse.nutrition_range.carbs[0],
-        maxCarbs: nutritionResponse.nutrition_range.carbs[1],
-        minProtein: nutritionResponse.nutrition_range.protein[0],
-        maxProtein: nutritionResponse.nutrition_range.protein[1],
-        minSodium: nutritionResponse.nutrition_range.sodium[0],
-        maxSodium: nutritionResponse.nutrition_range.sodium[1],
-        minCalories: nutritionResponse.nutrition_range.calories[0],
-        maxCalories: nutritionResponse.nutrition_range.calories[1]
+        minCarbs: nutritionResponse.nutrition_range.carbs?.[0] ?? 0,
+        maxCarbs: nutritionResponse.nutrition_range.carbs?.[1] ?? 0,
+        minProtein: nutritionResponse.nutrition_range.protein?.[0] ?? 0,
+        maxProtein: nutritionResponse.nutrition_range.protein?.[1] ?? 0,
+        minSodium: nutritionResponse.nutrition_range.sodium?.[0] ?? 0,
+        maxSodium: nutritionResponse.nutrition_range.sodium?.[1] ?? 0,
+        minCalories: nutritionResponse.nutrition_range.calories?.[0] ?? 0,
+        maxCalories: nutritionResponse.nutrition_range.calories?.[1] ?? 0
       };
 
       const averageCarb =
@@ -338,16 +352,20 @@ export const useNutritionIntakeStore = create<NutritionIntakeState>(
       try {
         set({ isLoading: true, error: null });
 
-        // FIXED: Add null check for authStore
-        const authState = useAuthStore?.getState?.();
+        // Get auth state
+        const authState = useAuthStore.getState();
         if (!authState) {
-          throw new Error("Auth store is not initialized");
+          console.log("Auth store not initialized");
+          set({ isLoading: false, error: null });
+          return;
         }
 
         const { user, profileComplete } = authState;
-        
+
         if (!user) {
-          throw new Error("No authenticated user found");
+          console.log("No authenticated user found");
+          set({ isLoading: false, error: null });
+          return;
         }
 
         // Check if user changed
@@ -486,16 +504,20 @@ export const useNutritionIntakeStore = create<NutritionIntakeState>(
       try {
         set({ isHistoryLoading: true, historyError: null });
 
-        // FIXED: Add null check for authStore
-        const authState = useAuthStore?.getState?.();
+        // Get auth state
+        const authState = useAuthStore.getState();
         if (!authState) {
-          throw new Error("Auth store is not initialized");
+          console.log("Auth store not initialized");
+          set({ isHistoryLoading: false, historyError: null });
+          return;
         }
 
         const { user } = authState;
-        
+
         if (!user) {
-          throw new Error("No authenticated user found");
+          console.log("No authenticated user found");
+          set({ isHistoryLoading: false, historyError: null });
+          return;
         }
 
         // Check if user changed

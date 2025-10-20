@@ -9,6 +9,7 @@ import {
   PanResponder,
   Animated,
   StatusBar,
+  TouchableOpacity,
 } from "react-native";
 import { useRoute, RouteProp } from "@react-navigation/native";
 import { StackNavigationProp } from "@react-navigation/stack";
@@ -17,6 +18,7 @@ import { RootStackParamList } from "@/types/types";
 import ReturnButton from "@/components/ReturnButton";
 import AvgIntakeCard from "@/components/avgIntakeCard";
 import CalorieCard from "@/components/CalorieCard";
+
 import AmountSelector from "@/components/amount";
 import { useDetailedNutrientStore } from "@/stores/useDetailedNutrientStore";
 
@@ -67,7 +69,7 @@ function PhotoLabelDetailsPage() {
       const updatedIntakes = [...intakes];
       updatedIntakes[imageIndex] = {
         ...updatedIntakes[imageIndex],
-        originalServings: currentIntake.servings || 1
+        originalServings: currentIntake.servings || 1,
       };
       setIntake(updatedIntakes);
     }
@@ -94,7 +96,7 @@ function PhotoLabelDetailsPage() {
     if (updatedIntakes[imageIndex]) {
       updatedIntakes[imageIndex] = {
         ...updatedIntakes[imageIndex],
-        servings: newAmount
+        servings: newAmount,
       };
       setIntake(updatedIntakes);
     }
@@ -109,7 +111,7 @@ function PhotoLabelDetailsPage() {
     if (updatedIntakes[imageIndex]) {
       updatedIntakes[imageIndex] = {
         ...updatedIntakes[imageIndex],
-        servings: newAmount
+        servings: newAmount,
       };
       setIntake(updatedIntakes);
     }
@@ -275,14 +277,20 @@ function PhotoLabelDetailsPage() {
           {/* Servings Container */}
           <View style={styles.servingsCard}>
             <Text style={styles.servingsTitle}>
-              Number of Servings in Package: {currentIntake.originalServings || currentIntake.servings || 1}
+              Number of Servings in Package:{" "}
+              {currentIntake.originalServings || currentIntake.servings || 1}
             </Text>
           </View>
+          {/* Confirm Button */}
+          <TouchableOpacity style={styles.confirmButton} onPress={() => navigation.goBack()}>
+            <Text style={styles.confirmButtonText}>Confirm Intake</Text>
+          </TouchableOpacity>
         </View>
       </Animated.View>
 
       {/* Return Button - positioned absolutely */}
       <ReturnButton position="top" />
+      
     </View>
   );
 }
@@ -293,6 +301,19 @@ export default function NutritionalLabelScreen() {
 }
 
 const styles = StyleSheet.create({
+  confirmButton: {
+    backgroundColor: "#9AB206",
+    borderRadius: 12,
+    padding: 16,
+    marginTop: 16,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  confirmButtonText: {
+    color: "#fff",
+    fontSize: 18,
+    fontWeight: "bold",
+  },
   container: {
     flex: 1,
     backgroundColor: "#000",
@@ -302,7 +323,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "flex-end",
-    marginBottom: 20,
+    marginBottom: 15,
   },
   imageContainer: {
     flex: 1,

@@ -585,7 +585,7 @@ export default function Camera() {
         } else if (isFruitMode) {
           // FRUIT MODE - This is likely where your issue is
           const fruits = response.data.fruits || {};
-          const { total_carbs, total_protein, total_sodium } = fruits;
+          const { total_carbs, total_protein, total_sodium, total_kcal } = fruits;
 
           console.log("🍎 FRUIT MODE - Raw fruits object:", fruits);
           console.log("🔍 FRUIT MODE - Extracted values:");
@@ -596,6 +596,7 @@ export default function Camera() {
           const parsedCarbs = total_carbs ?? 0;
           const parsedProtein = total_protein ?? 0;
           const parsedSodium = total_sodium ?? 0;
+          const parsedKcal = total_kcal ?? 0;
 
           console.log("🔍 FRUIT MODE - Parsed values:");
           console.log("  parsedCarbs:", parsedCarbs);
@@ -652,7 +653,7 @@ export default function Camera() {
                   imageUrl: photos[intake.imageIndex],
                   carbs: intake.carbs ?? 0,
                   protein: intake.protein ?? 0,
-                  calories: intake.calories ?? 0,
+                  calories: intake.kcal ?? 0,
                   sodium: intake.sodium ?? 0,
                 })
               );
