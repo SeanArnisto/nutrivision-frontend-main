@@ -321,6 +321,8 @@ const targetCalories = calorieAvg;
       )
     : "low";
 
+    
+
   // Function to get nutrition totals for a specific date
   const getDailyNutritionTotals = (date: Date | null) => {
     try {
