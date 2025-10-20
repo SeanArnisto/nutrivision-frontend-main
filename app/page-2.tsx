@@ -120,11 +120,15 @@ useEffect(() => {
 }, [userBMI, isProfileLoading, userWeight, userHeight]);
 
   // Fetch nutrition intake data on component mount
-  useEffect(() => {
-    if (isAuthenticated && user && profileComplete === true) {
-      fetchNutritionIntake();
-    }
-  }, [isAuthenticated, user, profileComplete, fetchNutritionIntake]);
+  // Fetch nutrition intake data on component mount
+useEffect(() => {
+  if (isAuthenticated && user && profileComplete === true) {
+    console.log("🏠 Home page: Fetching nutrition intake...");
+    fetchNutritionIntake().then(() => {
+      console.log("📊 Nutrition data loaded:", nutritionData);
+    });
+  }
+}, [isAuthenticated, user, profileComplete, fetchNutritionIntake]);
 
   // Redirect unauthenticated users to login
   useEffect(() => {

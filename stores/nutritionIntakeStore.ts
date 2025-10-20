@@ -221,6 +221,22 @@ export const fetchNutritionAverage = create<AverageIntakeState>((set, get) => ({
         return;
       }
 
+      // 🔥 CHECK: Don't update if data is manual
+      const { data: existingIntake, error: checkError } = await supabase
+        .from("user_nutrition_intake")
+        .select("is_manual")
+        .eq("user_id", user.id)
+        .single();
+
+      if (existingIntake && existingIntake.is_manual === true) {
+        console.log("⚠️ Cannot update - user has manual nutrition data");
+        set({
+          isLoading: false,
+          error: "Cannot update manually entered nutrition data. Please update manually in settings."
+        });
+        return;
+      }
+
       const { data: profile, error: profileError } = await supabase
         .from("profiles")
         .select("height, weight, age")
@@ -293,6 +309,7 @@ export const fetchNutritionAverage = create<AverageIntakeState>((set, get) => ({
       const averageCalories =
         (nutritionDataAve.minCalories + nutritionDataAve.maxCalories) / 2;
 
+      // Only update if NOT manual
       const { data, error } = await supabase
         .from("user_nutrition_intake")
         .update({
@@ -300,6 +317,7 @@ export const fetchNutritionAverage = create<AverageIntakeState>((set, get) => ({
           avg_sodium: averageSodium,
           avg_protein: averageProtein,
           avg_calories: averageCalories,
+          is_manual: false,  // 🔥 Ensure it's marked as calculated
         })
         .eq("user_id", user.id)
         .select()
@@ -384,14 +402,31 @@ export const useNutritionIntakeStore = create<NutritionIntakeState>(
         }
 
         // Check if user already has nutrition intake data
+        // 🔥 CRITICAL: Also select is_manual field
         const { data: existingIntake, error: intakeError } = await supabase
           .from("user_nutrition_intake")
-          .select("avg_carbs, avg_protein, avg_sodium, avg_calories")
+          .select("avg_carbs, avg_protein, avg_sodium, avg_calories, is_manual")
           .eq("user_id", user.id)
           .single();
 
+        // 🔥 PROTECTION: If data is manually entered, NEVER recalculate
+        if (existingIntake && !intakeError && existingIntake.is_manual === true) {
+          console.log("✅ Manual nutrition data detected - protecting from recalculation");
+          set({
+            nutritionData: {
+              avg_carbs: existingIntake.avg_carbs,
+              avg_protein: existingIntake.avg_protein,
+              avg_sodium: existingIntake.avg_sodium,
+              avg_calories: existingIntake.avg_calories || 0,
+            },
+            isLoading: false,
+          });
+          return; // Stop here - manual data is sacred!
+        }
+
+        // If data exists but is NOT manual, use it (allow future updates)
         if (existingIntake && !intakeError) {
-          // User already has data, use it
+          console.log("ℹ️ Using existing calculated nutrition data");
           set({
             nutritionData: {
               avg_carbs: existingIntake.avg_carbs,
@@ -404,11 +439,13 @@ export const useNutritionIntakeStore = create<NutritionIntakeState>(
           return;
         }
 
-        // Fetch user profile for calculation
+        // No existing data - calculate from profile
+        console.log("📊 No nutrition data found - calculating from profile");
+        
         const { data: profile, error: profileError } = await supabase
           .from("profiles")
           .select("height, weight, age")
-          .eq("id", user.id)
+          .eq("user_id", user.id)
           .single();
 
         if (profileError || !profile) {
@@ -464,6 +501,7 @@ export const useNutritionIntakeStore = create<NutritionIntakeState>(
             nutritionResponse.nutrition_range.calories[1]) /
           2;
 
+        // 🔥 IMPORTANT: Mark calculated data as NOT manual
         const { data: savedData, error: saveError } = await supabase
           .from("user_nutrition_intake")
           .insert({
@@ -472,6 +510,7 @@ export const useNutritionIntakeStore = create<NutritionIntakeState>(
             avg_protein: avgProtein,
             avg_sodium: avgSodium,
             avg_calories: avgCalories,
+            is_manual: false,  // 🔥 Mark as calculated (not manual)
           })
           .select()
           .single();
@@ -481,6 +520,8 @@ export const useNutritionIntakeStore = create<NutritionIntakeState>(
             `Failed to save nutrition data: ${saveError.message}`
           );
         }
+
+        console.log("✅ Calculated nutrition data saved successfully");
 
         set({
           nutritionData: {
