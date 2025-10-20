@@ -156,48 +156,47 @@ export default function OnboardingScreen() {
     console.log("Profile saved successfully:", profileResult);
 
     // Step 2: Save nutrition intake data ONLY if user has health condition
+    // Step 2: Save nutrition intake data ONLY if user has health condition
     if (formData.hasHealthCondition) {
-      const nutritionData = {
-        user_id: user.id,
-        avg_calories: parseFloat(formData.avgCalories),
-        avg_carbs: parseFloat(formData.avgCarbs),
-        avg_protein: parseFloat(formData.avgProtein),
-        avg_sodium: parseFloat(formData.avgSodium),
-        updated_at: new Date().toISOString(),
-      };
+    const nutritionData = {
+      user_id: user.id,
+      avg_calories: parseFloat(formData.avgCalories),
+      avg_carbs: parseFloat(formData.avgCarbs),
+      avg_protein: parseFloat(formData.avgProtein),
+      avg_sodium: parseFloat(formData.avgSodium),
+      is_manual: true,  // 🔥 Marks data as manually entered
+      updated_at: new Date().toISOString(),
+    };
 
-      const { data: nutritionResult, error: nutritionError } = await supabase
-        .from("user_nutrition_intake")
-        .upsert(nutritionData, {
-          onConflict: "user_id",
-          ignoreDuplicates: false,
-        })
-        .select()
-        .single();
+    const { data: nutritionResult, error: nutritionError } = await supabase
+      .from("user_nutrition_intake")
+      .upsert(nutritionData, {
+        onConflict: "user_id",
+        ignoreDuplicates: false,
+      })
+      .select()
+      .single();
 
-      if (nutritionError) {
-        console.error("Error saving nutrition intake:", nutritionError);
-        showToast(
-          "error",
-          "Check Internet Connection!",
-          "Failed to save nutrition data. Please try again."
-        );
-        return false;
-      }
-
-      console.log("Nutrition intake saved successfully:", nutritionResult);
-    } else {
-      // If user selected "No", delete any existing nutrition intake data
-      const { error: deleteError } = await supabase
-        .from("user_nutrition_intake")
-        .delete()
-        .eq("user_id", user.id);
-
-      if (deleteError) {
-        console.error("Error deleting nutrition intake:", deleteError);
-        // Don't fail the whole process if delete fails
-      }
+    if (nutritionError) {
+      console.error("Error saving nutrition intake:", nutritionError);
+      showToast("error", "Check Internet Connection!", "Failed to save nutrition data.");
+      return false;
     }
+
+    console.log("✅ Manual nutrition intake saved successfully:", nutritionResult);
+    
+    // 🔥 ADD THIS DEBUG LOG:
+    console.log("📊 Manual values entered:", {
+      avgCarbs: formData.avgCarbs,
+      avgProtein: formData.avgProtein,
+      avgSodium: formData.avgSodium,
+      avgCalories: formData.avgCalories,
+    });
+    
+  } else {
+    // If user selected "No", don't delete - let fetchNutritionIntake calculate
+    console.log("ℹ️ No manual data - system will calculate based on BMI");
+  }
 
     // Update the auth store to mark profile as complete
     const { checkProfileComplete } = useAuthStore.getState();

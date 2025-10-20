@@ -13,7 +13,7 @@ import {
 interface NutrientInputRowProps {
   iconSource: ImageSourcePropType;
   label: string;
-  value: string; // Changed from number to string
+  value: string;
   isEditing: boolean;
   onEdit: () => void;
   onChangeText: (text: string) => void;
@@ -21,12 +21,14 @@ interface NutrientInputRowProps {
 }
 
 interface Nutrients {
+  calories: string;
   carbohydrate: string;
   sodium: string;
   protein: string;
 }
 
 interface IsEditing {
+  calories: boolean;
   carbohydrate: boolean;
   sodium: boolean;
   protein: boolean;
@@ -48,7 +50,6 @@ const NutrientInputRow: React.FC<NutrientInputRowProps> = ({
   onChangeText,
   onEndEditing,
 }) => {
-  // Format display value when not editing
   const displayValue = !isEditing && value ? 
     (parseFloat(value) || 0).toString() : 
     value;
@@ -58,31 +59,36 @@ const NutrientInputRow: React.FC<NutrientInputRowProps> = ({
       <Image source={iconSource} style={styles.icon} />
       <Text style={styles.nutrientText}>{label}</Text>
       <View style={styles.divider} />
-      <View style={styles.inputBox}>
-        {isEditing ? (
-          <TextInput
-            style={styles.input}
-            value={value}
-            onChangeText={onChangeText}
-            autoFocus
-            onBlur={onEndEditing}
-            keyboardType="decimal-pad"
-            textAlign="center"
-            returnKeyType="done"
-            maxLength={10}
-          />
-        ) : (
-          <>
-            <Text style={styles.inputText}>{displayValue}</Text>
-            <TouchableOpacity style={styles.editButtonInside} onPress={onEdit}>
+      <TouchableOpacity 
+        style={styles.inputBoxTouchable} 
+        onPress={onEdit}
+        activeOpacity={0.7}
+        disabled={isEditing}
+      >
+        <View style={styles.inputBox}>
+          {isEditing ? (
+            <TextInput
+              style={styles.input}
+              value={value}
+              onChangeText={onChangeText}
+              autoFocus
+              onBlur={onEndEditing}
+              keyboardType="decimal-pad"
+              textAlign="center"
+              returnKeyType="done"
+              maxLength={10}
+            />
+          ) : (
+            <>
+              <Text style={styles.inputText}>{displayValue}</Text>
               <Image
                 source={require("@/assets/images/Edit Icon.png")}
                 style={styles.editIcon}
               />
-            </TouchableOpacity>
-          </>
-        )}
-      </View>
+            </>
+          )}
+        </View>
+      </TouchableOpacity>
     </View>
   );
 };
@@ -98,6 +104,11 @@ const NutrientInputSection: React.FC<NutrientInputSectionProps> = ({
     label: string;
     iconSource: ImageSourcePropType;
   }> = [
+    {
+      key: "calories",
+      label: "Calories",
+      iconSource: require("@/assets/images/calorie.png"),
+    },
     {
       key: "carbohydrate",
       label: "Carbs",
@@ -115,24 +126,19 @@ const NutrientInputSection: React.FC<NutrientInputSectionProps> = ({
     },
   ];
 
-  // Handle nutrient change with proper decimal validation
   const handleChange = (key: keyof Nutrients, text: string) => {
-    // Allow empty string
     if (text === '') {
       handleNutrientChange(key, '0');
       return;
     }
 
-    // Allow single decimal point
     if (text === '.') {
       handleNutrientChange(key, '0.');
       return;
     }
 
-    // Validate decimal format - allow numbers and single decimal point
     const regex = /^\d*\.?\d{0,5}$/;
     if (regex.test(text)) {
-      // Remove leading zeros except for decimal numbers less than 1
       let cleanedText = text;
       if (text.length > 1 && text[0] === '0' && text[1] !== '.') {
         cleanedText = text.substring(1);
@@ -142,18 +148,14 @@ const NutrientInputSection: React.FC<NutrientInputSectionProps> = ({
   };
 
   const handleEndEditing = (key: keyof Nutrients) => {
-    // Clean up the value when editing ends
     let value = nutrients[key];
     
-    // If empty or just a decimal point, set to 0
     if (!value || value === '.' || value === '0.') {
       handleNutrientChange(key, '0');
     } else {
-      // Remove trailing decimal point if exists
       if (value.endsWith('.')) {
         value = value.slice(0, -1);
       }
-      // Ensure it's a valid number but keep as string
       const numValue = parseFloat(value) || 0;
       handleNutrientChange(key, numValue.toString());
     }
@@ -202,12 +204,19 @@ const styles = StyleSheet.create({
   editIcon: {
     width: 13,
     height: 13,
+    position: "absolute",
+    right: 8,
+    top: "50%",
+    transform: [{ translateY: -6.5 }],
   },
   editButtonInside: {
     position: "absolute",
     right: 5,
     top: "50%",
     transform: [{ translateY: -8 }],
+  },
+  inputBoxTouchable: {
+    borderRadius: 8,
   },
   inputBox: {
     backgroundColor: "#F0F0F0",

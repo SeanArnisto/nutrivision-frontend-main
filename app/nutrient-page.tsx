@@ -95,12 +95,14 @@ export default function UserNutrientPage() {
     carbohydrate: "88",
     sodium: "1.83",
     protein: "3.5",
+    calories: "1"
   });
 
   const [isEditing, setIsEditing] = useState({
     carbohydrate: false,
     sodium: false,
     protein: false,
+    calories: false
   });
 
   interface NutritionData {
@@ -123,8 +125,9 @@ export default function UserNutrientPage() {
       carbohydrate: detailedCarbs.toString(),
       protein: detailedProtein.toString(),
       sodium: detailedSodium.toString(),
+      calories: detailedCalories.toString()
     });
-  }, [intakes, detailedCarbs, detailedProtein, detailedSodium]); // Update when intakes change
+  }, [intakes, detailedCarbs, detailedProtein, detailedSodium, detailedCalories]); // Update when intakes change
 
   // Update pie chart when store values change
   useEffect(() => {
@@ -160,13 +163,13 @@ export default function UserNutrientPage() {
   }, [carbohydrate, protein, sodium]);
 
   // Toggle edit mode
-  const toggleEdit = (key: "sodium" | "protein" | "carbohydrate") => {
+  const toggleEdit = (key: "sodium" | "protein" | "carbohydrate" | "calories") => {
     setIsEditing((prev) => ({ ...prev, [key]: !prev[key] }));
   };
 
   // Handle nutrient change with proper decimal support
   const handleNutrientChange = (
-    key: "sodium" | "protein" | "carbohydrate",
+    key: "sodium" | "protein" | "carbohydrate" | "calories",
     value: string
   ) => {
     // Update local state (keep as string for display)

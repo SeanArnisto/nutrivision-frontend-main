@@ -10,6 +10,7 @@ import {
   Dimensions,
 } from 'react-native';
 import ResponsiveNutritionCard from '@/components/ResponsiveNutritionCard';
+import CalorieCard from '@/components/CalorieCard';
 import { nutrients } from '@/constants/nutrientIcons';
 
 interface FoodEntry {
@@ -19,6 +20,7 @@ interface FoodEntry {
 }
 
 interface NutritionSummary {
+  calories: number;
   carbs: number;
   sodium: number;
   protein: number;
@@ -53,6 +55,9 @@ const SessionDetailModal: React.FC<SessionDetailModalProps> = ({
   const containerWidth = modalWidth - 40; // Minus padding
   const imageSize = (containerWidth - 16) / 3; // 3 images per row with proper spacing
   const nutritionCardWidth = (containerWidth - 8) / 3; // 3 nutrition cards with gap
+
+  // Set calorie fill to always be 100% for this modal
+  const calorieFill = 100;
 
   // Function to render images with proper centering for odd numbers
   const renderImages = () => {
@@ -113,6 +118,15 @@ const SessionDetailModal: React.FC<SessionDetailModalProps> = ({
             {/* Food Images Grid */}
             <View style={styles.imageGrid}>
               {renderImages()}
+            </View>
+
+            {/* Calorie Card - Full width with 100% fill */}
+            <View style={styles.calorieCardContainer}>
+              <CalorieCard
+                value={nutritionSummary.calories}
+                fill={calorieFill}
+                tintColor="#88A444"
+              />
             </View>
 
             {/* Nutrition Summary using ResponsiveNutritionCard */}
@@ -230,6 +244,9 @@ const styles = StyleSheet.create({
   foodImage: {
     width: '100%',
     height: '100%',
+  },
+  calorieCardContainer: {
+    marginBottom: 20,
   },
   nutritionContainer: {
     flexDirection: 'row',
