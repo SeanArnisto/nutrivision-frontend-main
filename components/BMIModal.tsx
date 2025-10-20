@@ -6,6 +6,7 @@ import {
   StyleSheet,
   TouchableOpacity,
   ScrollView,
+  TouchableWithoutFeedback,
 } from "react-native";
 import BMICard from "./BMICard";
 
@@ -32,58 +33,69 @@ export default function BMIModal({
       onRequestClose={onClose}
     >
       <View style={styles.overlay}>
+        <TouchableWithoutFeedback onPress={onClose}>
+          <View style={styles.overlayTouchable} />
+        </TouchableWithoutFeedback>
+
         <View style={styles.modalContainer}>
           <ScrollView
             contentContainerStyle={styles.scrollContent}
             showsVerticalScrollIndicator={false}
           >
-            {/* BMI Title */}
-            <Text style={styles.title}>Your BMI:</Text>
-            <Text style={styles.bmiValue}>{bmiValue.toFixed(1)}</Text>
+              {/* BMI Title */}
+              <Text style={styles.title}>Your BMI:</Text>
+              <Text style={styles.bmiValue}>{bmiValue.toFixed(1)}</Text>
 
-            {/* BMI Card */}
-            <View style={styles.bmiCardContainer}>
-              <BMICard bmiValue={bmiValue} />
-            </View>
+              {/* BMI Card */}
+              <View style={styles.bmiCardContainer}>
+                <BMICard bmiValue={bmiValue} />
+              </View>
 
-            {/* Weight and Height Display */}
-            <View style={styles.statsContainer}>
-              <View style={styles.statItem}>
-                <Text style={styles.statValue}>{weight}kg</Text>
-                <Text style={styles.statLabel}>Weight</Text>
+              {/* Weight and Height Display */}
+              <View style={styles.statsContainer}>
+                <View style={styles.statItem}>
+                  <Text style={styles.statValue}>{weight}kg</Text>
+                  <Text style={styles.statLabel}>Weight</Text>
+                </View>
+                <View style={styles.statItem}>
+                  <Text style={styles.statValue}>{height}cm</Text>
+                  <Text style={styles.statLabel}>Height</Text>
+                </View>
               </View>
-              <View style={styles.statItem}>
-                <Text style={styles.statValue}>{height}cm</Text>
-                <Text style={styles.statLabel}>Height</Text>
-              </View>
-            </View>
 
-            {/* BMI Calculation Formula */}
-            <View style={styles.formulaContainer}>
-              <Text style={styles.formulaTitle}>How BMI is Calculated:</Text>
-              <View style={styles.formulaBox}>
-                <Text style={styles.formulaText}>BMI = Weight (kg) / Height² (m²)</Text>
-              </View>
-              <Text style={styles.exampleText}>
-                Your calculation: {weight}kg / ({(height / 100).toFixed(2)}m)² = {bmiValue.toFixed(1)}
-              </Text>
-              
-              <View style={styles.infoBox}>
-                <Text style={styles.infoTitle}>BMI Categories:</Text>
-                <Text style={styles.infoItem}>• Underweight: BMI &lt; 18.5</Text>
-                <Text style={styles.infoItem}>• Normal: BMI 18.5 - 24.9</Text>
-                <Text style={styles.infoItem}>• Overweight: BMI 25 - 29.9</Text>
-                <Text style={styles.infoItem}>• Obese: BMI ≥ 30</Text>
-              </View>
-            </View>
+              {/* BMI Calculation Formula */}
+              <View style={styles.formulaContainer}>
+                <Text style={styles.formulaTitle}>How BMI is Calculated:</Text>
+                <View style={styles.formulaBox}>
+                  <Text style={styles.formulaText}>
+                    BMI = Weight (kg) / Height² (m²)
+                  </Text>
+                </View>
+                <Text style={styles.exampleText}>
+                  Your calculation: {weight}kg / ({(height / 100).toFixed(2)}m)²
+                  = {bmiValue.toFixed(1)}
+                </Text>
 
-            {/* Go Back Button */}
-            <TouchableOpacity style={styles.goBackButton} onPress={onClose}>
-              <Text style={styles.goBackText}>GO BACK</Text>
-            </TouchableOpacity>
-          </ScrollView>
+                <View style={styles.infoBox}>
+                  <Text style={styles.infoTitle}>BMI Categories:</Text>
+                  <Text style={styles.infoItem}>
+                    • Underweight: BMI &lt; 18.5
+                  </Text>
+                  <Text style={styles.infoItem}>• Normal: BMI 18.5 - 24.9</Text>
+                  <Text style={styles.infoItem}>
+                    • Overweight: BMI 25 - 29.9
+                  </Text>
+                  <Text style={styles.infoItem}>• Obese: BMI ≥ 30</Text>
+                </View>
+              </View>
+
+              {/* Go Back Button */}
+              <TouchableOpacity style={styles.goBackButton} onPress={onClose}>
+                <Text style={styles.goBackText}>GO BACK</Text>
+              </TouchableOpacity>
+            </ScrollView>
+          </View>
         </View>
-      </View>
     </Modal>
   );
 }
@@ -95,6 +107,13 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     padding: 20,
+  },
+  overlayTouchable: {
+    position: "absolute",
+    top: 0,
+    bottom: 0,
+    left: 0,
+    right: 0,
   },
   modalContainer: {
     backgroundColor: "white",
@@ -178,7 +197,6 @@ const styles = StyleSheet.create({
     backgroundColor: "#F9F9F9",
     padding: 16,
     borderRadius: 8,
-
   },
   infoTitle: {
     fontSize: 16,

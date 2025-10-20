@@ -718,6 +718,7 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingHorizontal: 16,
     paddingTop: 16,
+    marginBottom: 50
   },
   profileBoxContainer: {
     marginBottom: 20,

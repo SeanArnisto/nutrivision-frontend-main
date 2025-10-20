@@ -26,9 +26,6 @@ import CalorieCard from "@/components/CalorieCard";
 import BMICard from "@/components/BMICard";
 import BMIModal from "@/components/BMIModal";
 
-
-
-
 // Import the hooks and auth store
 import {
   useNutritionCalendar,
@@ -43,9 +40,6 @@ import CustomModal from "@/components/customModal";
 import { Custom } from "react-native-reanimated-carousel/lib/typescript/components/Pagination/Custom";
 import { withDecay } from "react-native-reanimated";
 import { useUserProfileStore } from "@/stores/userProfileStore";
-
-
-
 
 type Page2ScreenNavigationProp = StackNavigationProp<
   RootStackParamList,
@@ -62,7 +56,6 @@ export default function Page2() {
   const [sessionFoodEntries, setSessionFoodEntries] = useState<FoodEntry[]>([]);
   const [shouldRedirect, setShouldRedirect] = useState(false);
   const [bmiModalVisible, setBmiModalVisible] = useState(false);
-
 
   // Use the auth store to get user info
   const { user, isAuthenticated, profileComplete } = useAuthStore();
@@ -94,41 +87,41 @@ export default function Page2() {
     error: profileError,
   } = useAccountCreationDate();
 
+  const { profile, fetchUserProfile, calculateBMI } = useUserProfileStore();
 
-  const {
-  profile,
-  fetchUserProfile,
-  calculateBMI,
-} = useUserProfileStore();
+  useEffect(() => {
+    if (isAuthenticated && user) {
+      fetchUserProfile();
+    }
+  }, [isAuthenticated, user, fetchUserProfile]);
 
-useEffect(() => {
-  if (isAuthenticated && user) {
-    fetchUserProfile();
-  }
-}, [isAuthenticated, user, fetchUserProfile]);
+  const userBMI = calculateBMI();
+  const userWeight = profile?.weight ?? 0;
+  const userHeight = profile?.height ?? 0;
 
-
-
-const userBMI = calculateBMI();
-const userWeight = profile?.weight ?? 0;
-const userHeight = profile?.height ?? 0;
-
-useEffect(() => {
-  if (!isProfileLoading) {
-    console.log("✅ Profile loaded - BMI:", userBMI, "Weight:", userWeight, "Height:", userHeight);
-  }
-}, [userBMI, isProfileLoading, userWeight, userHeight]);
+  useEffect(() => {
+    if (!isProfileLoading) {
+      console.log(
+        "✅ Profile loaded - BMI:",
+        userBMI,
+        "Weight:",
+        userWeight,
+        "Height:",
+        userHeight
+      );
+    }
+  }, [userBMI, isProfileLoading, userWeight, userHeight]);
 
   // Fetch nutrition intake data on component mount
   // Fetch nutrition intake data on component mount
-useEffect(() => {
-  if (isAuthenticated && user && profileComplete === true) {
-    console.log("🏠 Home page: Fetching nutrition intake...");
-    fetchNutritionIntake().then(() => {
-      console.log("📊 Nutrition data loaded:", nutritionData);
-    });
-  }
-}, [isAuthenticated, user, profileComplete, fetchNutritionIntake]);
+  useEffect(() => {
+    if (isAuthenticated && user && profileComplete === true) {
+      console.log("🏠 Home page: Fetching nutrition intake...");
+      fetchNutritionIntake().then(() => {
+        console.log("📊 Nutrition data loaded:", nutritionData);
+      });
+    }
+  }, [isAuthenticated, user, profileComplete, fetchNutritionIntake]);
 
   // Redirect unauthenticated users to login
   useEffect(() => {
@@ -150,13 +143,6 @@ useEffect(() => {
   if (!isAuthenticated || !user) {
     return null;
   }
-
-
-
-
-
-
-
 
   // Check if any of the errors are network-related
   // useEffect(() => {
@@ -232,21 +218,21 @@ useEffect(() => {
   };
 
   // Calculate averages from nutrition intake data (from user_nutrition_intake table)
-    const carbAvg = nutritionData?.avg_carbs
-      ? Math.round(nutritionData.avg_carbs)
-      : 0;
-    const proteinAvg = nutritionData?.avg_protein
-      ? Math.round(nutritionData.avg_protein)
-      : 0;
-    const sodiumAvg = nutritionData?.avg_sodium
-      ? nutritionData.avg_sodium / 1000
-      : 0; // No division by 1000 if already in correct units
-    // Calories average (fallback to 0 if not available)
-    const caloriesAvg = nutritionData?.avg_calories
-      ? Math.round(nutritionData.avg_calories)
-      : 0;
-    // const bmiValue = 35;
-    // Handle retry for different er  rors
+  const carbAvg = nutritionData?.avg_carbs
+    ? Math.round(nutritionData.avg_carbs)
+    : 0;
+  const proteinAvg = nutritionData?.avg_protein
+    ? Math.round(nutritionData.avg_protein)
+    : 0;
+  const sodiumAvg = nutritionData?.avg_sodium
+    ? nutritionData.avg_sodium / 1000
+    : 0; // No division by 1000 if already in correct units
+  // Calories average (fallback to 0 if not available)
+  const caloriesAvg = nutritionData?.avg_calories
+    ? Math.round(nutritionData.avg_calories)
+    : 0;
+  // const bmiValue = 35;
+  // Handle retry for different er  rors
   const handleRetry = (type: "calendar" | "intake") => {
     switch (type) {
       case "calendar":
@@ -259,165 +245,159 @@ useEffect(() => {
   };
 
   return (
-    
-
     <SafeAreaView style={SafeViewAndroid.AndroidSafeArea}>
       <ScrollView style={styles.down}>
-      <AppLogo />
-      <ThemedView style={styles.container}>
-        <View style={styles.headerContainer}>
-          <ProfileBox
-            primaryText="Average"
-            highlightedText="Daily"
-            secondaryText="Intake"
-            style={{width: 165}}
-          />
-          <TouchableOpacity onPress={() => setIsVisible(true)}>
-            <Ionicons
-              name="information-circle-outline"
-              size={28}
-              color="#9AB206"
+        <AppLogo />
+        <ThemedView style={styles.container}>
+          <View style={styles.headerContainer}>
+            <ProfileBox
+              primaryText="Average"
+              highlightedText="Daily"
+              secondaryText="Intake"
+              style={{ width: 165 }}
             />
-          </TouchableOpacity>
-        </View>
-
-        <CustomModal
-          visible={isVisible}
-          onClose={() => setIsVisible(false)}
-          title="Average Daily Intake"
-        >
-          <View>
-            <Text>
-              {"\n"}This screen displays your average daily intake. {"\n\n"}The values shown
-              for carbohydrates, sodium, and protein (in grams) {"\n\n"}Represent your
-              maximum daily threshold, which is customized based on your weight,
-              height, and age.{"\n\n"}The calendar below allows you to track daily intake, it displays
-              the intake for a specific day at a given time.
-              
-            </Text>
+            <TouchableOpacity onPress={() => setIsVisible(true)}>
+              <Ionicons
+                name="information-circle-outline"
+                size={28}
+                color="#9AB206"
+              />
+            </TouchableOpacity>
           </View>
-        </CustomModal>
+
+          <CustomModal
+            visible={isVisible}
+            onClose={() => setIsVisible(false)}
+            title="Average Daily Intake"
+          >
+            <View>
+              <Text>
+                {"\n"}This screen displays your average daily intake. {"\n\n"}
+                The values shown for carbohydrates, sodium, and protein (in
+                grams) {"\n\n"}Represent your maximum daily threshold, which is
+                customized based on your weight, height, and age.{"\n\n"}The
+                calendar below allows you to track daily intake, it displays the
+                intake for a specific day at a given time.
+              </Text>
+            </View>
+          </CustomModal>
           {/* Calorie Card - Full Width */}
           <CalorieCard
             value={isIntakeLoading ? "..." : caloriesAvg.toString()}
             fill={100}
             maxCalories={2000} // Optional: pass user's target calories
           />
-        <View style={styles.rowContainer}>
-        
-          {/* Carbohydrate Card */}
-          <AvgIntakeCard
-            iconSource={nutrients.carbohydrate.icon}
-            tintColor={nutrients.carbohydrate.tintColor}
-            subtitle="Carbohydrate"
-            value={isIntakeLoading ? "..." : carbAvg.toString()}
-            index={0}
-          />
+          <View style={styles.rowContainer}>
+            {/* Carbohydrate Card */}
+            <AvgIntakeCard
+              iconSource={nutrients.carbohydrate.icon}
+              tintColor={nutrients.carbohydrate.tintColor}
+              subtitle="Carbohydrate"
+              value={isIntakeLoading ? "..." : carbAvg.toString()}
+              index={0}
+            />
 
-          {/* Sodium Card */}
-          <AvgIntakeCard
-            iconSource={nutrients.sodium.icon}
-            tintColor={nutrients.sodium.tintColor}
-            subtitle="Sodium"
-            value={isIntakeLoading ? "..." : sodiumAvg.toString()}
-            index={1}
-          />
+            {/* Sodium Card */}
+            <AvgIntakeCard
+              iconSource={nutrients.sodium.icon}
+              tintColor={nutrients.sodium.tintColor}
+              subtitle="Sodium"
+              value={isIntakeLoading ? "..." : sodiumAvg.toString()}
+              index={1}
+            />
 
-          {/* Protein Card */}
-          <AvgIntakeCard
-            iconSource={nutrients.protein.icon}
-            tintColor={nutrients.protein.tintColor}
-            subtitle="Protein"
-            value={isIntakeLoading ? "..." : proteinAvg.toString()}
-            index={2}
-          />
-        </View>
-        {/* BMI Card */}
-<BMICard
-  bmiValue={isProfileLoading ? 0 : Math.round(userBMI || 0)}
-  onInfoPress={() => setBmiModalVisible(true)}
-/>
-      {/* Show loading skeleton while fetching profile */}
-{isProfileLoading && (
-  <View style={styles.skeletonContainer}>
-    <Text style={styles.skeletonText}>Loading profile...</Text>
-  </View>
-)}
-
-{/* Show error if fetch fails */}
-{profileError && (
-  <View style={styles.errorContainer}>
-    <Text style={styles.errorText}>
-      Error loading profile: {profileError}
-    </Text>
-  </View>
-)}
-        {/* Error handling for nutrition intake */}
-        {intakeError && (
-          <View style={styles.errorContainer}>
-            <Text style={styles.errorText}>
-              Error loading nutrition intake: Check Internet Connectivity
-            </Text>
-            <TouchableOpacity
-              onPress={() => handleRetry("intake")}
-              style={styles.retryButton}
-            >
-              <Text style={styles.retryText}>Retry</Text>
-            </TouchableOpacity>
+            {/* Protein Card */}
+            <AvgIntakeCard
+              iconSource={nutrients.protein.icon}
+              tintColor={nutrients.protein.tintColor}
+              subtitle="Protein"
+              value={isIntakeLoading ? "..." : proteinAvg.toString()}
+              index={2}
+            />
           </View>
-        )}
+          {/* BMI Card */}
+          <BMICard
+            bmiValue={isProfileLoading ? 0 : Math.round(userBMI || 0)}
+            onInfoPress={() => setBmiModalVisible(true)}
+          />
+          {/* Show loading skeleton while fetching profile */}
+          {isProfileLoading && (
+            <View style={styles.skeletonContainer}>
+              <Text style={styles.skeletonText}>Loading profile...</Text>
+            </View>
+          )}
 
-        {/* Error handling for calendar */}
-        {calendarError && (
-          <View style={styles.errorContainer}>
-            <Text style={styles.errorText}>
-              Error loading calendar data: Check Internet Connectivity
-            </Text>
-            <TouchableOpacity
-              onPress={() => handleRetry("calendar")}
-              style={styles.retryButton}
-            >
-              <Text style={styles.retryText}>Retry</Text>
-            </TouchableOpacity>
-          </View>
-        )}
+          {/* Show error if fetch fails */}
+          {profileError && (
+            <View style={styles.errorContainer}>
+              <Text style={styles.errorText}>
+                Error loading profile: {profileError}
+              </Text>
+            </View>
+          )}
+          {/* Error handling for nutrition intake */}
+          {intakeError && (
+            <View style={styles.errorContainer}>
+              <Text style={styles.errorText}>
+                Error loading nutrition intake: Check Internet Connectivity
+              </Text>
+              <TouchableOpacity
+                onPress={() => handleRetry("intake")}
+                style={styles.retryButton}
+              >
+                <Text style={styles.retryText}>Retry</Text>
+              </TouchableOpacity>
+            </View>
+          )}
 
-        {/* Calendar Component */}
-        <Calendar
-          onDateSelect={handleDateSelect}
-          sessionsData={sessionsData}
-          accountCreationDate={accountCreationDate || new Date()}
-        />
+          {/* Error handling for calendar */}
+          {calendarError && (
+            <View style={styles.errorContainer}>
+              <Text style={styles.errorText}>
+                Error loading calendar data: Check Internet Connectivity
+              </Text>
+              <TouchableOpacity
+                onPress={() => handleRetry("calendar")}
+                style={styles.retryButton}
+              >
+                <Text style={styles.retryText}>Retry</Text>
+              </TouchableOpacity>
+            </View>
+          )}
 
-        {/* Date Detail Modal */}
-        <DateDetailModal
-          visible={dateModalVisible}
-          onClose={handleModalClose}
-          selectedDate={selectedDate}
-          sessions={getSessionsForSelectedDate()}
-          onSessionSelect={handleSessionSelect}
-        />
+          {/* Calendar Component */}
+          <Calendar
+            onDateSelect={handleDateSelect}
+            sessionsData={sessionsData}
+            accountCreationDate={accountCreationDate || new Date()}
+          />
 
-        {/* Session Detail Modal */}
-        <SessionDetailModal
-          visible={sessionModalVisible}
-          onClose={handleSessionModalClose}
-          session={selectedSession}
-          foodEntries={sessionFoodEntries}
-          nutritionSummary={
-            getSelectedSessionNutritionSummary() || {
-              carbs: 0,
-              sodium: 0,
-              protein: 0,
-              calories: 0,
-              total: 0,
+          {/* Date Detail Modal */}
+          <DateDetailModal
+            visible={dateModalVisible}
+            onClose={handleModalClose}
+            selectedDate={selectedDate}
+            sessions={getSessionsForSelectedDate()}
+            onSessionSelect={handleSessionSelect}
+          />
+
+          {/* Session Detail Modal */}
+          <SessionDetailModal
+            visible={sessionModalVisible}
+            onClose={handleSessionModalClose}
+            session={selectedSession}
+            foodEntries={sessionFoodEntries}
+            nutritionSummary={
+              getSelectedSessionNutritionSummary() || {
+                carbs: 0,
+                sodium: 0,
+                protein: 0,
+                calories: 0,
+                total: 0,
+              }
             }
-          }
-        />
-      </ThemedView>
-
-      
-      
+          />
+        </ThemedView>
       </ScrollView>
       <BottomNavBar
         onCameraPress={() => navigation.navigate("camera")}
@@ -427,18 +407,15 @@ useEffect(() => {
           settings: "settings",
           profile: "profile",
         }}
-        
       />
-<BMIModal
-  visible={bmiModalVisible}
-  onClose={() => setBmiModalVisible(false)}
-  bmiValue={isProfileLoading ? 0 : Math.round(userBMI || 0)}
-  weight={userWeight}
-  height={userHeight}
-/>
+      <BMIModal
+        visible={bmiModalVisible}
+        onClose={() => setBmiModalVisible(false)}
+        bmiValue={isProfileLoading ? 0 : Math.round(userBMI || 0)}
+        weight={userWeight}
+        height={userHeight}
+      />
     </SafeAreaView>
-    
-    
   );
 }
 
@@ -490,7 +467,7 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     fontSize: 14,
   },
-  down:{
+  down: {
     marginBottom: 60,
   },
 
@@ -508,5 +485,4 @@ const styles = StyleSheet.create({
     color: "#666666",
     fontStyle: "italic",
   },
-  
 });
