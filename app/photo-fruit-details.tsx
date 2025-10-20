@@ -70,12 +70,45 @@ function PhotoFruitDetailsPage() {
     isDropdownOpenRef.current = isDropdownOpen;
   }, [isDropdownOpen]);
 
-  // Calculate nutrients based on amount
+  const [disabled] = useState(false);
+  const [fruitCut, setFruitCut] = useState(1);
+  const [slices, setSlices] = useState(1);
+
+  const fruitCutRange = { minAmount: 1, maxAmount: 15 };
+  const slicesRange = { minAmount: 0, maxAmount: 15 };
+
+  // Generate options based on fruitCut value
+  const optionsLength = fruitCut === 1 ? 99 : fruitCut;
+  const dropdownLabel = fruitCut === 1 ? "Amount" : "Slices to eat";
+  const optionUnit = fruitCut === 1 ? "amount" : "slice";
+
+  const options = Array.from({ length: optionsLength }, (_, i) => ({
+    label: `${i + 1} ${i + 1 === 1 ? optionUnit : optionUnit + "s"}`,
+    value: `${i + 1}`,
+  }));
+
+  const [selectedValue, setSelectedValue] = useState(options[0].value);
+
+  // Update selectedValue when fruitCut changes and current value exceeds new limit
+  useEffect(() => {
+    const currentValue = parseInt(selectedValue);
+    if (fruitCut > 1 && currentValue > fruitCut) {
+      setSelectedValue("1");
+    }
+  }, [fruitCut]);
+
+  // Calculate nutrients based on fruitCut and selectedValue
+  const selectedAmount = parseInt(selectedValue) || 1;
+
+  // If fruitCut = 1: multiply by selectedAmount (whole fruits)
+  // If fruitCut > 1: divide by fruitCut (portion size), then multiply by selectedAmount (slices eaten)
+  const multiplier = fruitCut === 1 ? selectedAmount : (selectedAmount / fruitCut);
+
   const nutrientPerServing = {
-    carbs: parseFloat((currentIntake.carbs * amount).toFixed(2)),
-    protein: parseFloat((currentIntake.protein * amount).toFixed(2)),
-    sodium: parseFloat((currentIntake.sodium * amount).toFixed(4)),
-    calories: parseFloat((currentIntake.calories * amount).toFixed(2)),
+    carbs: parseFloat((currentIntake.carbs * multiplier).toFixed(2)),
+    protein: parseFloat((currentIntake.protein * multiplier).toFixed(2)),
+    sodium: parseFloat((currentIntake.sodium * multiplier).toFixed(4)),
+    calories: parseFloat((currentIntake.calories * multiplier).toFixed(2)),
   };
 
   const handleFruitCutIncrease = () => {
@@ -142,13 +175,6 @@ function PhotoFruitDetailsPage() {
     })
   ).current;
 
-  const [disabled] = useState(false);
-  const [fruitCut, setFruitCut] = useState(1); // For halves (0-8)
-  const [slices, setSlices] = useState(1); // For slices
-
-  const fruitCutRange = { minAmount: 1, maxAmount: 15 };
-  const slicesRange = { minAmount: 0, maxAmount: 15 };
-
   const isFruitCutDecreaseDisabled =
     disabled || fruitCut <= fruitCutRange.minAmount;
   const isFruitCutIncreaseDisabled =
@@ -163,25 +189,6 @@ function PhotoFruitDetailsPage() {
     extrapolate: "clamp",
   });
 
-  // Generate options based on fruitCut value
-  const optionsLength = fruitCut === 1 ? 99 : fruitCut;
-  const dropdownLabel = fruitCut === 1 ? "Amount" : "Slices to eat";
-  const optionUnit = fruitCut === 1 ? "amount" : "slice";
-
-  const options = Array.from({ length: optionsLength }, (_, i) => ({
-    label: `${i + 1} ${i + 1 === 1 ? optionUnit : optionUnit + "s"}`,
-    value: `${i + 1}`,
-  }));
-
-  const [selectedValue, setSelectedValue] = useState(options[0].value);
-
-  // Update selectedValue when fruitCut changes and current value exceeds new limit
-  useEffect(() => {
-    const currentValue = parseInt(selectedValue);
-    if (fruitCut > 1 && currentValue > fruitCut) {
-      setSelectedValue("1");
-    }
-  }, [fruitCut]);
   const carbsIcon = require("@/assets/images/Carbohydrate Icon.png");
   const sodiumIcon = require("@/assets/images/Sodium Icon.png");
   const proteinIcon = require("@/assets/images/Protein Icon.png");
