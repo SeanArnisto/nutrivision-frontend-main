@@ -170,7 +170,6 @@ function Feedback() {
     intakes,
     loading: detailedLoading,
     error: detailedError,
-    saveToDatabase,
   } = useDetailedNutrientStore();
   // Use fruitCut and selectedAmount if available, otherwise fall back to servings
   const detailedCarbs = intakes.reduce((sum, intake) => {
@@ -359,6 +358,10 @@ function Feedback() {
   const saveWithPhotos = useNutrientsStore((state) => state.saveWithPhotos);
   const reset = useNutrientsStore((state) => state.reset);
   const calories = useNutrientsStore((state) => state.calories) || 1800; // PLACEHOLDER: use 1500 for testing
+  const setCarbs = useNutrientsStore((state) => state.setCarbs);
+  const setProtein = useNutrientsStore((state) => state.setProtein);
+  const setSodium = useNutrientsStore((state) => state.setSodium);
+  const setCalories = useNutrientsStore((state) => state.setCalories);
 
   const deleteAllCapturedPhotos = useCallback(
     async (photos: Photo[]) => {
@@ -417,8 +420,14 @@ function Feedback() {
   const handleModalSave = async () => {
     setModalLoading(true);
     try {
-      // Use saveToDatabase from useDetailedNutrientStore instead of useNutrientsStore
-      const result = await saveToDatabase(intakes);
+      // Update the nutrients store with calculated values from lines 215-218
+      setCarbs(carbs);
+      setProtein(prot);
+      setSodium(sod);
+      setCalories(cal);
+
+      // Use saveWithPhotos with the updated values
+      const result = await saveWithPhotos(capturedPhotos);
 
       if (result.success) {
         // IMPORTANT: Refresh the nutritional history in the store after saving
