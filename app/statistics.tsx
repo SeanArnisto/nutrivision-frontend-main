@@ -197,31 +197,39 @@ export default function Statistics() {
     return null;
   }
 
-  // Calculate averages from preloaded nutrition intake data
-  const carbAvg = nutritionData?.avg_carbs
-    ? Math.round(nutritionData.avg_carbs)
-    : 0;
-  const proteinAvg = nutritionData?.avg_protein
-    ? Math.round(nutritionData.avg_protein)
-    : 0;
-  const sodiumAvg = nutritionData?.avg_sodium
-    ? nutritionData.avg_sodium / 1000
-    : 0;
-  const todaysCalories = 200;
-  const targetCalories = 2000;
+// Calculate averages from preloaded nutrition intake data
+const carbAvg = nutritionData?.avg_carbs
+  ? Math.round(nutritionData.avg_carbs)
+  : 0;
+const proteinAvg = nutritionData?.avg_protein
+  ? Math.round(nutritionData.avg_protein)
+  : 0;
+const sodiumAvg = nutritionData?.avg_sodium
+  ? nutritionData.avg_sodium / 1000
+  : 0;
+const calorieAvg = nutritionData?.avg_calories
+  ? Math.round(nutritionData.avg_calories)
+  : 2000;
 
-  // Use preloaded nutritional history (with safety checks)
-  const getTodaysRecords = () => {
-    if (!Array.isArray(nutritionalHistory)) return [];
+// Use preloaded nutritional history (with safety checks)
+const getTodaysRecords = () => {
+  if (!Array.isArray(nutritionalHistory)) return [];
 
-    const today = new Date().toDateString();
-    return nutritionalHistory.filter(
-      (record) =>
-        record &&
-        record.created_at &&
-        new Date(record.created_at).toDateString() === today
-    );
-  };
+  const today = new Date().toDateString();
+  return nutritionalHistory.filter(
+    (record) =>
+      record &&
+      record.created_at &&
+      new Date(record.created_at).toDateString() === today
+  );
+};
+
+// Calculate today's calorie total (after getTodaysRecords is defined)
+const todaysCalories = getTodaysRecords().reduce(
+  (total, record) => total + (record.calories || 0),
+  0
+);
+const targetCalories = calorieAvg;
 
   const getWeeklyRecords = () => {
     if (!Array.isArray(nutritionalHistory)) return [];
