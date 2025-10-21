@@ -567,18 +567,22 @@ export default function Camera() {
 
           console.log(`SERVINGS: ${response.data.items?.servings}`);
 
-          const detailedIntakes = response.data.items.map((intake, index) => ({
-            type: "label",
-            imageUrl: photos[index]?.uri,
-            carbs: parseFloat(intake.raw_extracted.carbohydrates ?? 0) || 0,
-            protein: parseFloat(intake.raw_extracted.protein ?? 0) || 0,
-            sodium: parseFloat(intake.raw_extracted.sodium ?? 0) / 1000 || 0,
-            calories: parseFloat(intake.raw_extracted.calories ?? 0) || 0,
-            servings:
-              intake.servings_count ||
+          const detailedIntakes = response.data.items.map((intake, index) => {
+            const detectedServings = intake.servings_count ||
               parseFloat(intake.final_extracted?.servings ?? 0) ||
-              0,
-          }));
+              0;
+
+            return {
+              type: "label",
+              imageUrl: photos[index]?.uri,
+              carbs: parseFloat(intake.raw_extracted.carbohydrates ?? 0) || 0,
+              protein: parseFloat(intake.raw_extracted.protein ?? 0) || 0,
+              sodium: parseFloat(intake.raw_extracted.sodium ?? 0) / 1000 || 0,
+              calories: parseFloat(intake.raw_extracted.calories ?? 0) || 0,
+              servings: detectedServings,
+              originalServings: detectedServings, // 🔥 Store original detected servings
+            };
+          });
 
           console.log("📊 Setting detailed intakes:", detailedIntakes);
           useDetailedNutrientStore.getState().setIntake(detailedIntakes);
