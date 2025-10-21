@@ -32,7 +32,7 @@ import {
 } from "@/stores/useFeedbackStore";
 import BatteryIndicator from "@/components/BatteryIndicator";
 import { useDetailedNutrientStore } from "@/stores/useDetailedNutrientStore";
-import { SafeAreaView } from "react-native-safe-area-context"
+import { SafeAreaView } from "react-native-safe-area-context";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 
@@ -165,7 +165,6 @@ const SpoonVisualization = React.memo(
 );
 
 function Feedback() {
-
   const {
     intakes,
     loading: detailedLoading,
@@ -280,7 +279,7 @@ function Feedback() {
       proteinMax:
         nutritionDataAve && maxProtein === 0
           ? nutritionDataAve.maxProtein
-          : maxProtein,      
+          : maxProtein,
       caloriesMin:
         nutritionDataAve && minCalories === 0
           ? nutritionDataAve.minCalories
@@ -299,7 +298,7 @@ function Feedback() {
       minProtein,
       maxProtein,
       minCalories,
-      maxCalories
+      maxCalories,
     ]
   );
 
@@ -553,11 +552,13 @@ function Feedback() {
                   {getTablespoonEquivalent(carbs, "carbs")}
                 </Text>
               </View>
-              <SpoonVisualization
-                value={carbs}
-                minIntake={recommendationValues.carbsMin}
-                maxIntake={recommendationValues.carbsMax}
-              />
+              <TouchableOpacity onPress={() => alert("carbohydrates clicked")}>
+                <SpoonVisualization
+                  value={carbs}
+                  minIntake={recommendationValues.carbsMin}
+                  maxIntake={recommendationValues.carbsMax}
+                />
+              </TouchableOpacity>
             </View>
 
             {/* Sodium Display */}
@@ -568,14 +569,17 @@ function Feedback() {
                   {getTablespoonEquivalent(sod, "sodium")}
                 </Text>
               </View>
-              <SpoonVisualization
-                value={sod}
-                minIntake={recommendationValues.sodiumMin}
-                maxIntake={recommendationValues.sodiumMax}
-              />
+              <TouchableOpacity onPress={() => alert("sodium clicked")}>
+                <SpoonVisualization
+                  value={sod}
+                  minIntake={recommendationValues.sodiumMin}
+                  maxIntake={recommendationValues.sodiumMax}
+                />
+              </TouchableOpacity>
             </View>
 
             {/* Protein Display */}
+
             <View style={styles.nutrientContainer}>
               <View style={styles.textContainer}>
                 <Text style={styles.textHeader}>Protein: {prot}g</Text>
@@ -583,11 +587,13 @@ function Feedback() {
                   {getTablespoonEquivalent(prot, "protein")}
                 </Text>
               </View>
-              <SpoonVisualization
-                value={prot}
-                minIntake={recommendationValues.proteinMin}
-                maxIntake={recommendationValues.proteinMax}
-              />
+              <TouchableOpacity onPress={() => alert("protein clicked")}>
+                <SpoonVisualization
+                  value={prot}
+                  minIntake={recommendationValues.proteinMin}
+                  maxIntake={recommendationValues.proteinMax}
+                />
+              </TouchableOpacity>
             </View>
 
             {/* Feedback Carousel Section */}
@@ -689,7 +695,7 @@ function Feedback() {
           carbs: carbs,
           sodium: sod,
           protein: prot,
-          calories: cal
+          calories: cal,
         }}
         recommendations={{
           carbsMin: recommendationValues.carbsMin,
@@ -699,7 +705,7 @@ function Feedback() {
           proteinMin: recommendationValues.proteinMin,
           proteinMax: recommendationValues.proteinMax,
           caloriesMin: recommendationValues.caloriesMin,
-          caloriesMax: recommendationValues.caloriesMax
+          caloriesMax: recommendationValues.caloriesMax,
         }}
         loading={modalLoading}
       />
@@ -816,7 +822,7 @@ const styles = StyleSheet.create({
   },
   legendContainer: {
     flexDirection: "row",
-    width: SCREEN_WIDTH * 0.9,
+    width: SCREEN_WIDTH * 0.4,
     height: 40,
     alignItems: "center",
     justifyContent: "center",
@@ -837,7 +843,7 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "white",
     alignItems: "center",
-    justifyContent: "flex-start",
+    justifyContent: "center",
   },
   legendSpoon: {
     width: 30,

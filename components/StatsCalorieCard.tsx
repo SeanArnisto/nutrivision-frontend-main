@@ -20,6 +20,21 @@ export default function StatsCalorieCard({
 }: StatsCalorieCardProps) {
   const [progressAnim] = useState(new Animated.Value(0));
   
+  // Function to determine progress bar color based on value/target ratio
+  const getProgressColor = () => {
+    if (value === 0) return "#C0C0C0"; // low
+    
+    const percentage = (value / target) * 100;
+    
+    if (percentage < 80) {
+      return "#C0C0C0"; // low - gray
+    } else if (percentage >= 80 && percentage <= 110) {
+      return "#9AB106"; // recommended - green
+    } else {
+      return "#E74C3C"; // high - red
+    }
+  };
+  
   useEffect(() => {
     // Calculate percentage (cap at 100%)
     const percentage = value > 0 ? Math.min((value / target) * 100, 100) : 0;
@@ -70,7 +85,10 @@ export default function StatsCalorieCard({
             <Animated.View 
               style={[
                 styles.progressBarFill,
-                { width: progressWidth }
+                { 
+                  width: progressWidth,
+                  backgroundColor: getProgressColor()
+                }
               ]} 
             />
           </View>
@@ -144,7 +162,6 @@ const styles = StyleSheet.create({
   },
   progressBarFill: {
     height: "100%",
-    backgroundColor: "#C5C5C5",
     borderRadius: 10,
   },
 });
