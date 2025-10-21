@@ -49,37 +49,71 @@ export default function UserNutrientPage() {
   const setSodium = useNutrientsStore((state) => state.setSodium);
 
   // Get detailed nutrient data from store
-  const { intakes, loading: detailedLoading, error: detailedError, saveToDatabase } = useDetailedNutrientStore();
+  const {
+    intakes,
+    setIntake,
+    loading: detailedLoading,
+    error: detailedError,
+    saveToDatabase,
+  } = useDetailedNutrientStore();
 
   // Calculate totals from intakes
   // Use fruitCut and selectedAmount if available, otherwise fall back to servings
-  const detailedCarbs = parseFloat(intakes.reduce((sum, intake) => {
-    const multiplier = (intake.fruitCut !== undefined && intake.selectedAmount !== undefined)
-      ? (intake.fruitCut === 1 ? intake.selectedAmount : (intake.selectedAmount / intake.fruitCut))
-      : (intake.servings || 1);
-    return sum + (intake.carbs * multiplier);
-  }, 0).toFixed(5));
+  const detailedCarbs = parseFloat(
+    intakes
+      .reduce((sum, intake) => {
+        const multiplier =
+          intake.fruitCut !== undefined && intake.selectedAmount !== undefined
+            ? intake.fruitCut === 1
+              ? intake.selectedAmount
+              : intake.selectedAmount / intake.fruitCut
+            : intake.servings || 1;
+        return sum + intake.carbs * multiplier;
+      }, 0)
+      .toFixed(5)
+  );
 
-  const detailedProtein = parseFloat(intakes.reduce((sum, intake) => {
-    const multiplier = (intake.fruitCut !== undefined && intake.selectedAmount !== undefined)
-      ? (intake.fruitCut === 1 ? intake.selectedAmount : (intake.selectedAmount / intake.fruitCut))
-      : (intake.servings || 1);
-    return sum + (intake.protein * multiplier);
-  }, 0).toFixed(5));
+  const detailedProtein = parseFloat(
+    intakes
+      .reduce((sum, intake) => {
+        const multiplier =
+          intake.fruitCut !== undefined && intake.selectedAmount !== undefined
+            ? intake.fruitCut === 1
+              ? intake.selectedAmount
+              : intake.selectedAmount / intake.fruitCut
+            : intake.servings || 1;
+        return sum + intake.protein * multiplier;
+      }, 0)
+      .toFixed(5)
+  );
 
-  const detailedSodium = parseFloat(intakes.reduce((sum, intake) => {
-    const multiplier = (intake.fruitCut !== undefined && intake.selectedAmount !== undefined)
-      ? (intake.fruitCut === 1 ? intake.selectedAmount : (intake.selectedAmount / intake.fruitCut))
-      : (intake.servings || 1);
-    return sum + (intake.sodium * multiplier);
-  }, 0).toFixed(5));
+  const detailedSodium = parseFloat(
+    intakes
+      .reduce((sum, intake) => {
+        const multiplier =
+          intake.fruitCut !== undefined && intake.selectedAmount !== undefined
+            ? intake.fruitCut === 1
+              ? intake.selectedAmount
+              : intake.selectedAmount / intake.fruitCut
+            : intake.servings || 1;
+        return sum + intake.sodium * multiplier;
+      }, 0)
+      .toFixed(5)
+  );
 
-  const detailedCalories = parseFloat(intakes.reduce((sum, intake) => {
-    const multiplier = (intake.fruitCut !== undefined && intake.selectedAmount !== undefined)
-      ? (intake.fruitCut === 1 ? intake.selectedAmount : (intake.selectedAmount / intake.fruitCut))
-      : (intake.servings || 1);
-    return sum + (intake.calories * multiplier);
-  }, 0).toFixed(5));
+  const detailedCalories = parseFloat(
+    intakes
+      .reduce((sum, intake) => {
+        const multiplier =
+          intake.fruitCut !== undefined && intake.selectedAmount !== undefined
+            ? intake.fruitCut === 1
+              ? intake.selectedAmount
+              : intake.selectedAmount / intake.fruitCut
+            : intake.servings || 1;
+        return sum + intake.calories * multiplier;
+      }, 0)
+      .toFixed(5)
+  );
 
   const [fontsLoaded] = useFonts({
     "SpaceMono-Regular": require("@/assets/fonts/SpaceMono-Regular.ttf"),
@@ -95,14 +129,14 @@ export default function UserNutrientPage() {
     carbohydrate: "88",
     sodium: "1.83",
     protein: "3.5",
-    calories: "1"
+    calories: "1",
   });
 
   const [isEditing, setIsEditing] = useState({
     carbohydrate: false,
     sodium: false,
     protein: false,
-    calories: false
+    calories: false,
   });
 
   interface NutritionData {
@@ -125,9 +159,15 @@ export default function UserNutrientPage() {
       carbohydrate: detailedCarbs.toString(),
       protein: detailedProtein.toString(),
       sodium: detailedSodium.toString(),
-      calories: detailedCalories.toString()
+      calories: detailedCalories.toString(),
     });
-  }, [intakes, detailedCarbs, detailedProtein, detailedSodium, detailedCalories]); // Update when intakes change
+  }, [
+    intakes,
+    detailedCarbs,
+    detailedProtein,
+    detailedSodium,
+    detailedCalories,
+  ]); // Update when intakes change
 
   // Update pie chart when store values change
   useEffect(() => {
@@ -163,10 +203,13 @@ export default function UserNutrientPage() {
   }, [carbohydrate, protein, sodium]);
 
   // Toggle edit mode
-  const toggleEdit = (key: "sodium" | "protein" | "carbohydrate" | "calories") => {
+  const toggleEdit = (
+    key: "sodium" | "protein" | "carbohydrate" | "calories"
+  ) => {
     setIsEditing((prev) => ({ ...prev, [key]: !prev[key] }));
   };
 
+  // Handle nutrient change with proper decimal support
   // Handle nutrient change with proper decimal support
   const handleNutrientChange = (
     key: "sodium" | "protein" | "carbohydrate" | "calories",
@@ -185,14 +228,40 @@ export default function UserNutrientPage() {
       numValue = parseFloat(value) || 0;
     }
 
-    // Update the Zustand store with numeric value
-    if (key === "carbohydrate") {
-      setCarbs(numValue);
-    } else if (key === "protein") {
-      setProtein(numValue);
-    } else if (key === "sodium") {
-      setSodium(numValue);
-    }
+    // Update the detailed nutrient store
+    // Create updated intakes array with modified nutrient values
+    const updatedIntakes = intakes.map((intake) => {
+      // Calculate the current multiplier for this intake
+      const multiplier =
+        intake.fruitCut !== undefined && intake.selectedAmount !== undefined
+          ? intake.fruitCut === 1
+            ? intake.selectedAmount
+            : intake.selectedAmount / intake.fruitCut
+          : intake.servings || 1;
+
+      // Calculate the base value (per serving) by dividing current total by multiplier
+      const currentTotal = intake.carbs + intake.protein + intake.sodium;
+
+      if (key === "carbohydrate") {
+        // Calculate what the new carbs value should be per serving
+        const newCarbsPerServing = numValue / intakes.length / multiplier;
+        return { ...intake, carbs: newCarbsPerServing };
+      } else if (key === "protein") {
+        const newProteinPerServing = numValue / intakes.length / multiplier;
+        return { ...intake, protein: newProteinPerServing };
+      } else if (key === "sodium") {
+        const newSodiumPerServing = numValue / intakes.length / multiplier;
+        return { ...intake, sodium: newSodiumPerServing };
+      } else if (key === "calories") {
+        const newCaloriesPerServing = numValue / intakes.length / multiplier;
+        return { ...intake, calories: newCaloriesPerServing };
+      }
+
+      return intake;
+    });
+
+    // Update the store with the new intakes array
+    setIntake(updatedIntakes);
 
     // Update nutrition data for pie chart
     const updatedNutrients = { ...nutrients, [key]: value };
@@ -278,7 +347,7 @@ export default function UserNutrientPage() {
                 primaryText="User"
                 highlightedText="Nutrient"
                 secondaryText="Intake"
-                style={{width:165}}
+                style={{ width: 165 }}
               />
               <TouchableOpacity onPress={() => setIsVisible(true)}>
                 <Ionicons

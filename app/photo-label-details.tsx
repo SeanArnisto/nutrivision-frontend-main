@@ -54,7 +54,7 @@ function PhotoLabelDetailsPage() {
     sodium: 0,
     protein: 0,
     calories: 0,
-    servings: 1,
+    servings: 1,    
     type: "Nutritional Label",
     imageUrl: "placeholder",
   };
@@ -115,10 +115,7 @@ function PhotoLabelDetailsPage() {
     });
 
     // Navigate back
-    navigation.reset({
-      index: 0,
-      routes: [{ name: 'nutrient-page'}]
-    });
+    navigation.goBack();
   };
 
   useEffect(() => {
