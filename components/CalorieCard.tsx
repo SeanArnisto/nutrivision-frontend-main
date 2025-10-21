@@ -19,7 +19,7 @@ export default function CalorieCard({
   value,
   fill = 100,
   maxCalories = 2000,
-  tintColor = "#88A444"
+  tintColor = "#3E3E07"
 }: CalorieCardProps) {
   const [animatedFill, setAnimatedFill] = useState(0);
   
