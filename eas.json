@@ -13,7 +13,7 @@
         "EXPO_PUBLIC_SUPABASE_URL": "https://nglxfwxexbpbeybkbrvs.supabase.co",
         "EXPO_PUBLIC_SUPABASE_ANON_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5nbHhmd3hleGJwYmV5YmticnZzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUxNzk5MDMsImV4cCI6MjA3MDc1NTkwM30.UhDBt_sCXzpdNGZV83Kd7YPAD4C-coC7yEjxqs0KiyE"
       },
-      "node": "20.18.0"
+     
     }
   }
 }

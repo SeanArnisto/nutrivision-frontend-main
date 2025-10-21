@@ -317,7 +317,7 @@ export default function Page2() {
           </View>
           {/* BMI Card */}
           <BMICard
-            bmiValue={isProfileLoading ? 0 : Math.round(userBMI || 0)}
+            bmiValue={isProfileLoading ? 0 : (userBMI || 0)}
             onInfoPress={() => setBmiModalVisible(true)}
           />
           {/* Show loading skeleton while fetching profile */}
@@ -411,7 +411,7 @@ export default function Page2() {
       <BMIModal
         visible={bmiModalVisible}
         onClose={() => setBmiModalVisible(false)}
-        bmiValue={isProfileLoading ? 0 : Math.round(userBMI || 0)}
+        bmiValue={isProfileLoading ? 0 : (userBMI || 0)}
         weight={userWeight}
         height={userHeight}
       />

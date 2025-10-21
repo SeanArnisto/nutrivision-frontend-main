@@ -81,7 +81,7 @@ export default function BMICard({ bmiValue, onInfoPress }: BMICardProps) {
       <View style={styles.headerRow}>
         <View style={styles.titleRow}>
           <Text style={styles.bmiText}>
-            Your BMI: <Text style={styles.bmiValue}>{bmiValue.toFixed(1)}</Text>
+            Your BMI: <Text style={styles.bmiValue}>{bmiValue.toFixed(2)}</Text>
           </Text>
           <TouchableOpacity onPress={onInfoPress} style={styles.infoButton}>
             <Ionicons

@@ -131,7 +131,8 @@ export const useUserProfileStore = create<UserProfileState>((set, get) => ({
     }
 
     const heightInMeters = profile.height / 100;
-    const bmi = Math.round((profile.weight / Math.pow(heightInMeters, 2)) * 10) / 10;
+    const bmi = parseFloat((profile.weight / Math.pow(heightInMeters, 2)).toFixed(4));
+
     
     console.log("✅ BMI calculated:", {
       weight: profile.weight,

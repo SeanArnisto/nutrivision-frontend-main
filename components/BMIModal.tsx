@@ -44,7 +44,7 @@ export default function BMIModal({
           >
               {/* BMI Title */}
               <Text style={styles.title}>Your BMI:</Text>
-              <Text style={styles.bmiValue}>{bmiValue.toFixed(1)}</Text>
+              <Text style={styles.bmiValue}>{bmiValue.toFixed(2)}</Text>
 
               {/* BMI Card */}
               <View style={styles.bmiCardContainer}>
@@ -73,7 +73,7 @@ export default function BMIModal({
                 </View>
                 <Text style={styles.exampleText}>
                   Your calculation: {weight}kg / ({(height / 100).toFixed(2)}m)²
-                  = {bmiValue.toFixed(1)}
+                  = {bmiValue.toFixed(2)}
                 </Text>
 
                 <View style={styles.infoBox}>

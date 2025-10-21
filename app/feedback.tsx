@@ -617,6 +617,8 @@ function Feedback() {
                       <ScrollView
                         style={styles.slideContentScroll}
                         contentContainerStyle={styles.slideContent}
+                        nestedScrollEnabled={true}
+                        showsVerticalScrollIndicator={true}
                       >
                         <Text style={styles.feedbackText}>
                           {comparisonAnalysis}
@@ -630,6 +632,8 @@ function Feedback() {
                       <ScrollView
                         style={styles.slideContentScroll}
                         contentContainerStyle={styles.slideContent}
+                        nestedScrollEnabled={true}
+                        showsVerticalScrollIndicator={true}
                       >
                         <Text style={styles.feedbackText}>
                           {healthImplication}
