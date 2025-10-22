@@ -1,0 +1,133 @@
+import React, { useState, useEffect } from "react";
+import { AnimatedCircularProgress } from "react-native-circular-progress";
+import {
+  StyleSheet,
+  View,
+  Image,
+  Dimensions,
+  SafeAreaView,
+  Text,
+  TouchableOpacity,
+  Platform,
+} from "react-native";
+
+interface AvgIntakeCardProps {
+  iconSource: any; 
+  tintColor: string;
+  subtitle: string;
+  value: number | string;
+  fill?: number;
+  index?: number;
+}
+
+export default function AvgIntakeCard({ 
+  iconSource, 
+  tintColor, 
+  subtitle, 
+  value,
+  fill = 100,
+  index = 0
+}: AvgIntakeCardProps) {
+  // State to trigger immediate animation
+  const [animatedFill, setAnimatedFill] = useState(0);
+  
+  // Calculate staggered delay for animations - shorter delays for better performance
+  const animationDelay = 100 + (index * 100);
+  
+  // Reduce animation duration on Android for better performance
+  const animationDuration = Platform.OS === 'android' ? 500 : 600;
+
+  // Start animation immediately when component mounts
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setAnimatedFill(fill);
+    }, animationDelay);
+
+    return () => clearTimeout(timer);
+  }, [fill, animationDelay]);
+  return (
+    <>
+      <View style={[styles.column]}>
+        {
+          <View style={styles.textRow}>
+            <Text style={styles.titlegrams}>{value} g</Text>
+          </View>
+        }
+        <View style={styles.textRow}>
+          <Text style={styles.subtitle}>{subtitle}</Text>
+        </View>
+        {/* Circular Progress with Image */}
+
+        <View style={styles.circleRow}>
+          <View style={styles.progressRow}>
+            <View style={{ alignItems: "center", marginTop: 10 }}>
+              <AnimatedCircularProgress
+                style={{ transform: [{ rotate: "90deg" }, { scaleX: -1 }] }}
+                size={85}
+                width={8}
+                fill={animatedFill} // Animated percentage fill
+                tintColor={tintColor}
+                backgroundColor="#dddddd"
+                duration={animationDuration}
+                prefill={0}
+              >
+                {() => (
+                  <Image
+                    source={iconSource}
+                    style={{
+                      width: 40,
+                      height: 40,
+                      borderRadius: 20,
+                      transform: [{ rotate: "450deg" }, { scaleX: -1 }],
+                    }}
+                    resizeMode="contain"
+                  />
+                )}
+              </AnimatedCircularProgress>
+            </View>
+          </View>
+        </View>
+      </View>
+    </>
+  );
+}
+
+const styles = StyleSheet.create({
+  column: {
+    flex: 1,
+    backgroundColor: "white",
+    borderRadius: 8,
+    padding: 10,
+    minHeight: 170,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 6,
+    elevation: 4
+  },
+  textRow: {
+    alignItems: "flex-start",
+  },
+  circleRow: {
+    alignItems: "center",
+  },
+  progressRow: {
+    alignItems: "center",
+  },
+  title: {
+    fontSize: 24,
+    fontWeight: "bold",
+    color: "#385802",
+  },
+  titlegrams: {
+    fontSize: 14,
+    fontWeight: "bold",
+    color: "#385802",
+  },
+  subtitle: {
+    fontSize: 12,
+    color: "#666",
+    paddingHorizontal: 2,
+    fontWeight: "bold",
+  },
+});

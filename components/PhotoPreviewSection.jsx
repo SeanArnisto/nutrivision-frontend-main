@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { SafeAreaView, Image, StyleSheet, View, Dimensions, Platform, TouchableOpacity } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
-import * as FileSystem from 'expo-file-system';
+import { Ionicons } from "@expo/vector-icons";
+import * as FileSystem from 'expo-file-system/legacy';
 
 const { width, height } = Dimensions.get('window');
 
@@ -61,6 +61,9 @@ const PhotoPreviewSection = ({ photo, onBack, onSubmit }) => {
 
   return (
     <View style={styles.container}>
+      {/* Top Overlay */}
+      <View style={styles.topOverlay} />
+
       {/* Full screen image */}
       <Image
         style={styles.fullScreenImage}
@@ -71,12 +74,12 @@ const PhotoPreviewSection = ({ photo, onBack, onSubmit }) => {
       {/* Bottom Controls */}
       <View style={styles.bottomControlsContainer}>
         <View style={styles.bottomControls}>
-          <TouchableOpacity style={styles.roundButton} onPress={onBack}>
-            <Ionicons name="arrow-back" size={28} color="white" />
+          <TouchableOpacity style={styles.returnButton} onPress={onBack}>
+            <Ionicons name="return-down-back-outline" size={28} color="white" />
           </TouchableOpacity>
 
           <TouchableOpacity style={styles.roundButton} onPress={onSubmit}>
-            <Ionicons name="checkmark" size={28} color="white" />
+            <Ionicons name="return-down-forward-outline" size={28} color="white" />
           </TouchableOpacity>
         </View>
       </View>
@@ -87,19 +90,28 @@ const PhotoPreviewSection = ({ photo, onBack, onSubmit }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#000',
+    backgroundColor: '#252525ff', // Changed from '#000' to match top/bottom overlays
   },
   fullScreenImage: {
     width: '100%',
     height: '100%',
-    backgroundColor: '#000',
+    backgroundColor: 'transparent', // Let the container color show through
+  },
+  topOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: 80, // Adjust as needed for your top area
+    backgroundColor: '#252525ff',
+    zIndex: 10,
   },
   bottomControlsContainer: {
     position: 'absolute',
     bottom: 0,
     left: 0,
     right: 0,
-    backgroundColor: 'rgba(0, 0, 0, 0.4)',
+    backgroundColor: '#252525ff', // Changed to match your desired color
     paddingVertical: 15,
     paddingHorizontal: 20,
   },
@@ -111,14 +123,25 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
   },
   roundButton: {
-    width: 55,
-    height: 55,
-    borderRadius: 28,
-    backgroundColor: 'rgba(144, 238, 144, 0.8)',
-    justifyContent: 'center',
-    alignItems: 'center',
+    backgroundColor: "transparent",
+    borderRadius: 0,
+    width: undefined,
+    height: undefined,
     margin: 10,
-  }
+    padding: 10,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  returnButton: {
+    backgroundColor: "transparent",
+    borderRadius: 0,
+    width: undefined,
+    height: undefined,
+    margin: 10,
+    padding: 10,
+    justifyContent: "center",
+    alignItems: "center",
+  },
 });
 
 export default PhotoPreviewSection;

@@ -1,5 +1,6 @@
+// UserNutrientPage.tsx
 import React, { useEffect, useState, useCallback } from "react";
-import { useFocusEffect, useIsFocused } from "@react-navigation/native";
+import { useFocusEffect } from "@react-navigation/native";
 import { useNutrientsStore } from "@/hooks/store";
 import {
   View,
@@ -7,74 +8,188 @@ import {
   Text,
   StyleSheet,
   Dimensions,
-  TouchableOpacity,
   Platform,
   ScrollView,
   SafeAreaView,
-  TextInput,
   KeyboardAvoidingView,
+  TouchableOpacity,
+  ActivityIndicator,
+  Alert,
 } from "react-native";
 import { useFonts } from "expo-font";
-import { ThemedText } from "@/components/ThemedText";
-import { useNavigation } from "expo-router";
-import { RootStackParamList } from "@/types/types";
-import { StackNavigationProp } from "@react-navigation/stack";
 import * as MediaLibrary from "expo-media-library";
 import PieChart from "react-native-pie-chart";
-import { useRoute } from "@react-navigation/native";
+import AppLogo from "@/components/appLogo";
+import NutrientInputSection from "@/components/NutrientInput";
+import GoBack from "@/components/ReturnButton";
+import ProfileBox from "@/components/ProfileBox";
+import NutritionDonutChart from "@/components/DonuteChart";
+import PhotoThumbnailGallery from "@/components/PhotoThumbnailGallery";
+import GoNext from "@/components/NextButton";
+import { usePhotosStore } from "@/stores/usePhotoStore";
 import { Ionicons } from "@expo/vector-icons";
-
-//import  {useApi} from '@/hooks/ApiContext';
-
-const { width, height } = Dimensions.get("window");
+import CustomModal from "@/components/customModal";
+import { useDetailedNutrientStore } from "@/stores/useDetailedNutrientStore";
 
 // Helper Function
 const toPercentageText = (value: number): string => `${value}%`;
 const formatValue = (value: number, unit: string = "g"): string =>
   `${value} ${unit}`;
 
-type HomeScreenNavigationProp = StackNavigationProp<
-  RootStackParamList,
-  "index"
->;
-
 export default function UserNutrientPage() {
-  const route = useRoute();
-
   const carbohydrate = useNutrientsStore((state) => state.carbs);
   const protein = useNutrientsStore((state) => state.protein);
   const sodium = useNutrientsStore((state) => state.sodium);
+  const saveWithPhotos = useNutrientsStore((state) => state.saveWithPhotos);
+  const loading = useNutrientsStore((state) => state.loading);
+  const error = useNutrientsStore((state) => state.error);
+  const reset = useNutrientsStore((state) => state.reset);
+  const setCarbs = useNutrientsStore((state) => state.setCarbs);
+  const setProtein = useNutrientsStore((state) => state.setProtein);
+  const setSodium = useNutrientsStore((state) => state.setSodium);
+
+  // Get detailed nutrient data from store
+  const {
+    intakes,
+    setIntake,
+    loading: detailedLoading,
+    error: detailedError,
+    saveToDatabase,
+  } = useDetailedNutrientStore();
+
+  // Calculate totals from intakes
+  // Use fruitCut and selectedAmount if available, otherwise fall back to servings
+  const detailedCarbs = parseFloat(
+    intakes
+      .reduce((sum, intake) => {
+        const multiplier =
+          intake.fruitCut !== undefined && intake.selectedAmount !== undefined
+            ? intake.fruitCut === 1
+              ? intake.selectedAmount
+              : intake.selectedAmount / intake.fruitCut
+            : intake.servings || 1;
+        return sum + intake.carbs * multiplier;
+      }, 0)
+      .toFixed(5)
+  );
+
+  const detailedProtein = parseFloat(
+    intakes
+      .reduce((sum, intake) => {
+        const multiplier =
+          intake.fruitCut !== undefined && intake.selectedAmount !== undefined
+            ? intake.fruitCut === 1
+              ? intake.selectedAmount
+              : intake.selectedAmount / intake.fruitCut
+            : intake.servings || 1;
+        return sum + intake.protein * multiplier;
+      }, 0)
+      .toFixed(5)
+  );
+
+  const detailedSodium = parseFloat(
+    intakes
+      .reduce((sum, intake) => {
+        const multiplier =
+          intake.fruitCut !== undefined && intake.selectedAmount !== undefined
+            ? intake.fruitCut === 1
+              ? intake.selectedAmount
+              : intake.selectedAmount / intake.fruitCut
+            : intake.servings || 1;
+        return sum + intake.sodium * multiplier;
+      }, 0)
+      .toFixed(5)
+  );
+
+  const detailedCalories = parseFloat(
+    intakes
+      .reduce((sum, intake) => {
+        const multiplier =
+          intake.fruitCut !== undefined && intake.selectedAmount !== undefined
+            ? intake.fruitCut === 1
+              ? intake.selectedAmount
+              : intake.selectedAmount / intake.fruitCut
+            : intake.servings || 1;
+        return sum + intake.calories * multiplier;
+      }, 0)
+      .toFixed(5)
+  );
 
   const [fontsLoaded] = useFonts({
     "SpaceMono-Regular": require("@/assets/fonts/SpaceMono-Regular.ttf"),
   });
-  const [capturedPhotos, setCapturedPhotos] = useState<
-    { uri: string; type: string; orientation: string }[]
-  >([]);
+
+  const { capturedPhotos } = usePhotosStore();
   const [mediaLibraryPermission, setMediaLibraryPermission] = useState<
     boolean | null
   >(null);
 
-  function handleGoBack() {
-    navigation.goBack();
+  // State for nutrient inputs (as strings for proper decimal handling)
+  const [nutrients, setNutrients] = useState({
+    carbohydrate: "88",
+    sodium: "1.83",
+    protein: "3.5",
+    calories: "1",
+  });
+
+  const [isEditing, setIsEditing] = useState({
+    carbohydrate: false,
+    sodium: false,
+    protein: false,
+    calories: false,
+  });
+
+  interface NutritionData {
+    userIntake: {
+      breakdown: { carbohydrate: number; sodium: number; protein: number };
+      total: number;
+    };
   }
 
-  // Navigation
-  const navigation = useNavigation() as HomeScreenNavigationProp;
+  const [nutritionData, setNutritionData] = useState<NutritionData>({
+    userIntake: {
+      breakdown: { carbohydrate: 94, sodium: 2, protein: 4 },
+      total: 93.33,
+    },
+  });
 
+  // Update nutrients when intakes change
+  useEffect(() => {
+    setNutrients({
+      carbohydrate: detailedCarbs.toString(),
+      protein: detailedProtein.toString(),
+      sodium: detailedSodium.toString(),
+      calories: detailedCalories.toString(),
+    });
+  }, [
+    intakes,
+    detailedCarbs,
+    detailedProtein,
+    detailedSodium,
+    detailedCalories,
+  ]); // Update when intakes change
+
+  // Update pie chart when store values change
   useEffect(() => {
     const carb = Number(carbohydrate) || 0;
     const prot = Number(protein) || 0;
     const sod = Number(sodium) || 0;
 
     const total = carb + prot + sod;
-    if (total === 0) return;
+    if (total === 0) {
+      setNutritionData({
+        userIntake: {
+          breakdown: { carbohydrate: 0, sodium: 0, protein: 0 },
+          total: 0,
+        },
+      });
+      return;
+    }
 
     const pieCarb = parseFloat(((carb / total) * 100).toFixed(2));
     const pieProtein = parseFloat(((prot / total) * 100).toFixed(2));
     const pieSodium = parseFloat(((sod / total) * 100).toFixed(2));
 
-    setNutrients({ carbohydrate: carb, protein: prot, sodium: sod });
     setNutritionData({
       userIntake: {
         breakdown: {
@@ -87,75 +202,98 @@ export default function UserNutrientPage() {
     });
   }, [carbohydrate, protein, sodium]);
 
-  // State for nutrient inputs (now as numbers without units)
-  const [nutrients, setNutrients] = useState({
-    carbohydrate: 88,
-    sodium: 1.83,
-    protein: 3.5,
-  });
-
-  const [isEditing, setIsEditing] = useState({
-    carbohydrate: false,
-    sodium: false,
-    protein: false,
-  });
-
-  interface NutritionData {
-    userIntake: {
-      breakdown: { carbohydrate: number; sodium: number; protein: number };
-      total: number;
-    };
-  }
-
-  const [nutritionData1, setNutritionData] = useState<NutritionData>({
-    userIntake: {
-      breakdown: { carbohydrate: 94, sodium: 2, protein: 4 },
-      total: 93.33,
-    },
-  });
-
   // Toggle edit mode
-  const toggleEdit = (key: "sodium" | "protein" | "carbohydrate") => {
+  const toggleEdit = (
+    key: "sodium" | "protein" | "carbohydrate" | "calories"
+  ) => {
     setIsEditing((prev) => ({ ...prev, [key]: !prev[key] }));
   };
 
-  const setCarbs = useNutrientsStore((state) => state.setCarbs);
-  const setProtein = useNutrientsStore((state) => state.setProtein);
-  const setSodium = useNutrientsStore((state) => state.setSodium);
-
-  // Handle nutrient change
+  // Handle nutrient change with proper decimal support
+  // Handle nutrient change with proper decimal support
   const handleNutrientChange = (
-    key: "sodium" | "protein" | "carbohydrate",
+    key: "sodium" | "protein" | "carbohydrate" | "calories",
     value: string
   ) => {
-    const numValue = parseFloat(value) || 0;
-  
-    // Update the Zustand store
-    if (key === "carbohydrate") setCarbs(numValue);
-    if (key === "protein") setProtein(numValue);
-    if (key === "sodium") setSodium(numValue);
-  
-    // Update the local nutrients state
-    const updatedNutrients = { ...nutrients, [key]: numValue };
-    setNutrients(updatedNutrients);
-  
+    // Update local state (keep as string for display)
+    setNutrients((prev) => ({ ...prev, [key]: value }));
+
+    // Parse the value for store update
+    let numValue = 0;
+
+    // Handle special cases
+    if (value === "" || value === "." || value === "0.") {
+      numValue = 0;
+    } else {
+      numValue = parseFloat(value) || 0;
+    }
+
+    // Update the detailed nutrient store
+    // Create updated intakes array with modified nutrient values
+    const updatedIntakes = intakes.map((intake) => {
+      // Calculate the current multiplier for this intake
+      const multiplier =
+        intake.fruitCut !== undefined && intake.selectedAmount !== undefined
+          ? intake.fruitCut === 1
+            ? intake.selectedAmount
+            : intake.selectedAmount / intake.fruitCut
+          : intake.servings || 1;
+
+      // Calculate the base value (per serving) by dividing current total by multiplier
+      const currentTotal = intake.carbs + intake.protein + intake.sodium;
+
+      if (key === "carbohydrate") {
+        // Calculate what the new carbs value should be per serving
+        const newCarbsPerServing = numValue / intakes.length / multiplier;
+        return { ...intake, carbs: newCarbsPerServing };
+      } else if (key === "protein") {
+        const newProteinPerServing = numValue / intakes.length / multiplier;
+        return { ...intake, protein: newProteinPerServing };
+      } else if (key === "sodium") {
+        const newSodiumPerServing = numValue / intakes.length / multiplier;
+        return { ...intake, sodium: newSodiumPerServing };
+      } else if (key === "calories") {
+        const newCaloriesPerServing = numValue / intakes.length / multiplier;
+        return { ...intake, calories: newCaloriesPerServing };
+      }
+
+      return intake;
+    });
+
+    // Update the store with the new intakes array
+    setIntake(updatedIntakes);
+
+    // Update nutrition data for pie chart
+    const updatedNutrients = { ...nutrients, [key]: value };
+
     const total =
-      updatedNutrients.carbohydrate +
-      updatedNutrients.protein +
-      updatedNutrients.sodium;
-  
-    if (total === 0) return;
-  
+      (parseFloat(updatedNutrients.carbohydrate) || 0) +
+      (parseFloat(updatedNutrients.protein) || 0) +
+      (parseFloat(updatedNutrients.sodium) || 0);
+
+    if (total === 0) {
+      setNutritionData({
+        userIntake: {
+          breakdown: { carbohydrate: 0, protein: 0, sodium: 0 },
+          total: 0,
+        },
+      });
+      return;
+    }
+
     const pieCarb = parseFloat(
-      ((updatedNutrients.carbohydrate / total) * 100).toFixed(2)
+      (
+        ((parseFloat(updatedNutrients.carbohydrate) || 0) / total) *
+        100
+      ).toFixed(2)
     );
     const pieProtein = parseFloat(
-      ((updatedNutrients.protein / total) * 100).toFixed(2)
+      (((parseFloat(updatedNutrients.protein) || 0) / total) * 100).toFixed(2)
     );
     const pieSodium = parseFloat(
-      ((updatedNutrients.sodium / total) * 100).toFixed(2)
+      (((parseFloat(updatedNutrients.sodium) || 0) / total) * 100).toFixed(2)
     );
-  
+
     setNutritionData({
       userIntake: {
         breakdown: {
@@ -168,92 +306,27 @@ export default function UserNutrientPage() {
     });
   };
 
-  console.log("carbs:", carbohydrate, "protein:", protein, "sodium:", sodium);
-
-  // Request media library permissions on mount
-  useEffect(() => {
-    (async () => {
-      const { status } = await MediaLibrary.requestPermissionsAsync();
-      setMediaLibraryPermission(status === "granted");
-    })();
-  }, []);
-
-  // Load previously captured photos on mount
-  // Request media library permissions on mount
-  useEffect(() => {
-    (async () => {
-      const { status } = await MediaLibrary.requestPermissionsAsync();
-      setMediaLibraryPermission(status === "granted");
-    })();
-  }, []);
-
-  useFocusEffect(
-    useCallback(() => {
-      if (mediaLibraryPermission) {
-        loadRecentPhotos();
-      }
-
-      return () => {
-        // Optional: reset or cancel something if needed
-        console.log("Leaving the screen");
-      };
-    }, [mediaLibraryPermission])
+  console.log(
+    "Store values - carbs:",
+    carbohydrate,
+    "protein:",
+    protein,
+    "sodium:",
+    sodium
   );
+  console.log("Local state - nutrients:", nutrients);
 
-  const loadRecentPhotos = async () => {
-    try {
-      // First, get the NutriVision album
-      const album = await MediaLibrary.getAlbumAsync("NutriVision");
+  // Handle saving to database
 
-      // If the album doesn't exist yet, return empty array
-      if (!album) {
-        console.log("NutriVision album not found");
-        setCapturedPhotos([]);
-        return;
-      }
+  // Request media library permissions on mount
+  useEffect(() => {
+    (async () => {
+      const { status } = await MediaLibrary.requestPermissionsAsync();
+      setMediaLibraryPermission(status === "granted");
+    })();
+  }, []);
 
-      // Get assets from the NutriVision album specifically
-      const { assets } = await MediaLibrary.getAssetsAsync({
-        album: album.id,
-        first: 5,
-        mediaType: "photo",
-        sortBy: ["creationTime"],
-      });
-
-      const recentPhotos = [];
-      for (const asset of assets) {
-        let uriToUse = asset.uri;
-        if (Platform.OS === "ios" && uriToUse.startsWith("ph://")) {
-          try {
-            const info = await MediaLibrary.getAssetInfoAsync(asset);
-            if (info.localUri) {
-              uriToUse = info.localUri;
-            }
-          } catch (error) {
-            console.error("Error getting localUri for asset:", error);
-          }
-        }
-
-        recentPhotos.push({
-          uri: uriToUse,
-          type: Math.random() > 0.5 ? "label" : "fruit",
-          orientation: Math.random() > 0.5 ? "vertical" : "horizontal",
-        });
-      }
-
-      setCapturedPhotos(
-        recentPhotos.filter(
-          (photo) => photo.uri && typeof photo.uri === "string"
-        )
-      );
-    } catch (error) {
-      console.error("Error loading photos from NutriVision album:", error);
-    }
-  };
-
-  const handleCheck = () => {
-    navigation.navigate("page-6");
-  };
+  const [isVisible, setIsVisible] = useState(true);
 
   if (!fontsLoaded) {
     return <Text>Loading...</Text>;
@@ -264,265 +337,114 @@ export default function UserNutrientPage() {
       <KeyboardAvoidingView
         style={{ flex: 1 }}
         behavior={Platform.OS === "ios" ? "padding" : "height"}
-        keyboardVerticalOffset={Platform.OS === "ios" ? 20 : 0} // Adjust as needed
+        keyboardVerticalOffset={Platform.OS === "ios" ? 20 : 0}
       >
         <ScrollView contentContainerStyle={styles.scrollContainer}>
-          <View style={styles.container}>
-            <View style={styles.header}>
-              <Image
-                source={require("@/assets/images/NutriVision.png")}
-                style={styles.logo}
+          <AppLogo />
+          <View style={styles.container1}>
+            <View style={styles.headerContainer}>
+              <ProfileBox
+                primaryText="User"
+                highlightedText="Nutrient"
+                secondaryText="Intake"
+                style={{ width: 165 }}
               />
-            </View>
-
-            <View style={styles.userIntakeCard}>
-              <Text style={styles.userText}>User </Text>
-              <Text style={styles.intakeText}>Intake</Text>
-            </View>
-
-            {/* Thumbnail section */}
-            <View style={styles.thumbnailSection}>
-              <View style={styles.thumbnailWrapper}>
-                <ScrollView
-                  horizontal
-                  showsHorizontalScrollIndicator={false}
-                  contentContainerStyle={styles.thumbnailsRow}
-                >
-                  {capturedPhotos.map((item, index) => (
-                    <View key={index} style={styles.thumbnailContainer}>
-                      {item.uri ? (
-                        <Image
-                          source={{ uri: item.uri }}
-                          style={styles.thumbnail}
-                          onError={() => console.log("Image failed to load")}
-                        />
-                      ) : (
-                        <View style={styles.thumbnail}>
-                          <Text style={styles.placeholderText}>No Image</Text>
-                        </View>
-                      )}
-                    </View>
-                  ))}
-                </ScrollView>
-              </View>
-            </View>
-
-            {/* Input section */}
-            <View style={styles.inputSection}>
-              {/* Sugar Input */}
-              <View style={styles.inputRow}>
-                <Image
-                  source={require("@/assets/images/Carbohydrate Icon.png")}
-                  style={styles.icon}
+              <TouchableOpacity onPress={() => setIsVisible(true)}>
+                <Ionicons
+                  name="information-circle-outline"
+                  size={28}
+                  color="#9AB206"
                 />
-                <Text style={styles.nutrientText}>Carbs</Text>
-                <View style={styles.divider} />
-                <View style={styles.inputBox}>
-                  {isEditing.carbohydrate ? (
-                    <TextInput
-                      style={styles.input}
-                      value={nutrients.carbohydrate.toString()}
-                      onChangeText={(text) =>
-                        handleNutrientChange("carbohydrate", text)
-                      }
-                      autoFocus
-                      onBlur={() => toggleEdit("carbohydrate")}
-                      keyboardType="numeric"
-                      textAlign="center"
-                    />
-                  ) : (
-                    <>
-                      <Text style={styles.inputText}>
-                        {nutrients.carbohydrate}
-                      </Text>
-                      <TouchableOpacity
-                        style={styles.editButtonInside}
-                        onPress={() => toggleEdit("carbohydrate")}
-                      >
-                        <Image
-                          source={require("@/assets/images/Edit Icon.png")}
-                          style={styles.editIcon}
-                        />
-                      </TouchableOpacity>
-                    </>
-                  )}
-                </View>
-              </View>
-
-              {/* Sodium Input */}
-              <View style={styles.inputRow}>
-                <Image
-                  source={require("@/assets/images/Sodium Icon.png")}
-                  style={styles.icon}
-                />
-                <Text style={styles.nutrientText}>Sodium</Text>
-                <View style={styles.divider} />
-                <View style={styles.inputBox}>
-                  {isEditing.sodium ? (
-                    <TextInput
-                      style={styles.input}
-                      value={nutrients.sodium.toString()}
-                      onChangeText={(text) =>
-                        handleNutrientChange("sodium", text)
-                      }
-                      autoFocus
-                      onBlur={() => toggleEdit("sodium")}
-                      keyboardType="numeric"
-                      textAlign="center"
-                    />
-                  ) : (
-                    <>
-                      <Text style={styles.inputText}>{nutrients.sodium}</Text>
-                      <TouchableOpacity
-                        style={styles.editButtonInside}
-                        onPress={() => toggleEdit("sodium")}
-                      >
-                        <Image
-                          source={require("@/assets/images/Edit Icon.png")}
-                          style={styles.editIcon}
-                        />
-                      </TouchableOpacity>
-                    </>
-                  )}
-                </View>
-              </View>
-
-              {/* Calories Input */}
-              <View style={styles.inputRow}>
-                <Image
-                  source={require("@/assets/images/Protein Icon.png")}
-                  style={styles.icon}
-                />
-                <Text style={styles.nutrientText}>Protein</Text>
-                <View style={styles.divider} />
-                <View style={styles.inputBox}>
-                  {isEditing.protein ? (
-                    <TextInput
-                      style={styles.input}
-                      value={nutrients.protein.toString()}
-                      onChangeText={(text) =>
-                        handleNutrientChange("protein", text)
-                      }
-                      autoFocus
-                      onBlur={() => toggleEdit("protein")}
-                      keyboardType="numeric"
-                      textAlign="center"
-                    />
-                  ) : (
-                    <>
-                      <Text style={styles.inputText}>{nutrients.protein}</Text>
-                      <TouchableOpacity
-                        style={styles.editButtonInside}
-                        onPress={() => toggleEdit("protein")}
-                      >
-                        <Image
-                          source={require("@/assets/images/Edit Icon.png")}
-                          style={styles.editIcon}
-                        />
-                      </TouchableOpacity>
-                    </>
-                  )}
-                </View>
-              </View>
+              </TouchableOpacity>
             </View>
+
+            <CustomModal
+              visible={isVisible}
+              onClose={() => setIsVisible(false)}
+              title="User Intake "
+            >
+              <View>
+                <Text>
+                  The donut chart shows your{" "}
+                  <Text style={{ fontWeight: "bold" }}>User Intake</Text> as a
+                  percentage breakdown of the nutrients you consumed, visually
+                  indicating which one (Carbs, Protein, or Sodium) was the
+                  largest part of your diet.
+                </Text>
+                <Text style={{ marginTop: 16 }}>
+                  The{" "}
+                  <Text style={{ fontWeight: "bold" }}>
+                    Total Nutrient Amount
+                  </Text>{" "}
+                  provides the combined weight of these nutrients in grams.
+                </Text>
+                <Text style={{ fontWeight: "bold", marginTop: 16 }}>Note:</Text>
+                <Text style={{ marginLeft: 8 }}>
+                  Some data may return incosistently, therefore the data is
+                  editable. {"\n\n"}
+                  Feel free to click the photo and check the intake then compare
+                  from the image if results are accurate.
+                </Text>
+              </View>
+            </CustomModal>
+
+            {/* Thumbnail section with added top margin */}
+            <View style={{ marginTop: 20 }}>
+              <PhotoThumbnailGallery />
+            </View>
+
+            {/* Input section with updated props */}
+            <NutrientInputSection
+              nutrients={nutrients}
+              isEditing={isEditing}
+              handleNutrientChange={handleNutrientChange}
+              toggleEdit={toggleEdit}
+            />
 
             <View style={styles.chartsContainer}>
               {/* User Intake Donut Chart */}
-              <View style={styles.chartBox}>
-                <View style={styles.chartRow}>
-                  <View style={styles.chartWrapper}>
-                    <PieChart
-                      widthAndHeight={150}
-                      series={[
-                        {
-                          value: nutritionData1.userIntake.breakdown.protein,
-                          color: "#000000",
-                        },
-                        {
-                          value: nutritionData1.userIntake.breakdown.sodium,
-                          color: "#c0b4b4",
-                        },
-                        {
-                          value:
-                            nutritionData1.userIntake.breakdown.carbohydrate,
-                          color: "#7ca844",
-                        },
-                      ]}
-                      cover={0.55}
-                    />
-                  </View>
-                  <View style={styles.legendWrapper}>
-                    <Text style={styles.chartTitle}>User Intake</Text>
-                    <View style={styles.legendItem}>
-                      <View
-                        style={[
-                          styles.colorCircle,
-                          { backgroundColor: "#7ca844" },
-                        ]}
-                      />
-                      <Text style={styles.legendLabel}>
-                        Carbs (
-                        {toPercentageText(
-                          nutritionData1.userIntake.breakdown.carbohydrate
-                        )}
-                        )
-                      </Text>
-                    </View>
-                    <View style={styles.legendItem}>
-                      <View
-                        style={[
-                          styles.colorCircle,
-                          { backgroundColor: "#c0b4b4" },
-                        ]}
-                      />
-                      <Text style={styles.legendLabel}>
-                        Sodium (
-                        {toPercentageText(
-                          nutritionData1.userIntake.breakdown.sodium
-                        )}
-                        )
-                      </Text>
-                    </View>
-                    <View style={styles.legendItem}>
-                      <View
-                        style={[
-                          styles.colorCircle,
-                          { backgroundColor: "#000000" },
-                        ]}
-                      />
-                      <Text style={styles.legendLabel}>
-                        Protein (
-                        {toPercentageText(
-                          nutritionData1.userIntake.breakdown.protein
-                        )}
-                        )
-                      </Text>
-                    </View>
-                    <View style={styles.totalBox}>
-                      <Text style={styles.totalText}>
-                        Total Nutrient{"\n"}Amount ={" "}
-                        {formatValue(nutritionData1.userIntake.total)}
-                      </Text>
-                    </View>
-                  </View>
-                </View>
-              </View>
+              <NutritionDonutChart
+                nutritionData={nutritionData.userIntake}
+                title="Your Intake"
+                chartSize={150}
+                coverRadius={0.55}
+                colors={{
+                  protein: "#000000",
+                  sodium: "#c0b4b4",
+                  carbohydrate: "#7ca844",
+                }}
+                formatValue={formatValue}
+                toPercentageText={toPercentageText}
+              />
             </View>
+
+            {/* Error Display */}
+            {error && (
+              <View style={styles.errorContainer}>
+                <Text style={styles.errorText}>{error}</Text>
+              </View>
+            )}
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
-      <TouchableOpacity
-        style={styles.roundButton}
-        onPress={handleGoBack}
-        disabled={false}
-      >
-        <Ionicons name="arrow-undo-outline" size={28} color="#9AB206" />
-      </TouchableOpacity>
 
-      {/* Floating check button */}
-      <TouchableOpacity style={styles.checkButton} onPress={handleCheck}>
-        <ThemedText style={styles.checkMark}>➜</ThemedText>
-      </TouchableOpacity>
+      {/* Navigation */}
+      <GoBack />
+      <GoNext next="page-6" />
+
+      {/* Optional: Save Button instead of GoNext */}
+      {/* <TouchableOpacity 
+        style={[styles.saveButton, loading && styles.saveButtonDisabled]} 
+        onPress={handleSaveToDatabase}
+        disabled={loading}
+        activeOpacity={0.8}
+      >
+        {loading ? (
+          <ActivityIndicator color="#fff" size="small" />
+        ) : (
+          <Text style={styles.saveButtonText}>Save to Database</Text>
+        )}
+      </TouchableOpacity> */}
     </SafeAreaView>
   );
 }
@@ -532,293 +454,76 @@ const styles = StyleSheet.create({
   keyboardAvoidingContainer: {
     flex: 1,
   },
-  roundButton: {
-    width: 60,
-    height: 60,
-    bottom: 40,
-    left: 20,
-    borderRadius: 30,
-    backgroundColor: "#333",
-    justifyContent: "center",
-    alignItems: "center",
-    position: "absolute",
-  },
-  safeContainer: {
-    flex: 1,
-    backgroundColor: "#F5F5F5",
-  },
-  scrollContainer: {
-    flexGrow: 1,
-    paddingBottom: 100, // Add space for floating button
-  },
-  container: {
-    flex: 1,
-    backgroundColor: "#F5F5F5",
-    paddingHorizontal: 20,
-  },
-  header: {
-    marginLeft: -15,
-    width: "100%",
-    height: 100,
-    justifyContent: "center",
-    alignItems: "flex-start",
-    marginBottom: 10,
-  },
-  logo: {
-    width: 200,
-    height: 60,
-    resizeMode: "contain",
-    alignSelf: "flex-start",
-  },
-  userIntakeCard: {
-    marginTop: -15,
-    backgroundColor: "white",
-    padding: 15,
-    borderRadius: 12,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 6,
-    elevation: 4,
-    flexDirection: "row",
-    alignSelf: "flex-start",
-    marginBottom: 20,
-  },
-  userText: {
-    color: "#9AB206",
-    fontSize: 14,
-    fontWeight: "bold",
-  },
-  intakeText: {
-    color: "#4D4444",
-    fontSize: 14,
-    fontWeight: "bold",
-  },
-  thumbnailSection: {
-    backgroundColor: "white",
-    borderRadius: 12,
-    padding: 15,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 6,
-    elevation: 4,
-    marginBottom: 20,
-  },
-  thumbnailWrapper: {
-    width: "100%",
-  },
-  thumbnailsRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingVertical: 5,
-  },
-  thumbnailContainer: {
-    width: 60,
-    height: 60,
-    marginHorizontal: 5,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: "#DDDDDD",
-    overflow: "hidden",
-  },
-  thumbnail: {
-    width: "100%",
-    height: "100%",
-  },
-  placeholderText: {
-    color: "gray",
-    fontSize: 10,
-    textAlign: "center",
-    marginTop: 20,
-  },
-  inputSection: {
-    backgroundColor: "white",
-    borderRadius: 12,
-    padding: 10,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 6,
-    elevation: 4,
-    marginBottom: 20,
-  },
-  inputRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginVertical: 7.5,
-    marginHorizontal: 8,
-    overflow: "hidden",
-  },
-  icon: {
-    width: 24,
-    height: 24,
-    marginRight: 10,
-  },
-  nutrientText: {
-    fontSize: 14,
-    fontWeight: "bold",
-    color: "#4D4444",
-  },
-  editIcon: {
-    width: 13,
-    height: 13,
-  },
-  editButtonInside: {
-    position: "absolute",
-    right: 5,
-    top: "50%",
-    transform: [{ translateY: -8 }], // Center vertically (half of icon height)
-  },
-  inputBox: {
-    backgroundColor: "#F0F0F0",
-    borderRadius: 8,
-    width: 90,
-    height: 40,
-    justifyContent: "center",
-    position: "relative", // Added to position the edit icon inside
-  },
-  inputText: {
-    fontSize: 14,
-    color: "#333",
-    textAlign: "center",
-  },
-  input: {
-    width: "100%",
-    height: "100%",
-    fontSize: 14,
-    color: "#333",
-    padding: 0,
-    textAlign: "center",
-  },
-  divider: {
-    height: 1,
-    backgroundColor: "#DDDDDD",
-    flex: 1, // Makes it take up available space
-    marginHorizontal: 10,
-  },
-  innerRow: {
-    flexDirection: "row",
-  },
-  newLeftColumn: {
-    flex: 60,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  newRightColumn: {
-    flex: 40,
-    paddingLeft: 10,
-    justifyContent: "center",
-    gap: 6,
-  },
-  newLegendTitle: {
-    fontSize: 18,
-    fontWeight: "bold",
-    marginBottom: 8,
-    marginLeft: -20,
-  },
-  newLegendItem: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 4,
-  },
-  newCircle: {
-    width: 12,
-    height: 12,
-    borderRadius: 6,
-    marginRight: 6,
-  },
-  newLegendText: {
-    fontSize: 14,
-    color: "#333",
-  },
-  newTotalBox: {
-    backgroundColor: "#f8e4e4",
-    marginTop: 10,
-    padding: 10,
-    borderRadius: 15,
-    alignItems: "flex-start",
-    marginLeft: -20,
-  },
-  newTotalText: {
-    fontSize: 16,
-    color: "#333",
-    textAlign: "left",
-  },
   chartsContainer: {
     gap: 16,
   },
-  chartBox: {
-    backgroundColor: "white",
-    borderRadius: 12,
-    padding: 16,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 6,
-    elevation: 4,
-  },
-  chartRow: {
-    flexDirection: "row",
-  },
-  chartWrapper: {
-    position: "relative",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  legendWrapper: {
+  safeContainer: {
     flex: 1,
-    justifyContent: "center",
-    paddingLeft: 16,
+    backgroundColor: "#eff1f6",
   },
-  legendItem: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 4,
+  scrollContainer: {
+    flexGrow: 1,
+    paddingBottom: 100,
   },
-  legendItemSpacing: {
-    marginLeft: 24, // Additional spacing for the second legend
+  container: {
+    flex: 1,
+    backgroundColor: "#eff1f6",
+    paddingHorizontal: 16,
+    paddingVertical: 16,
   },
-  chartTitle: {
-    fontSize: 18,
-    fontWeight: "bold",
-    marginBottom: 12,
+  container1: {
+    flex: 1,
+    backgroundColor: "#eff1f6",
+    gap: 15,
+    padding: 15,
+    paddingBottom: 100,
   },
-  colorCircle: {
-    width: 12,
-    height: 12,
-    borderRadius: 6,
-    marginHorizontal: 12,
-  },
-  legendLabel: {
-    fontSize: 12,
-    color: "#333",
-  },
-  totalBox: {
-    backgroundColor: "#f8e4e4",
-    padding: 12,
-    borderRadius: 12,
-    marginTop: 12,
-  },
-  totalText: {
-    fontSize: 14,
-    color: "#333",
-    textAlign: "left",
-  },
-  checkButton: {
+  saveButton: {
     position: "absolute",
     bottom: 40,
     right: 20,
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    backgroundColor: "#333",
-    justifyContent: "center",
+    backgroundColor: "#7ca844",
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    borderRadius: 25,
+    minWidth: 150,
     alignItems: "center",
+    justifyContent: "center",
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
   },
-  checkMark: {
-    fontSize: 25,
-    color: "#9AB206",
-    fontWeight: "bold",
+  saveButtonDisabled: {
+    backgroundColor: "#c0b4b4",
+    opacity: 0.7,
+  },
+  saveButtonText: {
+    color: "#fff",
+    fontSize: 16,
+    fontWeight: "600",
+    fontFamily: "SpaceMono-Regular",
+  },
+  errorContainer: {
+    backgroundColor: "#ffebee",
+    padding: 12,
+    borderRadius: 8,
+    marginTop: 16,
+    marginHorizontal: 20,
+  },
+  errorText: {
+    color: "#c62828",
+    textAlign: "center",
+    fontSize: 14,
+    fontFamily: "SpaceMono-Regular",
+  },
+  headerContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
   },
 });

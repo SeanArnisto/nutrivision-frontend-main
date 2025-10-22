@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import {
   StyleSheet,
   View,
@@ -9,21 +9,37 @@ import {
   ScrollView,
   DimensionValue,
 } from "react-native";
-import { ThemedView } from "@/components/ThemedView";
-import { ThemedText } from "@/components/ThemedText";
-import PieChart from "react-native-pie-chart";
 import { useNavigation } from "@react-navigation/native";
 import { RootStackParamList } from "@/types/types";
 import { StackNavigationProp } from "@react-navigation/stack";
-import { useRoute } from "@react-navigation/native";
 import { useNutrientsStore } from "@/hooks/store";
 import { useRecommStore } from "@/hooks/store";
+import ProfileBox from "@/components/ProfileBox";
+import {
+  useNutritionIntakeStore,
+  useNutritionAverage,
+} from "@/stores/nutritionIntakeStore";
 import { Ionicons } from "@expo/vector-icons";
-
+import BarChart from "@/components/Barchart";
+import CalorieBarChart from "@/components/CalorieBarchart";
+import { format, addDays } from "date-and-time";
+import { getNutritionalHistory } from "@/hooks/store";
+import AppLogo from "@/components/appLogo";
+import type { NutritionRequest } from "@/stores/useFeedbackStore";
+import { useDetailedNutrientStore } from "@/stores/useDetailedNutrientStore";
+import useFeedbackStore, {
+  useFeedbackError,
+  useFeedbackLoading,
+} from "@/stores/useFeedbackStore";
+import Loading from "./loading";
+import CustomModal from "@/components/customModal";
 const toProgressWidth = (value: number) =>
   `${Math.min(value, 100)}%` as DimensionValue;
-const toPercentageText = (value: number) => `${value}%`;
-const formatValue = (value: number, unit: string = "g") => `${value} ${unit}`;
+const formatValue = (value: number, unit: string = "g") => {
+  // Handle values with up to 5 decimal places, removing trailing zeros
+  const formatted = value.toFixed(5).replace(/\.?0+$/, "");
+  return `${formatted} ${unit}`;
+};
 
 type Page6ScreenNavigationProp = StackNavigationProp<
   RootStackParamList,
@@ -35,199 +51,635 @@ interface NutritionData {
     carbohydrate: { user: number; avg: number };
     sodium: { user: number; avg: number };
     protein: { user: number; avg: number };
+    calories: { user: number; avg: number };
   };
   values: {
     carbohydrate: { user: number; avg: number };
     sodium: { user: number; avg: number };
     protein: { user: number; avg: number };
-  };
-  intake: {
-    breakdown: { protein: number; carbohydrate: number; sodium: number };
-    total: number;
-  };
-  avg: {
-    breakdown: { protein: number; carbohydrate: number; sodium: number };
-    total: number;
+    calories: { user: number; avg: number };
   };
 }
 
-export default function Page6() {
-  const route = useRoute();
-  const carbs = useNutrientsStore((state) => state.carbs);
-  const prot = useNutrientsStore((state) => state.protein);
-  const sod = useNutrientsStore((state) => state.sodium);
+interface NutritionalRecord {
+  id: string;
+  user_id: string;
+  calories?: number;
+  carbohydrates?: number;
+  protein?: number;
+  sodium?: number;
+  created_at: string;
+  nutritional_images?: Array<{
+    image_url: string;
+    image_order: number;
+  }>;
+}
 
+export default function Page6() {
+  const {
+    intakes,
+    loading: detailedLoading,
+    error: detailedError,
+    saveToDatabase,
+  } = useDetailedNutrientStore();
+  // Use fruitCut and selectedAmount if available, otherwise fall back to servings
+  const detailedCarbs = intakes.reduce((sum, intake) => {
+    const multiplier = (intake.fruitCut !== undefined && intake.selectedAmount !== undefined)
+      ? (intake.fruitCut === 1 ? intake.selectedAmount : (intake.selectedAmount / intake.fruitCut))
+      : (intake.servings || 1);
+    return sum + (intake.carbs * multiplier);
+  }, 0);
+
+  const detailedProtein = intakes.reduce((sum, intake) => {
+    const multiplier = (intake.fruitCut !== undefined && intake.selectedAmount !== undefined)
+      ? (intake.fruitCut === 1 ? intake.selectedAmount : (intake.selectedAmount / intake.fruitCut))
+      : (intake.servings || 1);
+    return sum + (intake.protein * multiplier);
+  }, 0);
+
+  const detailedSodium = intakes.reduce((sum, intake) => {
+    const multiplier = (intake.fruitCut !== undefined && intake.selectedAmount !== undefined)
+      ? (intake.fruitCut === 1 ? intake.selectedAmount : (intake.selectedAmount / intake.fruitCut))
+      : (intake.servings || 1);
+    return sum + (intake.sodium * multiplier);
+  }, 0);
+
+  const detailedCalories = intakes.reduce((sum, intake) => {
+    const multiplier = (intake.fruitCut !== undefined && intake.selectedAmount !== undefined)
+      ? (intake.fruitCut === 1 ? intake.selectedAmount : (intake.selectedAmount / intake.fruitCut))
+      : (intake.servings || 1);
+    return sum + (intake.calories * multiplier);
+  }, 0);
+
+  // Move all hooks to the top before any conditional retu
+  // rns
+  const isLoading = useFeedbackLoading();
+  const carbs = detailedCarbs;
+  const prot = detailedProtein;
+  const sod = detailedSodium;
+  const cal = detailedCalories;
   const minCarb = useRecommStore((state) => state.minCarb);
   const maxCarb = useRecommStore((state) => state.maxCarb);
   const minProtein = useRecommStore((state) => state.minProtein);
   const maxProtein = useRecommStore((state) => state.maxProtein);
   const minSodium = useRecommStore((state) => state.minSodium);
   const maxSodium = useRecommStore((state) => state.maxSodium);
+  const minCalories = useRecommStore((state) => state.minCalories);
+  const maxCalories = useRecommStore((state) => state.maxCalories);
+  const { nutritionData: intakeData, fetchNutritionIntake } =
+    useNutritionIntakeStore();
+  const {
+    nutritionDataAve: averageData,
+    fetchNutritionIntakeAve,
+    nutritionDataAve,
+  } = useNutritionAverage();
+
+  const fetchFeedback = useFeedbackStore((state) => state.fetchFeedback);
+
+  const [isVisible, setIsVisible] = useState(true);
+
+  useEffect(() => {
+    fetchNutritionIntake();
+    fetchNutritionIntakeAve();
+  }, []);
+
+  const recommendationValues = useMemo(
+    () => ({
+      carbsMin:
+        nutritionDataAve && minCarb === 0 ? nutritionDataAve.minCarbs : minCarb,
+      carbsMax:
+        nutritionDataAve && maxCarb === 0 ? nutritionDataAve.maxCarbs : maxCarb,
+      sodiumMin:
+        nutritionDataAve && minSodium === 0
+          ? nutritionDataAve.minSodium
+          : minSodium,
+      sodiumMax:
+        nutritionDataAve && maxSodium === 0
+          ? nutritionDataAve.maxSodium
+          : maxSodium,
+      proteinMin:
+        nutritionDataAve && minProtein === 0
+          ? nutritionDataAve.minProtein
+          : minProtein,
+      proteinMax:
+        nutritionDataAve && maxProtein === 0
+          ? nutritionDataAve.maxProtein
+          : maxProtein,
+      caloriesMin:
+        nutritionDataAve && minCalories === 0
+          ? nutritionDataAve.minCalories
+          : minCalories,
+      caloriesMax:
+        nutritionDataAve && maxCalories === 0
+          ? nutritionDataAve.maxCalories
+          : maxCalories,
+    }),
+    [
+      nutritionDataAve,
+      minCarb,
+      maxCarb,
+      minSodium,
+      maxSodium,
+      minProtein,
+      maxProtein,
+      minCalories,
+      maxCalories
+    ]
+  );
+
+  // Get nutrition intake data from stores
+
+  // Add nutritional history state for bar chart
+  const [nutritionalData, setNutritionalData] = useState<NutritionalRecord[]>(
+    []
+  );
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   const [nutritionData, setNutritionData] = useState<NutritionData>({
     progress: {
-      // these values are what the black and green bars are based on
       carbohydrate: { user: 88, avg: 50 },
       sodium: { user: 33, avg: 50 },
       protein: { user: 45, avg: 50 },
+      calories: { user: 60, avg: 50 },
     },
     values: {
-      // the values that are displayed on the right side of the bars
       carbohydrate: { user: 53, avg: 49 },
       sodium: { user: 15, avg: 11 },
       protein: { user: 180, avg: 147 },
-    },
-    intake: {
-      // these values are what the pie chart is based on, this is dependent on the images from user
-      breakdown: { carbohydrate: 94, sodium: 2, protein: 4 },
-      total: 93.33,
-    },
-    avg: {
-      // same as intake but from the average data dependent on the user
-      breakdown: { carbohydrate: 77, sodium: 7, protein: 16 },
-      total: 402,
+      calories: { user: 1800, avg: 2000 },
     },
   });
 
+  // Fetch nutrition data on component mount
+
+  // Fetch nutritional history for bar chart (same as statistics)
   useEffect(() => {
-    console.log("✅ Sodium from store:", sod); // Is it 1.9 or 1900?
-  }, [sod]);
+    const fetchNutritionHistory = async () => {
+      setLoading(true);
+      setError(null);
 
+      try {
+        const result = await getNutritionalHistory(30);
+
+        if (result.success) {
+          setNutritionalData(result.data || []);
+        }
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Unknown error occurred");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchNutritionHistory();
+  }, []);
+
+  // Update nutritionData when store data changes
   useEffect(() => {
-    const carbsMin = minCarb; // 346
-    const carbsMax = maxCarb;
+    if (intakeData && averageData) {
+      setNutritionData((prev) => ({
+        ...prev,
+        values: {
+          carbohydrate: {
+            user: parseFloat(carbs.toFixed(5)),
+            avg: parseFloat(intakeData.avg_carbs.toFixed(5)),
+          },
+          protein: {
+            user: parseFloat(prot.toFixed(5)),
+            avg: parseFloat(intakeData.avg_protein.toFixed(5)),
+          },
+          sodium: {
+            user: parseFloat(sod.toFixed(5)),
+            avg: parseFloat((intakeData.avg_sodium / 1000).toFixed(5)),
+          },
+          calories: {
+            // Add this
+            user: parseFloat((cal.toFixed(5) ?? 0) || "0"), // Placeholder - replace with actual value when available
+            avg: parseFloat(intakeData.avg_calories?.toFixed(5) || "0"),
+          },
+        },
+      }));
+    } else if (intakeData) {
+      // Use intakeData if averageData is not available
+      setNutritionData((prev) => ({
+        ...prev,
+        values: {
+          carbohydrate: {
+            user: parseFloat(carbs.toFixed(5)),
+            avg: parseFloat(intakeData.avg_carbs.toFixed(5)),
+          },
+          protein: {
+            user: parseFloat(prot.toFixed(5)),
+            avg: parseFloat(intakeData.avg_protein.toFixed(5)),
+          },
+          sodium: {
+            user: parseFloat(sod.toFixed(5)), // Already in grams
+            avg: parseFloat((intakeData.avg_sodium / 1000).toFixed(5)), // Convert mg to g
+          },
+          calories: {
+            // Add this
+            user: 1800, // Placeholder
+            avg: parseFloat(intakeData.avg_calories?.toFixed(5) || "2000"),
+          },
+        },
+      }));
+    } else if (averageData) {
+      // Use averageData as fallback
+      const carbAvg = (averageData.minCarbs + averageData.maxCarbs) / 2;
+      const proteinAvg = (averageData.minProtein + averageData.maxProtein) / 2;
+      const sodiumAvg = (averageData.minSodium + averageData.maxSodium) / 2;
+      const calorieAvg = (averageData.minCalories + averageData.maxCalories) /2;
 
-    const carbAvg = Math.round((carbsMin + carbsMax) / 2);
+      setNutritionData((prev) => ({
+        ...prev,
+        values: {
+          carbohydrate: {
+            user: parseFloat(carbs.toFixed(5)),
+            avg: parseFloat(carbAvg.toFixed(5)),
+          },
+          protein: {
+            user: parseFloat(prot.toFixed(5)),
+            avg: parseFloat(proteinAvg.toFixed(5)),
+          },
+          sodium: {
+            user: parseFloat(sod.toFixed(5)), // Already in grams
+            avg: parseFloat((sodiumAvg / 1000).toFixed(5)), // Convert mg to g
+          },
+          calories: {
+            // Add this
+            user: parseFloat(cal.toFixed(5)), // actual data
+            avg: parseFloat((calorieAvg.toFixed(5))), //actual data
+          },
+        },
+      }));
+    }
+  }, [carbs, prot, sod, intakeData, averageData]);
 
-    const proteinMin = minProtein; // 56
-    const proteinMax = maxProtein;
-
-    const proteinAvg = Math.round((proteinMin + proteinMax) / 2);
-
-    const sodiumMin = minSodium; // 1500
-    const sodiumMax = maxSodium;
-
-    const sodiumAvg = Math.round((sodiumMin + sodiumMax) / 2);
-
+  // Update progress bars - Using the same pattern as reference code
+  useEffect(() => {
     setNutritionData((prev) => ({
       ...prev,
       progress: {
         carbohydrate: {
-          ...prev.progress.carbohydrate,
-          avg: parseFloat(carbAvg.toFixed(1)),
+          user: parseFloat(
+            (
+              (prev.values.carbohydrate.user / prev.values.carbohydrate.avg) *
+              50
+            ).toFixed(1)
+          ),
+          avg: 50, // Always 50 for average bar
         },
         protein: {
-          ...prev.progress.protein,
-          avg: parseFloat(proteinAvg.toFixed(1)),
+          user: parseFloat(
+            ((prev.values.protein.user / prev.values.protein.avg) * 50).toFixed(
+              1
+            )
+          ),
+          avg: 50, // Always 50 for average bar
         },
         sodium: {
-          ...prev.progress.sodium,
-          avg: parseFloat(sodiumAvg.toFixed(1)),
+          user: parseFloat(
+            ((prev.values.sodium.user / prev.values.sodium.avg) * 50).toFixed(1)
+          ),
+          avg: 50, // Always 50 for average bar
         },
-      },
-      values: {
-        carbohydrate: {
-          ...prev.values.carbohydrate,
-          avg: parseFloat(carbAvg.toFixed(1)),
-        },
-        protein: {
-          ...prev.values.protein,
-          avg: parseFloat(proteinAvg.toFixed(1)),
-        },
-        sodium: {
-          ...prev.values.sodium,
-          avg: parseFloat((sodiumAvg/1000).toFixed(1)),
+        calories: {
+          // Add this
+          user: parseFloat(
+            (
+              (prev.values.calories.user / prev.values.calories.avg) *
+              50
+            ).toFixed(1)
+          ),
+          avg: 50,
         },
       },
     }));
-  }, [minCarb, maxCarb, minProtein, maxProtein, minSodium, maxSodium]);
+  }, [nutritionData.values]);
 
   function handleGoBack() {
     navigation.goBack();
   }
 
-  useEffect(() => {
-    const carbohydrate = carbs; // right side variables are from global state to avoid confusion
-    const protein = prot;
-    const sodium = sod;
-
-    const total = carbohydrate + protein + sodium;
-
-    // Avoid zero total for the donut chart
-    const safeTotal = total > 0 ? total : 1;
-
-    const pieCarb = parseFloat(((carbohydrate / safeTotal) * 100).toFixed(2));
-    const pieProtein = parseFloat(((protein / safeTotal) * 100).toFixed(2));
-    const pieSodium = parseFloat(((sodium / safeTotal) * 100).toFixed(2));
-
-    setNutritionData((prev) => ({
-      ...prev,
-      intake: {
-        ...prev.intake,
-        breakdown: {
-          carbohydrate: pieCarb,
-          protein: pieProtein,
-          sodium: pieSodium,
-        },
-        total: parseFloat(total.toFixed(2)),
-      },
-      values: {
-        carbohydrate: {
-          ...prev.values.carbohydrate,
-          user: parseFloat(carbohydrate.toFixed(1)),
-        },
-        protein: {
-          ...prev.values.protein,
-          user: parseFloat(protein.toFixed(1)),
-        },
-        sodium: {
-          ...prev.values.sodium,
-          user: parseFloat(sodium.toFixed(1)),
-        },
-      },
-      progress: {
-        carbohydrate: {
-          ...prev.progress.carbohydrate,
-          user: parseFloat(((carbohydrate / 100) * 100).toFixed(1)),
-        },
-        protein: {
-          ...prev.progress.protein,
-          user: parseFloat(((protein / 200) * 100).toFixed(1)),
-        },
-        sodium: {
-          ...prev.progress.sodium,
-          user: parseFloat(((sodium / 2.3) * 100).toFixed(1)),
-        },
-      },
-    }));
-  }, [carbs, prot, sod]);
-
   const navigation = useNavigation<Page6ScreenNavigationProp>();
 
-  const handleCheck = () => {
-    navigation.navigate("feedback");
+  const handleCheck = async () => {
+    try {
+      // Use the same fallback logic as recommendationValues
+      const requestData: NutritionRequest = {
+        carbs_total: carbs,
+        protein_total: prot,
+        sodium_total: sod * 1000, // Convert g to mg like in original code
+        calories_total: cal,
+        recommended_carbs: [
+          recommendationValues.carbsMin,
+          recommendationValues.carbsMax,
+        ] as [number, number],
+        recommended_sodium: [
+          recommendationValues.sodiumMin,
+          recommendationValues.sodiumMax,
+        ] as [number, number],
+        recommended_protein: [
+          recommendationValues.proteinMin,
+          recommendationValues.proteinMax,
+        ] as [number, number],
+        recommended_calories:  [
+          recommendationValues.caloriesMin,
+          recommendationValues.caloriesMax
+        ] as [number, number],
+      };
+
+      console.log("Fetching feedback with data:", requestData);
+
+      // Wait for the fetch to complete
+      await fetchFeedback(requestData);
+
+      // Navigate to feedback page (the store will handle success/error states)
+      navigation.navigate("feedback");
+    } catch (error) {
+      console.error("Error fetching feedback:", error);
+      // Still navigate to feedback page - the error will be shown there
+      navigation.navigate("feedback");
+    }
   };
+
+  // Get average values for bar chart calculations
+  const carbAvg = intakeData?.avg_carbs ? Math.round(intakeData.avg_carbs) : 0;
+  const proteinAvg = intakeData?.avg_protein
+    ? Math.round(intakeData.avg_protein)
+    : 0;
+  const sodiumAvg = intakeData?.avg_sodium ? intakeData.avg_sodium / 1000 : 0;
+  const calorieAvg = intakeData?.avg_calories
+    ? Math.round(intakeData.avg_calories)
+    : 0;
+
+  // Initialize date constants (same as statistics)
+  const today = new Date();
+  const dayOfWeek = today.getDay(); // 0 = Sunday, 1 = Monday, etc.
+  const startOfWeek = new Date(today);
+  startOfWeek.setDate(today.getDate() - dayOfWeek);
+  const endOfWeek = new Date(startOfWeek);
+  endOfWeek.setDate(startOfWeek.getDate() + 6);
+
+  // Format dates for display
+  const startStr = format(startOfWeek, "MMM DD");
+  const endStr =
+    startOfWeek.getMonth() !== endOfWeek.getMonth()
+      ? format(endOfWeek, "MMM DD")
+      : format(endOfWeek, "DD");
+
+  // Function to get nutrition totals for a specific date (same as statistics)
+  const getDailyNutritionTotals = (date: Date | null) => {
+    try {
+      if (!date) {
+        console.warn("Invalid date provided to getDailyNutritionTotals");
+        return { carbohydrates: 0, protein: 0, sodium: 0 };
+      }
+
+      const targetDate = new Date(date).toDateString();
+
+      if (!nutritionalData || !Array.isArray(nutritionalData)) {
+        console.warn("No nutritional data available");
+        return { carbohydrates: 0, protein: 0, sodium: 0 };
+      }
+
+      const dayRecords = nutritionalData.filter((record) => {
+        try {
+          return (
+            record &&
+            record.created_at &&
+            new Date(record.created_at).toDateString() === targetDate
+          );
+        } catch (e) {
+          console.warn("Invalid record date:", record?.created_at);
+          return false;
+        }
+      });
+
+      return dayRecords.reduce(
+        (totals, record) => ({
+          carbohydrates:
+            totals.carbohydrates + (Number(record?.carbohydrates) || 0),
+          protein: totals.protein + (Number(record?.protein) || 0),
+          sodium: totals.sodium + (Number(record?.sodium) || 0),
+        }),
+        { carbohydrates: 0, protein: 0, sodium: 0 }
+      );
+    } catch (error) {
+      console.error("Check Internet Connection", "Failed loading data.");
+      return { carbohydrates: 0, protein: 0, sodium: 0 };
+    }
+  };
+
+  // Generate weekly chart data (same logic as statistics but with current values for today)
+  const generateWeeklyChartData = () => {
+    try {
+      const days = ["S", "M", "T", "W", "Th", "F", "S"];
+      const chartData = [];
+
+      if (!startOfWeek) {
+        console.warn("startOfWeek is not defined");
+        return [];
+      }
+
+      // Get recommended values from nutrition store
+      const recommendedCarbs = carbAvg || 0;
+      const recommendedProtein = proteinAvg || 0;
+      const recommendedSodium = sodiumAvg || 0;
+
+      for (let i = 0; i < 7; i++) {
+        let currentDate;
+        try {
+          currentDate = addDays(startOfWeek, i);
+        } catch (e) {
+          console.warn(`Error adding days to startOfWeek: ${e}`);
+          currentDate = new Date();
+        }
+
+        let dailyTotals;
+
+        // Check if current date is today, use current store values
+        if (currentDate.toDateString() === today.toDateString()) {
+          dailyTotals = {
+            carbohydrates: carbs,
+            protein: prot,
+            sodium: sod, // Convert mg to g
+          };
+        } else {
+          // Use historical data for other days
+          dailyTotals = getDailyNutritionTotals(currentDate);
+          dailyTotals.sodium = dailyTotals.sodium; // Convert mg to g
+        }
+
+        // Ensure values are numbers and non-negative
+        const safeValue = (val: number) => Math.max(0, Number(val) || 0);
+
+        // Calculate ratios (multiply by 100 to match the 100 = ratio of 1 scale)
+        const carbsRatio = recommendedCarbs
+          ? (safeValue(dailyTotals.carbohydrates) / recommendedCarbs) * 100
+          : 0;
+        const sodiumRatio = recommendedSodium
+          ? (safeValue(dailyTotals.sodium) / recommendedSodium) * 100
+          : 0;
+        const proteinRatio = recommendedProtein
+          ? (safeValue(dailyTotals.protein) / recommendedProtein) * 100
+          : 0;
+
+        // Add carbohydrates bar
+        chartData.push({
+          value: carbsRatio,
+          frontColor: "#F4D03F", // Carbs - Yellow
+          spacing: 2,
+          label: days[i] || "",
+        });
+
+        // Add sodium bar
+        chartData.push({
+          value: sodiumRatio,
+          frontColor: "#8B4513", // Sodium - Brown
+        });
+
+        // Add protein bar
+        chartData.push({
+          value: proteinRatio,
+          frontColor: "#9AB106", // Protein - Green
+          spacing: i < 6 ? 8 : 0, // No spacing after the last day
+        });
+      }
+
+      return chartData;
+    } catch (error) {
+      console.error("Error in generateWeeklyChartData:", error);
+      return [];
+    }
+  };
+
+  // Generate calorie data for each day of the week
+  const generateWeeklyCalorieData = () => {
+    try {
+      const days = ["S", "M", "T", "W", "TH", "F", "S"];
+      const chartData = [];
+
+      if (!startOfWeek) {
+        console.warn("startOfWeek is not defined");
+        return [];
+      }
+
+      for (let i = 0; i < 7; i++) {
+        let currentDate;
+        try {
+          currentDate = addDays(startOfWeek, i);
+        } catch (e) {
+          console.warn(`Error adding days to startOfWeek: ${e}`);
+          currentDate = new Date();
+        }
+
+        let dailyCalories;
+
+        // Check if current date is today, use current nutrition values
+        if (currentDate.toDateString() === today.toDateString()) {
+          // Use the current calorie value from nutritionData state
+          dailyCalories = nutritionData.values.calories.user;
+        } else {
+          // Use historical data for other days
+          const targetDate = currentDate.toDateString();
+          const dayRecords =
+            nutritionalData?.filter((record) => {
+              try {
+                return (
+                  record &&
+                  record.created_at &&
+                  new Date(record.created_at).toDateString() === targetDate
+                );
+              } catch (e) {
+                return false;
+              }
+            }) || [];
+
+          // Sum up calories for the day
+          dailyCalories = dayRecords.reduce(
+            (total, record) => total + (Number(record?.calories) || 0),
+            0
+          );
+        }
+
+        chartData.push({
+          value: dailyCalories,
+          label: days[i],
+        });
+      }
+
+      return chartData;
+    } catch (error) {
+      console.error("Error in generateWeeklyCalorieData:", error);
+      return [];
+    }
+  };
+
+  // Weekly data for the bar chart using actual values
+  const weeklyChartData = generateWeeklyChartData();
+  const weeklyCalorieData = generateWeeklyCalorieData();
+
+  if (isLoading) {
+    return <Loading />;
+  }
 
   return (
     <SafeAreaView style={styles.safeContainer}>
       <ScrollView contentContainerStyle={styles.scrollContainer}>
-        <View style={styles.header}>
-          <Image
-            source={require("@/assets/images/NutriVision.png")}
-            style={styles.logo}
-            accessibilityRole="image"
-            accessibilityLabel="NutriVision logo"
-          />
+        <AppLogo />
+
+        <View style={styles.container}>
+          <View style={styles.headerContainer}>
+            <ProfileBox
+              primaryText="Intake"
+              highlightedText="Comparison"
+              secondaryText=""
+            />
+            <TouchableOpacity onPress={() => setIsVisible(true)}>
+              <Ionicons
+                name="information-circle-outline"
+                size={28}
+                color="#9AB206"
+              />
+            </TouchableOpacity>
+          </View>
         </View>
 
-        <ThemedView style={styles.contentContainer}>
+        <CustomModal
+          visible={isVisible}
+          onClose={() => setIsVisible(false)}
+          title="Visual Data for Intake "
+        >
+          <View>
+            <Text>
+              This screen displays the label or fruit{" "}
+              <Text style={{ fontWeight: "bold" }}>intake provided</Text> versus
+              your{" "}
+              <Text style={{ fontWeight: "bold" }}>average daily intake</Text>
+            </Text>
+            <Text style={{ marginTop: 16 }}>
+              The bar graph shows how much your intake is compared to the
+              average in terms of a horizontal line, in the right most the user
+              can also see the comparison in terms of numerical data.
+            </Text>
+
+            <Text style={{ marginTop: 16 }}>
+              The weekly intake chart compares your current input intake to the
+              existing intakes saved for the current week.
+            </Text>
+          </View>
+        </CustomModal>
+
+        <View style={styles.contentContainer}>
           {/* Progress Bars Section */}
           <View style={styles.progressContainer}>
             {/* Legends - Now properly spaced */}
             <View style={styles.legendsContainer}>
               <View style={styles.legendItem}>
                 <View style={[styles.legendSquare, styles.userLegend]} />
-                <Text style={styles.legendText}>User input</Text>
+                <Text style={styles.legendText}>Your intake</Text>
               </View>
               <View style={[styles.legendItem, styles.legendItemSpacing]}>
                 <View style={[styles.legendSquare, styles.avgLegend]} />
@@ -235,7 +687,7 @@ export default function Page6() {
               </View>
             </View>
 
-            {/* Carbohydrate Row (was Sugar) */}
+            {/* Carbohydrate Row */}
             <View style={styles.nutrientRow}>
               <View style={styles.nutrientLabel}>
                 <Text style={styles.nutrientText}>Carbs</Text>
@@ -252,9 +704,7 @@ export default function Page6() {
                       styles.userProgress,
                       {
                         width: toProgressWidth(
-                          (nutritionData.values.carbohydrate.user /
-                            nutritionData.values.carbohydrate.avg) *
-                            50
+                          nutritionData.progress.carbohydrate.user
                         ),
                       },
                     ]}
@@ -266,7 +716,9 @@ export default function Page6() {
                       styles.progressBar,
                       styles.avgProgress,
                       {
-                        width: toProgressWidth(50),
+                        width: toProgressWidth(
+                          nutritionData.progress.carbohydrate.avg
+                        ),
                       },
                     ]}
                   />
@@ -299,9 +751,7 @@ export default function Page6() {
                       styles.userProgress,
                       {
                         width: toProgressWidth(
-                          ((nutritionData.values.sodium.user) /
-                            nutritionData.values.sodium.avg) *
-                            50
+                          nutritionData.progress.sodium.user
                         ),
                       },
                     ]}
@@ -313,7 +763,9 @@ export default function Page6() {
                       styles.progressBar,
                       styles.avgProgress,
                       {
-                        width: toProgressWidth(50),
+                        width: toProgressWidth(
+                          nutritionData.progress.sodium.avg
+                        ),
                       },
                     ]}
                   />
@@ -329,7 +781,7 @@ export default function Page6() {
               </View>
             </View>
 
-            {/* Protein Row (was Calories) */}
+            {/* Protein Row */}
             <View style={styles.nutrientRow}>
               <View style={styles.nutrientLabel}>
                 <Text style={styles.nutrientText}>Protein</Text>
@@ -346,9 +798,7 @@ export default function Page6() {
                       styles.userProgress,
                       {
                         width: toProgressWidth(
-                          (nutritionData.values.protein.user /
-                            nutritionData.values.protein.avg) *
-                            50
+                          nutritionData.progress.protein.user
                         ),
                       },
                     ]}
@@ -360,7 +810,9 @@ export default function Page6() {
                       styles.progressBar,
                       styles.avgProgress,
                       {
-                        width: toProgressWidth(50),
+                        width: toProgressWidth(
+                          nutritionData.progress.protein.avg
+                        ),
                       },
                     ]}
                   />
@@ -375,160 +827,90 @@ export default function Page6() {
                 </Text>
               </View>
             </View>
-          </View>
-
-          {/* Donut Charts Section */}
-          <View style={styles.chartsContainer}>
-            {/* User Intake Donut Chart */}
-            <View style={styles.chartBox}>
-              <View style={styles.chartRow}>
-                <View style={styles.chartWrapper}>
-                  <PieChart
-                    widthAndHeight={150}
-                    series={[
+            {/* Calories Row - ADD THIS */}
+            <View style={styles.nutrientRow}>
+              <View style={styles.nutrientLabel}>
+                <Text style={styles.nutrientText}>Calories</Text>
+                <Image
+                  source={require("@/assets/images/calorie.png")} // You'll need to add this icon
+                  style={styles.icon}
+                />
+              </View>
+              <View style={styles.progressBars}>
+                <View style={styles.progressBarBackground}>
+                  <View
+                    style={[
+                      styles.progressBar,
+                      styles.userProgress,
                       {
-                        value: nutritionData.intake.breakdown.protein,
-                        color: "#000000",
-                      },
-                      {
-                        value: nutritionData.intake.breakdown.carbohydrate,
-                        color: "#7ca844",
-                      },
-                      {
-                        value: nutritionData.intake.breakdown.sodium,
-                        color: "#c0b4b4",
+                        width: toProgressWidth(
+                          nutritionData.progress.calories.user
+                        ),
                       },
                     ]}
-                    cover={0.55}
                   />
                 </View>
-                <View style={styles.legendWrapper}>
-                  <Text style={styles.chartTitle}>User Intake</Text>
-                  <View style={styles.legendItem}>
-                    <View
-                      style={[
-                        styles.colorCircle,
-                        { backgroundColor: "#7ca844" },
-                      ]}
-                    />
-                    <Text style={styles.legendLabel}>
-                      Carbs (
-                      {toPercentageText(
-                        nutritionData.intake.breakdown.carbohydrate
-                      )}
-                      )
-                    </Text>
-                  </View>
-                  <View style={styles.legendItem}>
-                    <View
-                      style={[
-                        styles.colorCircle,
-                        { backgroundColor: "#c0b4b4" },
-                      ]}
-                    />
-                    <Text style={styles.legendLabel}>
-                      Sodium (
-                      {toPercentageText(nutritionData.intake.breakdown.sodium)})
-                    </Text>
-                  </View>
-                  <View style={styles.legendItem}>
-                    <View
-                      style={[
-                        styles.colorCircle,
-                        { backgroundColor: "#000000" },
-                      ]}
-                    />
-                    <Text style={styles.legendLabel}>
-                      Protein (
-                      {toPercentageText(nutritionData.intake.breakdown.protein)}
-                      )
-                    </Text>
-                  </View>
-                  <View style={styles.totalBox}>
-                    <Text style={styles.totalText}>
-                      Total Nutrient{"\n"}Amount ={" "}
-                      {formatValue(nutritionData.intake.total)}
-                    </Text>
-                  </View>
+                <View style={styles.progressBarBackground}>
+                  <View
+                    style={[
+                      styles.progressBar,
+                      styles.avgProgress,
+                      {
+                        width: toProgressWidth(
+                          nutritionData.progress.calories.avg
+                        ),
+                      },
+                    ]}
+                  />
                 </View>
               </View>
-            </View>
-
-            {/* Average Intake Donut Chart */}
-            <View style={styles.chartBox}>
-              <View style={styles.chartRow}>
-                <View style={styles.chartWrapper}>
-                  <PieChart
-                    widthAndHeight={150}
-                    series={[
-                      {
-                        value: nutritionData.avg.breakdown.protein,
-                        color: "#000000",
-                      },
-                      {
-                        value: nutritionData.avg.breakdown.carbohydrate,
-                        color: "#7ca844",
-                      },
-                      {
-                        value: nutritionData.avg.breakdown.sodium,
-                        color: "#c0b4b4",
-                      },
-                    ]}
-                    cover={0.55}
-                  />
-                </View>
-                <View style={styles.legendWrapper}>
-                  <Text style={styles.chartTitle}>Average Intake</Text>
-                  <View style={styles.legendItem}>
-                    <View
-                      style={[
-                        styles.colorCircle,
-                        { backgroundColor: "#7ca844" },
-                      ]}
-                    />
-                    <Text style={styles.legendLabel}>
-                      Carbs (
-                      {toPercentageText(
-                        nutritionData.avg.breakdown.carbohydrate
-                      )}
-                      )
-                    </Text>
-                  </View>
-                  <View style={styles.legendItem}>
-                    <View
-                      style={[
-                        styles.colorCircle,
-                        { backgroundColor: "#c0b4b4" },
-                      ]}
-                    />
-                    <Text style={styles.legendLabel}>
-                      Sodium (
-                      {toPercentageText(nutritionData.avg.breakdown.sodium)})
-                    </Text>
-                  </View>
-                  <View style={styles.legendItem}>
-                    <View
-                      style={[
-                        styles.colorCircle,
-                        { backgroundColor: "#000000" },
-                      ]}
-                    />
-                    <Text style={styles.legendLabel}>
-                      Protein (
-                      {toPercentageText(nutritionData.avg.breakdown.protein)})
-                    </Text>
-                  </View>
-                  <View style={styles.totalBox}>
-                    <Text style={styles.totalText}>
-                      Total Nutrient{"\n"}Amount ={" "}
-                      {formatValue(nutritionData.avg.total)}
-                    </Text>
-                  </View>
-                </View>
+              <View style={styles.valueContainer}>
+                <Text style={styles.userValue}>
+                  {formatValue(nutritionData.values.calories.user)}
+                </Text>
+                <Text style={styles.avgValue}>
+                  {formatValue(nutritionData.values.calories.avg)}
+                </Text>
               </View>
             </View>
           </View>
-        </ThemedView>
+
+          {/* Weekly Chart using BarChart component - Same implementation as statistics */}
+          <BarChart
+            data={weeklyChartData}
+            title="Weekly Intake Ratio"
+            subtitle={`${startStr} - ${endStr}`}
+            maxValue={150} // Maximum value on Y-axis
+            stepValue={25} // Steps of 25 (0.25 ratio increments)
+            height={160}
+            barWidth={10}
+            spacing={2}
+            showLegend={true}
+            referenceLine={100} // Add constant reference line at 100%
+            referenceLineColor="#000000" // Black line for reference
+            legendData={[
+              { color: "#F4D03F", label: "Carbohydrates" },
+              { color: "#8B4513", label: "Sodium" },
+              { color: "#9AB106", label: "Protein" },
+              { color: "#000000", label: "Target" },
+            ]}
+          />
+
+          {/* Calorie Chart - ADD THIS */}
+          <View style={{ marginTop: 16 }}>
+            <CalorieBarChart
+              data={weeklyCalorieData}
+              title="Weekly Calorie Intake"
+              subtitle={`${startStr} - ${endStr}`}
+              dailyGoal={calorieAvg}
+              maxValue={3000}
+              stepValue={500}
+              height={160}
+              barWidth={10}
+              spacing={15}
+            />
+          </View>
+        </View>
       </ScrollView>
 
       <TouchableOpacity
@@ -540,7 +922,7 @@ export default function Page6() {
       </TouchableOpacity>
 
       <TouchableOpacity style={styles.checkButton} onPress={handleCheck}>
-        <ThemedText style={styles.checkMark}>✓</ThemedText>
+        <Ionicons name="arrow-redo-outline" size={28} color="#9AB206" />
       </TouchableOpacity>
     </SafeAreaView>
   );
@@ -549,12 +931,12 @@ export default function Page6() {
 const styles = StyleSheet.create({
   safeContainer: {
     flex: 1,
-    backgroundColor: "#F5F5F5",
+    backgroundColor: "#eff1f6",
   },
   roundButton: {
     width: 60,
     height: 60,
-    bottom: 40,
+    bottom: 20,
     left: 20,
     borderRadius: 30,
     backgroundColor: "#333",
@@ -571,6 +953,7 @@ const styles = StyleSheet.create({
     height: 100,
     justifyContent: "center",
     alignItems: "flex-start",
+    paddingLeft: 16,
   },
   logo: {
     width: 200,
@@ -580,8 +963,8 @@ const styles = StyleSheet.create({
   contentContainer: {
     flex: 1,
     paddingHorizontal: 16,
-    paddingBottom: 16,
-    backgroundColor: "#F5F5F5",
+    paddingVertical: 16,
+    backgroundColor: "#eff1f6",
   },
   progressContainer: {
     backgroundColor: "white",
@@ -630,21 +1013,22 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   nutrientLabel: {
-    flex: 1.5,
+    flex: 1.1,
     flexDirection: "row",
     alignItems: "center",
   },
   nutrientText: {
     fontSize: 14,
     color: "#333",
-    marginRight: 8,
+    marginRight: 2,
+    marginLeft: -8,
   },
   icon: {
     width: 20,
     height: 20,
   },
   progressBars: {
-    flex: 3.5,
+    flex: 2.7,
   },
   progressBarBackground: {
     height: 4,
@@ -664,70 +1048,18 @@ const styles = StyleSheet.create({
     backgroundColor: "#9AB106",
   },
   valueContainer: {
-    flex: 0.8,
+    flex: 1,
     alignItems: "flex-end",
   },
   userValue: {
-    fontSize: 12,
+    fontSize: 9,
     fontWeight: "bold",
     color: "#333",
   },
   avgValue: {
-    fontSize: 12,
+    fontSize: 9,
     fontWeight: "bold",
     color: "#9AB106",
-  },
-  chartsContainer: {
-    gap: 16,
-  },
-  chartBox: {
-    backgroundColor: "white",
-    borderRadius: 12,
-    padding: 16,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 6,
-    elevation: 4,
-  },
-  chartRow: {
-    flexDirection: "row",
-  },
-  chartWrapper: {
-    position: "relative",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  legendWrapper: {
-    flex: 1,
-    justifyContent: "center",
-    paddingLeft: 16,
-  },
-  chartTitle: {
-    fontSize: 18,
-    fontWeight: "bold",
-    marginBottom: 12,
-  },
-  colorCircle: {
-    width: 12,
-    height: 12,
-    borderRadius: 6,
-    marginHorizontal: 12,
-  },
-  legendLabel: {
-    fontSize: 12,
-    color: "#333",
-  },
-  totalBox: {
-    backgroundColor: "#f8e4e4",
-    padding: 12,
-    borderRadius: 12,
-    marginTop: 12,
-  },
-  totalText: {
-    fontSize: 14,
-    color: "#333",
-    textAlign: "left",
   },
   checkButton: {
     position: "absolute",
@@ -740,9 +1072,15 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
-  checkMark: {
-    fontSize: 25,
-    color: "#9AB106",
-    fontWeight: "bold",
+  headerContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+  },
+  container: {
+    flex: 1,
+    backgroundColor: "#eff1f6",
+    paddingHorizontal: 16,
+    paddingVertical: 16,
   },
 });

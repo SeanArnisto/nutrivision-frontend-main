@@ -1,23 +1,45 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import {
   StyleSheet,
   View,
-  Image,
-  Dimensions,
   SafeAreaView,
   Text,
   TouchableOpacity,
+  ScrollView,
 } from "react-native";
+import SafeViewAndroid from "@/components/SafeViewAndroid";
 import { ThemedView } from "@/components/ThemedView";
-import { ThemedText } from "@/components/ThemedText";
-import { CircularProgressbar } from "react-circular-progressbar";
 import "react-circular-progressbar/dist/styles.css";
-import { AnimatedCircularProgress } from "react-native-circular-progress";
-import { useNavigation, useRoute } from "@react-navigation/native";
+import { useNavigation } from "@react-navigation/native";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { RootStackParamList } from "@/types/types";
-import { useRecommStore } from "@/hooks/store";
+import AvgIntakeCard from "@/components/avgIntakeCard";
+import { nutrients } from "@/constants/nutrientIcons";
+import AppLogo from "@/components/appLogo";
+import ProfileBox from "@/components/ProfileBox";
+import BottomNavBar from "@/components/BottomNavBar";
+import Calendar from "@/components/Calendar";
+import DateDetailModal from "@/components/DateDetailModal";
+import SessionDetailModal from "@/components/SessionDetailModal";
 import { Ionicons } from "@expo/vector-icons";
+import CalorieCard from "@/components/CalorieCard";
+import BMICard from "@/components/BMICard";
+import BMIModal from "@/components/BMIModal";
+
+// Import the hooks and auth store
+import {
+  useNutritionCalendar,
+  Session,
+  FoodEntry,
+  NutritionSummary,
+} from "@/hooks/useNutritionCalendar";
+import { useAuthStore } from "@/stores/authStore";
+import { useNutritionIntakeStore } from "@/stores/nutritionIntakeStore";
+import { useAccountCreationDate } from "@/hooks/useAccountCreationDate";
+import CustomModal from "@/components/customModal";
+import { Custom } from "react-native-reanimated-carousel/lib/typescript/components/Pagination/Custom";
+import { withDecay } from "react-native-reanimated";
+import { useUserProfileStore } from "@/stores/userProfileStore";
 
 type Page2ScreenNavigationProp = StackNavigationProp<
   RootStackParamList,
@@ -26,207 +48,373 @@ type Page2ScreenNavigationProp = StackNavigationProp<
 
 export default function Page2() {
   const navigation = useNavigation<Page2ScreenNavigationProp>();
-  const route = useRoute();
+  const [activeTab, setActiveTab] = useState("home");
+  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+  const [dateModalVisible, setDateModalVisible] = useState(false);
+  const [sessionModalVisible, setSessionModalVisible] = useState(false);
+  const [selectedSession, setSelectedSession] = useState<Session | null>(null);
+  const [sessionFoodEntries, setSessionFoodEntries] = useState<FoodEntry[]>([]);
+  const [shouldRedirect, setShouldRedirect] = useState(false);
+  const [bmiModalVisible, setBmiModalVisible] = useState(false);
 
-  const minCarb = useRecommStore((state) => state.minCarb);
-  const maxCarb = useRecommStore((state) => state.maxCarb);
+  // Use the auth store to get user info
+  const { user, isAuthenticated, profileComplete } = useAuthStore();
+  const [isVisible, setIsVisible] = useState<boolean>(false);
 
-  const minProtein = useRecommStore((state) => state.minProtein);
-  const maxProtein = useRecommStore((state) => state.maxProtein);
+  // Use the nutrition calendar hook
+  const {
+    sessionsData,
+    isLoading: isCalendarLoading,
+    error: calendarError,
+    getSessionsForDate,
+    getFoodEntriesForSession,
+    getNutritionSummaryForSession,
+    refreshData,
+  } = useNutritionCalendar();
 
-  const minSodium = useRecommStore((state) => state.minSodium);
-  const maxSodium = useRecommStore((state) => state.maxSodium);
+  // Use the correct nutrition intake hook for average intake cards
+  const {
+    nutritionData,
+    isLoading: isIntakeLoading,
+    error: intakeError,
+    fetchNutritionIntake,
+  } = useNutritionIntakeStore();
 
-  function handleGoBack() {
-    navigation.goBack();
+  // Use the account creation date hook
+  const {
+    accountCreationDate,
+    isLoading: isProfileLoading,
+    error: profileError,
+  } = useAccountCreationDate();
+
+  const { profile, fetchUserProfile, calculateBMI } = useUserProfileStore();
+
+  useEffect(() => {
+    if (isAuthenticated && user) {
+      fetchUserProfile();
+    }
+  }, [isAuthenticated, user, fetchUserProfile]);
+
+  const userBMI = calculateBMI();
+  const userWeight = profile?.weight ?? 0;
+  const userHeight = profile?.height ?? 0;
+
+  useEffect(() => {
+    if (!isProfileLoading) {
+      console.log(
+        "✅ Profile loaded - BMI:",
+        userBMI,
+        "Weight:",
+        userWeight,
+        "Height:",
+        userHeight
+      );
+    }
+  }, [userBMI, isProfileLoading, userWeight, userHeight]);
+
+  // Fetch nutrition intake data on component mount
+  // Fetch nutrition intake data on component mount
+  useEffect(() => {
+    if (isAuthenticated && user && profileComplete === true) {
+      console.log("🏠 Home page: Fetching nutrition intake...");
+      fetchNutritionIntake().then(() => {
+        console.log("📊 Nutrition data loaded:", nutritionData);
+      });
+    }
+  }, [isAuthenticated, user, profileComplete, fetchNutritionIntake]);
+
+  // Redirect unauthenticated users to login
+  useEffect(() => {
+    if (!isAuthenticated) {
+      navigation.reset({
+        index: 0,
+        routes: [{ name: "login" }],
+      });
+    }
+  }, [isAuthenticated, navigation]);
+
+  useEffect(() => {
+    if (isAuthenticated && profileComplete === false) {
+      navigation.replace("onboarding");
+    }
+  }, [isAuthenticated, profileComplete, navigation]);
+
+  // Don't render anything if not authenticated
+  if (!isAuthenticated || !user) {
+    return null;
   }
 
-  const { width } = Dimensions.get("window");
-  const handleCheck = () => {
-    navigation.navigate("camera");
+  // Check if any of the errors are network-related
+  // useEffect(() => {
+  //   const hasNetworkError = (error: string | null) => {
+  //     return (
+  //       error &&
+  //       (error.toLowerCase().includes("network request failed") ||
+  //         error.toLowerCase().includes("network error") ||
+  //         error.toLowerCase().includes("connection failed") ||
+  //         error.toLowerCase().includes("fetch failed"))
+  //     );
+  //   };
+
+  //   // Only check the error variable you actually have
+  //   if (hasNetworkError(intakeError) && !shouldRedirect) {
+  //     console.log(
+  //       "Network error detected in Statistics, redirecting to Page2..."
+  //     );
+  //     setShouldRedirect(true);
+  //     setTimeout(() => {
+  //       navigation.navigate("page-2");
+  //     }, 1000);
+  //   }
+  // }, [intakeError, navigation, shouldRedirect]);
+
+  const handleDateSelect = (date: Date) => {
+    setSelectedDate(date);
+    setDateModalVisible(true);
+    console.log("Selected date:", date.toDateString());
   };
 
-  const carbsMin = minCarb; // 346
-  const carbsMax = maxCarb;
+  const handleModalClose = () => {
+    setDateModalVisible(false);
+    setSelectedDate(null);
+  };
 
-  const carbAvg = Math.round((carbsMin + carbsMax) / 2);
+  const handleSessionSelect = (session: any) => {
+    try {
+      setSelectedSession(session);
+      setDateModalVisible(false);
+      setSessionModalVisible(true);
 
-  const proteinMin = minProtein;
-  const proteinMax = maxProtein;
+      // Fetch food entries for the selected session asynchronously
+      getFoodEntriesForSession(session.id)
+        .then((foodEntries) => {
+          setSessionFoodEntries(foodEntries);
+        })
+        .catch((error) => {
+          console.error("Error loading session details:", error);
+          setSessionFoodEntries([]);
+        });
+    } catch (error) {
+      console.error("Error loading session details:", error);
+    }
+  };
 
-  const proteinAvg = Math.round((proteinMin + proteinMax) / 2);
+  const handleSessionModalClose = () => {
+    setSessionModalVisible(false);
+    setSelectedSession(null);
+    setSessionFoodEntries([]);
+  };
 
-  const sodiumMin = minSodium;
-  const sodiumMax = maxSodium;
+  // Get sessions for the selected date
+  const getSessionsForSelectedDate = (): Session[] => {
+    if (!selectedDate) return [];
+    return getSessionsForDate(selectedDate);
+  };
 
-  const sodiumAvg = Math.round((sodiumMin + sodiumMax) / 2) /1000;
+  // Get nutrition summary for selected session
+  const getSelectedSessionNutritionSummary = (): NutritionSummary | null => {
+    if (!selectedSession) return null;
+    return getNutritionSummaryForSession(selectedSession.id);
+  };
+
+  // Calculate averages from nutrition intake data (from user_nutrition_intake table)
+  const carbAvg = nutritionData?.avg_carbs
+    ? Math.round(nutritionData.avg_carbs)
+    : 0;
+  const proteinAvg = nutritionData?.avg_protein
+    ? Math.round(nutritionData.avg_protein)
+    : 0;
+  const sodiumAvg = nutritionData?.avg_sodium
+    ? nutritionData.avg_sodium / 1000
+    : 0; // No division by 1000 if already in correct units
+  // Calories average (fallback to 0 if not available)
+  const caloriesAvg = nutritionData?.avg_calories
+    ? Math.round(nutritionData.avg_calories)
+    : 0;
+  // const bmiValue = 35;
+  // Handle retry for different er  rors
+  const handleRetry = (type: "calendar" | "intake") => {
+    switch (type) {
+      case "calendar":
+        refreshData();
+        break;
+      case "intake":
+        fetchNutritionIntake();
+        break;
+    }
+  };
 
   return (
-    <SafeAreaView style={styles.safeArea}>
-      {/* Logo kept from original */}
-      <Image
-        source={require("@/assets/images/NutriVision.png")}
-        style={styles.logo}
-        accessibilityRole="image"
-        accessibilityLabel="NutriVision logo"
+    <SafeAreaView style={SafeViewAndroid.AndroidSafeArea}>
+      <ScrollView style={styles.down}>
+        <AppLogo />
+        <ThemedView style={styles.container}>
+          <View style={styles.headerContainer}>
+            <ProfileBox
+              primaryText="Average"
+              highlightedText="Daily"
+              secondaryText="Intake"
+              style={{ width: 165 }}
+            />
+            <TouchableOpacity onPress={() => setIsVisible(true)}>
+              <Ionicons
+                name="information-circle-outline"
+                size={28}
+                color="#9AB206"
+              />
+            </TouchableOpacity>
+          </View>
+
+          <CustomModal
+            visible={isVisible}
+            onClose={() => setIsVisible(false)}
+            title="Average Daily Intake"
+          >
+            <View>
+              <Text>
+                {"\n"}This screen displays your average daily intake. {"\n\n"}
+                The values shown for carbohydrates, sodium, and protein (in
+                grams) {"\n\n"}Represent your maximum daily threshold, which is
+                customized based on your weight, height, and age.{"\n\n"}The
+                calendar below allows you to track daily intake, it displays the
+                intake for a specific day at a given time.
+              </Text>
+            </View>
+          </CustomModal>
+          {/* Calorie Card - Full Width */}
+          <CalorieCard
+            value={isIntakeLoading ? "..." : caloriesAvg.toString()}
+            fill={100}
+            maxCalories={2000} // Optional: pass user's target calories
+          />
+          <View style={styles.rowContainer}>
+            {/* Carbohydrate Card */}
+            <AvgIntakeCard
+              iconSource={nutrients.carbohydrate.icon}
+              tintColor={nutrients.carbohydrate.tintColor}
+              subtitle="Carbohydrate"
+              value={isIntakeLoading ? "..." : carbAvg.toString()}
+              index={0}
+            />
+
+            {/* Sodium Card */}
+            <AvgIntakeCard
+              iconSource={nutrients.sodium.icon}
+              tintColor={nutrients.sodium.tintColor}
+              subtitle="Sodium"
+              value={isIntakeLoading ? "..." : sodiumAvg.toString()}
+              index={1}
+            />
+
+            {/* Protein Card */}
+            <AvgIntakeCard
+              iconSource={nutrients.protein.icon}
+              tintColor={nutrients.protein.tintColor}
+              subtitle="Protein"
+              value={isIntakeLoading ? "..." : proteinAvg.toString()}
+              index={2}
+            />
+          </View>
+          {/* BMI Card */}
+          <BMICard
+            bmiValue={isProfileLoading ? 0 : (userBMI || 0)}
+            onInfoPress={() => setBmiModalVisible(true)}
+          />
+          {/* Show loading skeleton while fetching profile */}
+          {isProfileLoading && (
+            <View style={styles.skeletonContainer}>
+              <Text style={styles.skeletonText}>Loading profile...</Text>
+            </View>
+          )}
+
+          {/* Show error if fetch fails */}
+          {profileError && (
+            <View style={styles.errorContainer}>
+              <Text style={styles.errorText}>
+                Error loading profile: {profileError}
+              </Text>
+            </View>
+          )}
+          {/* Error handling for nutrition intake */}
+          {intakeError && (
+            <View style={styles.errorContainer}>
+              <Text style={styles.errorText}>
+                Error loading nutrition intake: Check Internet Connectivity
+              </Text>
+              <TouchableOpacity
+                onPress={() => handleRetry("intake")}
+                style={styles.retryButton}
+              >
+                <Text style={styles.retryText}>Retry</Text>
+              </TouchableOpacity>
+            </View>
+          )}
+
+          {/* Error handling for calendar */}
+          {calendarError && (
+            <View style={styles.errorContainer}>
+              <Text style={styles.errorText}>
+                Error loading calendar data: Check Internet Connectivity
+              </Text>
+              <TouchableOpacity
+                onPress={() => handleRetry("calendar")}
+                style={styles.retryButton}
+              >
+                <Text style={styles.retryText}>Retry</Text>
+              </TouchableOpacity>
+            </View>
+          )}
+
+          {/* Calendar Component */}
+          <Calendar
+            onDateSelect={handleDateSelect}
+            sessionsData={sessionsData}
+            accountCreationDate={accountCreationDate || new Date()}
+          />
+
+          {/* Date Detail Modal */}
+          <DateDetailModal
+            visible={dateModalVisible}
+            onClose={handleModalClose}
+            selectedDate={selectedDate}
+            sessions={getSessionsForSelectedDate()}
+            onSessionSelect={handleSessionSelect}
+          />
+
+          {/* Session Detail Modal */}
+          <SessionDetailModal
+            visible={sessionModalVisible}
+            onClose={handleSessionModalClose}
+            session={selectedSession}
+            foodEntries={sessionFoodEntries}
+            nutritionSummary={
+              getSelectedSessionNutritionSummary() || {
+                carbs: 0,
+                sodium: 0,
+                protein: 0,
+                calories: 0,
+                total: 0,
+              }
+            }
+          />
+        </ThemedView>
+      </ScrollView>
+      <BottomNavBar
+        onCameraPress={() => navigation.navigate("camera")}
+        routeMapping={{
+          home: "page-2",
+          stats: "statistics",
+          settings: "settings",
+          profile: "profile",
+        }}
       />
-      <ThemedView style={styles.container}>
-        {/* Add your new page-2 content here */}
-        <View style={styles.profileBox}>
-          <ThemedText style={styles.profileBoxText}>
-            Average <ThemedText style={styles.profileText}>Daily</ThemedText>{" "}
-            Intake
-          </ThemedText>
-        </View>
-        <View style={styles.rowContainer}>
-          {/* Container 1 */}
-          <View style={[styles.column]}>
-            {
-              <View style={styles.textRow}>
-                <Text style={styles.title}>{carbAvg} g</Text>
-              </View>
-            }
-            <View style={styles.textRow}>
-              <Text style={styles.subtitle}>Carbohydrates</Text>
-            </View>
-            {/* Circular Progress with Image */}
-
-            <View style={styles.textRow}>
-              <View style={styles.progressRow}>
-                <View style={{ alignItems: "flex-start", marginTop: 10 }}>
-                  <AnimatedCircularProgress
-                    style={{ transform: [{ rotate: "90deg" }, { scaleX: -1 }] }}
-                    size={95}
-                    width={10}
-                    fill={100} // Percentage fill
-                    tintColor="#d5cd3a"
-                    backgroundColor="#dddddd"
-                  >
-                    {() => (
-                      <Image
-                        source={require("@/assets/images/Carbohydrate Icon.png")} // Change this to your desired image
-                        style={{
-                          width: 40,
-                          height: 40,
-                          borderRadius: 20,
-                          transform: [{ rotate: "450deg" }, { scaleX: -1 }],
-                        }}
-                        resizeMode="contain"
-                      />
-                    )}
-                  </AnimatedCircularProgress>
-                </View>
-              </View>
-            </View>
-          </View>
-
-          {/* Container 2 */}
-          <View style={[styles.column]}>
-            {/* Your content */}
-            {
-              <View style={styles.textRow}>
-                <Text style={styles.title}>{sodiumAvg} g</Text>
-              </View>
-            }
-            <View style={styles.textRow}>
-              <Text style={styles.subtitle}>Sodium</Text>
-            </View>
-            {/* Circular Progress with Image */}
-            <View style={styles.textRow}>
-              <View style={styles.progressRow}>
-                <View style={{ alignItems: "flex-start", marginTop: 10 }}>
-                  <AnimatedCircularProgress
-                    style={{ transform: [{ rotate: "90deg" }, { scaleX: -1 }] }}
-                    size={95}
-                    width={10}
-                    fill={100} // Percentage fill
-                    tintColor="#aa7b08"
-                    backgroundColor="#dddddd"
-                  >
-                    {() => (
-                      <Image
-                        source={require("@/assets/images/Sodium Icon.png")} // Change this to your desired image
-                        style={{
-                          width: 40,
-                          height: 40,
-                          borderRadius: 20,
-                          transform: [{ rotate: "450deg" }, { scaleX: 1 }],
-                        }}
-                        resizeMode="contain"
-                      />
-                    )}
-                  </AnimatedCircularProgress>
-                </View>
-              </View>
-            </View>
-          </View>
-
-          {/* Container 3 */}
-          <View style={[styles.column]}>
-            {/* Your content */}
-            {
-              <View style={styles.textRow}>
-                <Text style={styles.title}>{proteinAvg} g</Text>
-              </View>
-            }
-            <View style={styles.textRow}>
-              <Text style={styles.subtitle}>Protein</Text>
-            </View>
-            <View style={styles.textRow}>
-              <View style={styles.progressRow}>
-                <View style={{ alignItems: "flex-start", marginTop: 10 }}>
-                  <AnimatedCircularProgress
-                    style={{ transform: [{ rotate: "90deg" }, { scaleX: -1 }] }}
-                    size={95}
-                    width={10}
-                    fill={100} // Percentage fill
-                    tintColor="#9ab106"
-                    backgroundColor="#dddddd"
-                  >
-                    {() => (
-                      <Image
-                        source={require("@/assets/images/Protein Icon.png")} // Change this to your desired image
-                        style={{
-                          width: 40,
-                          height: 40,
-                          borderRadius: 20,
-                          transform: [{ rotate: "450deg" }, { scaleX: -1 }],
-                        }}
-                        resizeMode="contain"
-                      />
-                    )}
-                  </AnimatedCircularProgress>
-                </View>
-              </View>
-            </View>
-          </View>
-        </View>
-        <View style={styles.paragraphContainer}>
-          <Text style={styles.paragraphText}>
-            The information provided by Nutrivision is for educational and
-            informational purposes only. It is not intended as medical advice,
-            diagnosis, or treatment. Nutrient values are estimated based on
-            available data and may not reflect exact amounts due to variations
-            in food composition and labeling. While we strive for accuracy,
-            individual nutritional needs may differ. Always consult a healthcare
-            professional or registered dietitian for personalized dietary
-            recommendations and health-related decisions.
-          </Text>
-        </View>
-      </ThemedView>
-      <TouchableOpacity
-        style={styles.roundButton}
-        onPress={handleGoBack}
-        disabled={false}
-      >
-        <Ionicons name="arrow-undo-outline" size={28} color="#9AB206" />
-      </TouchableOpacity>
-      <TouchableOpacity style={styles.checkButton} onPress={handleCheck}>
-        <Image
-          source={require("@/assets/images/Plus.png")}
-          style={{ width: 20, height: 20 }}
-        />
-      </TouchableOpacity>
+      <BMIModal
+        visible={bmiModalVisible}
+        onClose={() => setBmiModalVisible(false)}
+        bmiValue={isProfileLoading ? 0 : (userBMI || 0)}
+        weight={userWeight}
+        height={userHeight}
+      />
     </SafeAreaView>
   );
 }
@@ -236,121 +424,65 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#eff1f6",
   },
-  roundButton: {
-    width: 60,
-    height: 60,
-    bottom: 40,
-    left: 20,
-    borderRadius: 30,
-    backgroundColor: "#333",
-    justifyContent: "center",
+  headerContainer: {
+    flexDirection: "row",
     alignItems: "center",
-    position: "absolute",
-  },
-  checkButton: {
-    position: "absolute",
-    bottom: 40,
-    right: 20,
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    backgroundColor: "#333",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  checkMark: {
-    fontSize: 25,
-    color: "#9AB106",
-    fontWeight: "bold",
+    gap: 12,
   },
   container: {
     flex: 1,
     backgroundColor: "#eff1f6",
     gap: 15,
     padding: 15,
-  },
-  // Logo style from original
-  logo: {
-    width: 200,
-    height: 60,
-    resizeMode: "contain",
-    alignSelf: "flex-start",
-  },
-  // New styles for page-2
-  content: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "flex-start",
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: "bold",
-    color: "#385802",
-  },
-  subtitle: {
-    fontSize: 12,
-    color: "#666",
-    paddingHorizontal: 2,
-    fontWeight: "bold",
-  },
-  profileBox: {
-    width: 150,
-    height: 50,
-    backgroundColor: "white",
-    borderRadius: 12,
-    justifyContent: "center",
-    alignItems: "center",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 6,
-    elevation: 4,
-  },
-  profileBoxText: {
-    fontSize: 12,
-    fontWeight: "bold",
-    color: "#333",
-  },
-  profileText: {
-    fontSize: 12,
-    color: "#9AB206",
+    paddingBottom: 100,
   },
   rowContainer: {
     flexDirection: "row",
     justifyContent: "space-between",
     gap: 7,
   },
-  column: {
-    flex: 1,
-    backgroundColor: "white",
-    borderRadius: 8,
-    padding: 10,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 6,
-    elevation: 4,
-  },
-  textRow: {
-    alignItems: "flex-start",
-  },
-  progressRow: {},
-  paragraphContainer: {
-    backgroundColor: "white",
+  errorContainer: {
+    backgroundColor: "#ffebee",
     borderRadius: 8,
     padding: 15,
     marginTop: 10,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 6,
-    elevation: 4,
+    alignItems: "center",
+    borderLeftWidth: 4,
+    borderLeftColor: "#f44336",
+  },
+  errorText: {
+    fontSize: 14,
+    color: "#c62828",
+    textAlign: "center",
+    marginBottom: 10,
+  },
+  retryButton: {
+    backgroundColor: "#4CAF50",
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 6,
+  },
+  retryText: {
+    color: "white",
+    fontWeight: "600",
+    fontSize: 14,
+  },
+  down: {
+    marginBottom: 60,
   },
 
-  paragraphText: {
-    fontSize: 16,
-    color: "#333",
-    lineHeight: 26,
-    textAlign: "justify",
+  skeletonContainer: {
+    backgroundColor: "#e0e0e0",
+    borderRadius: 8,
+    padding: 15,
+    marginTop: 10,
+    alignItems: "center",
+    justifyContent: "center",
+    minHeight: 60,
+  },
+  skeletonText: {
+    fontSize: 14,
+    color: "#666666",
+    fontStyle: "italic",
   },
 });

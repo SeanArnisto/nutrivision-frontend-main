@@ -1,23 +1,27 @@
 {
   "expo": {
-    "name": "NutriVision",
+    "name": "NutriXtract",
     "slug": "nutrinitional",
-    "version": "1.0.0",
+    "owner": "nutrixtract",
+    "version": "1.0.1",
     "orientation": "portrait",
-    "icon": "./assets/images/icon.png",
-    "scheme": "myapp",
+    "icon": "./assets/images/nutrixtractlogo.png",  
+    "scheme": "com.jamescarillo.nutrivision",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": true
     },
     "android": {
-      "permissions": ["INTERNET", "READ_EXTERNAL_STORAGE"],
+      "permissions": [
+        "INTERNET",
+        "READ_EXTERNAL_STORAGE"
+      ],
       "adaptiveIcon": {
-        "foregroundImage": "./assets/images/adaptive-icon.png",
+        "foregroundImage": "./assets/images/nutrixtractlogo.png",
         "backgroundColor": "#ffffff"
       },
-      "package": "com.jamescarillo.nutrivision",
+      "package": "com.jamescarillo.nutrivision"
     },
     "web": {
       "bundler": "metro",
@@ -29,11 +33,13 @@
       [
         "expo-splash-screen",
         {
-          "image": "./assets/images/nutri-logo.png",
+          "image": "./assets/images/nutri_loading_logo.png",
           "resizeMode": "cover",
           "backgroundColor": "#BBCAA0"
         }
-      ]
+      ],
+      "expo-font",
+      "expo-web-browser"
     ],
     "experiments": {
       "typedRoutes": true

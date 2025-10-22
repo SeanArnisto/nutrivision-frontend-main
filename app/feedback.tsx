@@ -1,5 +1,6 @@
-import React, { useCallback, useEffect, useState } from "react";
-import { useFocusEffect, useIsFocused } from "@react-navigation/native";
+// Feedback.tsx - UPDATED VERSION WITH MODAL
+import React, { useCallback, useEffect, useState, useMemo } from "react";
+import { useFocusEffect } from "@react-navigation/native";
 import {
   View,
   Image,
@@ -9,174 +10,299 @@ import {
   TouchableOpacity,
   Platform,
   ScrollView,
-  SafeAreaView,
-  TextInput,
   KeyboardAvoidingView,
+  Alert,
+  ActivityIndicator,
 } from "react-native";
-import { ThemedView } from "@/components/ThemedView";
-import { ThemedText } from "@/components/ThemedText";
 import { useNavigation } from "expo-router";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { RootStackParamList } from "@/types/types";
 import * as MediaLibrary from "expo-media-library";
-import axios from "axios";
-import { useRoute } from "@react-navigation/native";
-import { FindTablespoons } from "./HelperFunctions";
-import EquivalentTablespoon from "./HelperFunctions";
-const { width: SCREEN_WIDTH } = Dimensions.get("window");
-import { useRecommStore } from "@/hooks/store";
-import { useNutrientsStore } from "@/hooks/store";
+import { useRecommStore, useNutrientsStore } from "@/hooks/store";
+import { useNutritionAverage } from "@/stores/nutritionIntakeStore";
 import { Ionicons } from "@expo/vector-icons";
+import AppLogo from "@/components/appLogo";
+import NutritionalModal from "@/components/NutritionalModal"; // ADD THIS IMPORT
+import { useNutritionIntakeStore } from "@/stores/nutritionIntakeStore";
+import { usePhotosStore, Photo } from "@/stores/usePhotoStore";
+import {
+  useComparisonAnalysis,
+  useHealthImplication,
+  useFeedbackLoading,
+} from "@/stores/useFeedbackStore";
+import BatteryIndicator from "@/components/BatteryIndicator";
+import { useDetailedNutrientStore } from "@/stores/useDetailedNutrientStore";
+import { SafeAreaView } from "react-native-safe-area-context";
+
+const { width: SCREEN_WIDTH } = Dimensions.get("window");
 
 type HomeScreenNavigationProp = StackNavigationProp<
   RootStackParamList,
   "index"
 >;
 
-type protein = {
-  protein: number;
-  approxProtein: number;
-  equivalentTablespoon: string;
-  proteinTablespoon: number;
-};
-type sodium = {
-  sodium: number;
-  approxSodium: number;
-  equivalentTablespoon: string;
-  sodiumTablespoon: number;
-};
-type carbs = {
-  carbs: number;
-  approxCarbs: number;
-  equivalentTablespoon: string;
-  carbsTablepoon: number;
-};
+// Memoized spoon images to prevent re-creation
+const SPOON_IMAGES = {
+  green: require("@/assets/images/spoongreen.png"),
+  red: require("@/assets/images/spoonred.png"),
+  gray: require("@/assets/images/spoongray.png"),
+} as const;
 
-function Feedback() {
-  const route = useRoute();
-  const carbs = useNutrientsStore((state) => state.carbs);
-  const prot = useNutrientsStore((state) => state.protein);
-  const sod = useNutrientsStore((state) => state.sodium);
+// Helper function moved outside component to prevent re-creation
+const getTablespoonEquivalent = (
+  grams: number,
+  isNutrient: "carbs" | "protein" | "sodium"
+): string => {
+  const tablespoons = grams / 15;
 
-  const minCarb = useRecommStore((state) => state.minCarb);
-  const maxCarb = useRecommStore((state) => state.maxCarb);
-
-  const minProtein = useRecommStore((state) => state.minProtein);
-  const maxProtein = useRecommStore((state) => state.maxProtein);
-
-  const minSodium = useRecommStore((state) => state.minSodium);
-  const maxSodium = useRecommStore((state) => state.maxSodium);
-  //console.log("Data from page-2:", data);
-  //console.log("working page 6:", nutritionData); // Use this data in your UI
-
-  const [carbsTablespoon, setCarbsTablespoon] = useState<carbs>({
-    carbs: 0,
-    approxCarbs: 0,
-    equivalentTablespoon: "",
-    carbsTablepoon: 0,
-  });
-  const [proteinTablespoon, setProteinTablespoon] = useState<protein>({
-    protein: 0,
-    approxProtein: 0,
-    equivalentTablespoon: "",
-    proteinTablespoon: 0,
-  });
-  const [sodiumTablespoon, setSodiumTablespoon] = useState<sodium>({
-    sodium: 0,
-    approxSodium: 0,
-    equivalentTablespoon: "",
-    sodiumTablespoon: 0,
-  });
-  const [requestMessage, setRequestMessage] = useState<string>(""); // Feedback message
-  const [loading, setLoading] = useState<boolean>(true); // Loading state
-
-  useEffect(() => {
-    const carbsMin = minCarb;
-    const carbsMax = maxCarb;
-    const proteinMin = minProtein;
-    const proteinMax = maxProtein;
-    const sodiumMin = minSodium;
-    const sodiumMax = maxSodium;
-
-    const carbohydrate = carbs;
-    const protein = prot;
-    const sodium = sod;
-
-    setCarbsTablespoon({
-      carbs: carbohydrate,
-      approxCarbs: 0,
-      equivalentTablespoon: EquivalentTablespoon(carbohydrate),
-      carbsTablepoon: FindTablespoons(carbohydrate, carbsMin, carbsMax),
-    });
-    setProteinTablespoon({
-      protein: protein,
-      approxProtein: 0,
-      equivalentTablespoon: EquivalentTablespoon(protein),
-      proteinTablespoon: FindTablespoons(protein, proteinMin, proteinMax),
-    });
-    setSodiumTablespoon({
-      sodium: sodium,
-      approxSodium: 0,
-      equivalentTablespoon: EquivalentTablespoon(sodium),
-      sodiumTablespoon: FindTablespoons(sodium, sodiumMin, sodiumMax),
-    });
-  }, [carbs, prot, sod, minCarb, maxCarb, minProtein, maxProtein, minSodium, maxSodium]);
-
-  function handleGoBack() {
-    navigation.goBack();
+  if (isNutrient === "sodium") {
+    // Sodium is usually much smaller amounts
+    if (tablespoons < 0.25) {
+      return "less than ¼ tbsp";
+    } else if (tablespoons < 0.5) {
+      return "¼ tbsp";
+    } else if (tablespoons < 1) {
+      return "½ tbsp";
+    } else {
+      const rounded = Math.round(tablespoons * 4) / 4; // Round to nearest quarter
+      return `${rounded} tbsp${rounded > 1 ? "s" : ""}`;
+    }
   }
 
-  const fetchFeedback = async () => {
-    try {
-      setLoading(true); // Start loading
-      const response = await axios.post(
-        "https://pel1-recommendation.hf.space/get-nutrient-feedback",
-        {
-          carbs_total: carbsTablespoon.carbs, // User's carbohydrate intake
-          sodium_total: sodiumTablespoon.sodium, // User's sodium intake
-          protein_total: proteinTablespoon.protein, // User's protein intake
-          recommended_carbs: [minCarb, maxCarb], // Recommended range for carbohydrates
-          recommended_sodium: [minSodium, maxSodium], // Recommended range for sodium
-          recommended_protein: [minProtein, maxProtein], // Recommended range for protein
+  // For carbs and protein
+  if (tablespoons < 1) {
+    return "less than 1 tbsp";
+  } else {
+    const rounded = Math.round(tablespoons);
+    return `${rounded} tbsp${rounded > 1 ? "s" : ""}`;
+  }
+};
+
+// Memoized SpoonVisualization component
+const SpoonVisualization = React.memo(
+  ({
+    value,
+    minIntake,
+    maxIntake,
+  }: {
+    value: number;
+    minIntake: number;
+    maxIntake: number;
+  }) => {
+    const spoonData = useMemo(() => {
+      const maxSpoons = 5;
+      const gramsPerSpoon = 15;
+      const totalTablespoons = value / gramsPerSpoon;
+
+      // Calculate how many spoons should be filled based on the value
+      const filledSpoons = Math.min(Math.ceil(totalTablespoons), maxSpoons);
+
+      // Check if we need to show a plus sign (more than 5 tablespoons)
+      const showPlusSign = totalTablespoons > maxSpoons;
+
+      // Check if we need to show a less than sign (very small amounts)
+      const showLessThanSign = totalTablespoons < 1;
+
+      // Spoons turn GREEN when value is within recommended range
+      const isInGoodRange = value >= minIntake && value <= maxIntake;
+
+      // Create array of spoon states
+      const spoonStates = Array.from({ length: maxSpoons }, (_, index) => {
+        if (index < filledSpoons) {
+          return isInGoodRange ? "green" : "red";
         }
+        return "gray";
+      });
+
+      return {
+        spoonStates,
+        showPlusSign,
+        showLessThanSign,
+        isInGoodRange,
+      };
+    }, [value, minIntake, maxIntake]);
+
+    const getSpoonImage = useCallback((state: string) => {
+      return (
+        SPOON_IMAGES[state as keyof typeof SPOON_IMAGES] || SPOON_IMAGES.gray
       );
+    }, []);
 
-      if (response.data && response.data.feedback) {
-        const { comparison_analysis, range_assessment, health_implications } =
-          response.data.feedback;
-        setRequestMessage(
-          `${comparison_analysis}\n\n${range_assessment}\n\n${health_implications}`
-        );
-      } else {
-        setRequestMessage("No feedback available.");
-      }
-    } catch (error) {
-      console.error("Error fetching feedback:", error);
-      setRequestMessage("Error fetching feedback.");
-    } finally {
-      setLoading(false); // Stop loading
-    }
-  };
+    return (
+      <View style={styles.rightContainer}>
+        <View style={styles.spoonContainer}>
+          {spoonData.spoonStates.map((state, index) => (
+            <Image
+              key={index}
+              source={getSpoonImage(state)}
+              style={styles.individualSpoon}
+            />
+          ))}
+          {spoonData.showLessThanSign && (
+            <Text
+              style={[
+                styles.lessThanSign,
+                { color: spoonData.isInGoodRange ? "#4CAF50" : "#F44336" },
+              ]}
+            >
+              &lt;
+            </Text>
+          )}
+          {spoonData.showPlusSign && (
+            <Text
+              style={[
+                styles.plusSign,
+                { color: spoonData.isInGoodRange ? "#4CAF50" : "#F44336" },
+              ]}
+            >
+              +
+            </Text>
+          )}
+        </View>
+      </View>
+    );
+  }
+);
 
-  useEffect(() => {
-    if (
-      carbsTablespoon.carbs !== 0 &&
-      proteinTablespoon.protein !== 0 &&
-      sodiumTablespoon.sodium !== 0
-    ) {
-      fetchFeedback();
-    }
-  }, [carbsTablespoon, proteinTablespoon, sodiumTablespoon]);
+function Feedback() {
+  const {
+    intakes,
+    loading: detailedLoading,
+    error: detailedError,
+  } = useDetailedNutrientStore();
+  // Use fruitCut and selectedAmount if available, otherwise fall back to servings
+  const detailedCarbs = intakes.reduce((sum, intake) => {
+    const multiplier =
+      intake.fruitCut !== undefined && intake.selectedAmount !== undefined
+        ? intake.fruitCut === 1
+          ? intake.selectedAmount
+          : intake.selectedAmount / intake.fruitCut
+        : intake.servings || 1;
+    return sum + intake.carbs * multiplier;
+  }, 0);
 
-  const navigation = useNavigation() as HomeScreenNavigationProp;
-  const [capturedPhotos, setCapturedPhotos] = useState<
-    { uri: string; type: string; orientation: string }[]
-  >([]);
+  const detailedProtein = intakes.reduce((sum, intake) => {
+    const multiplier =
+      intake.fruitCut !== undefined && intake.selectedAmount !== undefined
+        ? intake.fruitCut === 1
+          ? intake.selectedAmount
+          : intake.selectedAmount / intake.fruitCut
+        : intake.servings || 1;
+    return sum + intake.protein * multiplier;
+  }, 0);
+
+  const detailedSodium = intakes.reduce((sum, intake) => {
+    const multiplier =
+      intake.fruitCut !== undefined && intake.selectedAmount !== undefined
+        ? intake.fruitCut === 1
+          ? intake.selectedAmount
+          : intake.selectedAmount / intake.fruitCut
+        : intake.servings || 1;
+    return sum + intake.sodium * multiplier;
+  }, 0);
+
+  const detailedCalories = intakes.reduce((sum, intake) => {
+    const multiplier =
+      intake.fruitCut !== undefined && intake.selectedAmount !== undefined
+        ? intake.fruitCut === 1
+          ? intake.selectedAmount
+          : intake.selectedAmount / intake.fruitCut
+        : intake.servings || 1;
+    return sum + intake.calories * multiplier;
+  }, 0);
+  const carbs = parseFloat(detailedCarbs.toFixed(5));
+  const prot = parseFloat(detailedProtein.toFixed(5));
+  const sod = parseFloat(detailedSodium.toFixed(5));
+  const cal = detailedCalories;
+  const minCarb = useRecommStore((state) => state.minCarb);
+  const maxCarb = useRecommStore((state) => state.maxCarb);
+  const minProtein = useRecommStore((state) => state.minProtein);
+  const maxProtein = useRecommStore((state) => state.maxProtein);
+  const minSodium = useRecommStore((state) => state.minSodium);
+  const maxSodium = useRecommStore((state) => state.maxSodium);
+  const minCalories = useRecommStore((state) => state.minCalories);
+  const maxCalories = useRecommStore((state) => state.maxCalories);
+
+  const loadUserRecommendations = useRecommStore(
+    (state) => state.loadUserRecommendations
+  );
+
+  const { fetchNutritionalHistory } = useNutritionIntakeStore();
+
+  // Nutrition average store for better recommendation ranges
+  const {
+    nutritionDataAve,
+    isLoading: nutritionAveLoading,
+    error: nutritionAveError,
+    fetchNutritionIntakeAve,
+  } = useNutritionAverage();
+
+  const { capturedPhotos, clearAllPhotos } = usePhotosStore();
+
+  const comparisonAnalysis = useComparisonAnalysis();
+  const healthImplication = useHealthImplication();
+  const isLoading = useFeedbackLoading();
+  const [currentSlide, setCurrentSlide] = useState<number>(0);
   const [mediaLibraryPermission, setMediaLibraryPermission] = useState<
     boolean | null
   >(null);
+  const [photosLoading, setPhotosLoading] = useState<boolean>(true);
+  // const [capturedPhotos, setCapturedPhotos] = useState<
+  //   { uri: string; type: string; orientation: string; id: string }[]
+  // >([]);
 
-  // Request media library permissions on mount
+  // ADD THIS STATE FOR THE MODAL
+  const [modalVisible, setModalVisible] = useState(false);
+  const [modalLoading, setModalLoading] = useState(false);
+
+  const navigation = useNavigation() as HomeScreenNavigationProp;
+
+  // Memoize recommendation values to prevent unnecessary re-renders
+  const recommendationValues = useMemo(
+    () => ({
+      carbsMin:
+        nutritionDataAve && minCarb === 0 ? nutritionDataAve.minCarbs : minCarb,
+      carbsMax:
+        nutritionDataAve && maxCarb === 0 ? nutritionDataAve.maxCarbs : maxCarb,
+      sodiumMin:
+        nutritionDataAve && minSodium === 0
+          ? nutritionDataAve.minSodium / 1000
+          : minSodium,
+      sodiumMax:
+        nutritionDataAve && maxSodium === 0
+          ? nutritionDataAve.maxSodium / 1000
+          : maxSodium,
+      proteinMin:
+        nutritionDataAve && minProtein === 0
+          ? nutritionDataAve.minProtein
+          : minProtein,
+      proteinMax:
+        nutritionDataAve && maxProtein === 0
+          ? nutritionDataAve.maxProtein
+          : maxProtein,
+      caloriesMin:
+        nutritionDataAve && minCalories === 0
+          ? nutritionDataAve.minCalories
+          : minCalories,
+      caloriesMax:
+        nutritionDataAve && maxCalories === 0
+          ? nutritionDataAve.maxCalories
+          : maxCalories,
+    }),
+    [
+      nutritionDataAve,
+      minCarb,
+      maxCarb,
+      minSodium,
+      maxSodium,
+      minProtein,
+      maxProtein,
+      minCalories,
+      maxCalories,
+    ]
+  );
+
+  // Request media library permissions
   useEffect(() => {
     (async () => {
       const { status } = await MediaLibrary.requestPermissionsAsync();
@@ -184,428 +310,468 @@ function Feedback() {
     })();
   }, []);
 
-  // Load previously captured photos on mount
+  // Fetch nutrition average data for better recommendations
+  useEffect(() => {
+    fetchNutritionIntakeAve();
+  }, [fetchNutritionIntakeAve]);
+
+  // Load photos when screen is focused
   useFocusEffect(
     useCallback(() => {
       if (mediaLibraryPermission) {
         loadRecentPhotos();
+      } else {
+        setPhotosLoading(false);
       }
-
-      return () => {
-        // Optional: reset or cancel something if needed
-        console.log("Leaving the screen");
-      };
     }, [mediaLibraryPermission])
   );
 
   const loadRecentPhotos = async () => {
-    try {
-      // First, get the NutriVision album
-      const album = await MediaLibrary.getAlbumAsync("NutriVision");
+    // Only load from MediaLibrary on iOS - Android photos are already in store
+    if (Platform.OS !== "ios") {
+      console.log("Android: Photos already available in store");
+      setPhotosLoading(false);
+      return;
+    }
 
-      // If the album doesn't exist yet, return empty array
+    try {
+      const album = await MediaLibrary.getAlbumAsync("NutriVision");
       if (!album) {
         console.log("NutriVision album not found");
-        setCapturedPhotos([]);
+        setPhotosLoading(false);
         return;
       }
 
-      // Get assets from the NutriVision album specifically
-      const { assets } = await MediaLibrary.getAssetsAsync({
-        album: album.id,
-        first: 5,
-        mediaType: "photo",
-        sortBy: ["creationTime"],
-      });
-
-      const recentPhotos = [];
-      for (const asset of assets) {
-        let uriToUse = asset.uri;
-        if (Platform.OS === "ios" && uriToUse.startsWith("ph://")) {
-          try {
-            const info = await MediaLibrary.getAssetInfoAsync(asset);
-            if (info.localUri) {
-              uriToUse = info.localUri;
-            }
-          } catch (error) {
-            console.error("Error getting localUri for asset:", error);
-          }
-        }
-
-        recentPhotos.push({
-          uri: uriToUse,
-          type: Math.random() > 0.5 ? "label" : "fruit",
-          orientation: Math.random() > 0.5 ? "vertical" : "horizontal",
-        });
-      }
-
-      setCapturedPhotos(
-        recentPhotos.filter(
-          (photo) => photo.uri && typeof photo.uri === "string"
-        )
-      );
+      // Rest of your iOS loading logic...
+      // But don't call setCapturedPhotos - photos should already be in store from Camera component
+      setPhotosLoading(false);
     } catch (error) {
       console.error("Error loading photos from NutriVision album:", error);
+      setPhotosLoading(false);
     }
   };
 
-  const handleCheck = () => {
-    navigation.pop(5);
-  };
+  const carbohydrate = useNutrientsStore((state) => state.carbs);
+  const protein = useNutrientsStore((state) => state.protein);
+  const sodium = useNutrientsStore((state) => state.sodium);
+  const saveWithPhotos = useNutrientsStore((state) => state.saveWithPhotos);
+  const reset = useNutrientsStore((state) => state.reset);
+  const calories = useNutrientsStore((state) => state.calories) || 1800; // PLACEHOLDER: use 1500 for testing
+  const setCarbs = useNutrientsStore((state) => state.setCarbs);
+  const setProtein = useNutrientsStore((state) => state.setProtein);
+  const setSodium = useNutrientsStore((state) => state.setSodium);
+  const setCalories = useNutrientsStore((state) => state.setCalories);
 
-  const testRequest = async () => {
-    const [response, setResponse] = useState("");
+  const deleteAllCapturedPhotos = useCallback(
+    async (photos: Photo[]) => {
+      console.log("🗑️ Starting cleanup of captured photos...");
 
-    const handleSubmit = () => {
-      // axios.get()
-    };
-  };
+      if (!photos || photos.length === 0) {
+        console.log("No photos to delete");
+        return;
+      }
 
-  function SpoonImages({ spoonDisplay }: { spoonDisplay: number }) {
-    let imageToDisplay = require("@/assets/images/neutral.png"); // Default image
-    switch (spoonDisplay) {
-      case 1: // oneGreen
-        imageToDisplay = require("@/assets/images/1green.png");
-        break;
+      try {
+        if (Platform.OS === "ios") {
+          // iOS: Delete from MediaLibrary AND clear store
+          const { status } = await MediaLibrary.requestPermissionsAsync(false);
+          if (status !== "granted") {
+            console.warn(
+              "Media library permission not granted, clearing store only"
+            );
+            clearAllPhotos();
+            return;
+          }
 
-      case 2: // twoGreen
-        imageToDisplay = require("@/assets/images/2green.png");
-        break;
+          // Your existing iOS deletion logic...
+          // Then clear the store:
+          clearAllPhotos();
+        } else {
+          // Android: Only clear from store
+          clearAllPhotos();
+          console.log("✅ Cleared captured photos from Android store");
+        }
+      } catch (error) {
+        console.error("❌ Error during photo cleanup:", error);
+        clearAllPhotos();
+      }
+    },
+    [clearAllPhotos]
+  );
 
-      case 3: // threeGreen
-        imageToDisplay = require("@/assets/images/3green.png");
-        break;
-
-      case 4: // fourGreen
-        imageToDisplay = require("@/assets/images/4green.png");
-        break;
-
-      case 5: // fiveGreen
-        imageToDisplay = require("@/assets/images/5green.png");
-        break;
-
-      case 6: // fiveGreenPlus
-        imageToDisplay = require("@/assets/images/5greenwithplus.png");
-        break;
-
-      case 7: // oneRed
-        imageToDisplay = require("@/assets/images/1red.png");
-        break;
-
-      case 8: // twoRed
-        imageToDisplay = require("@/assets/images/2red.png");
-        break;
-
-      case 9: // threeRed
-        imageToDisplay = require("@/assets/images/3red.png");
-        break;
-
-      case 10: // fourRed
-        imageToDisplay = require("@/assets/images/4red.png");
-        break;
-
-      case 11: // fiveRed
-        imageToDisplay = require("@/assets/images/5red.png");
-        break;
-
-      case 12: // fiveRedPlus
-        imageToDisplay = require("@/assets/images/5redwithplus.png");
-        break;
-
-      case 13: // oneGreenLess
-        imageToDisplay = require("@/assets/images/1greenwithless.png");
-        break;
-
-      case 14: // oneRedLess
-        imageToDisplay = require("@/assets/images/1redwithless.png");
-        break;
+  // UPDATED: Show modal instead of directly saving
+  const handleSaveToDatabase = () => {
+    // Validate that we have nutrition data from detailed store
+    if (intakes.length === 0 || (carbs === 0 && prot === 0 && sod === 0)) {
+      Alert.alert(
+        "No nutritional data",
+        "Please scan some items before saving.",
+        [{ text: "OK" }]
+      );
+      return;
     }
 
-    return (
-      <View style={styles.rightContainer}>
-        <Image source={imageToDisplay} style={styles.image} />
-      </View>
+    // Show the modal instead of directly saving
+    setModalVisible(true);
+  };
+
+  // NEW: Handle the actual save from modal
+  const handleModalSave = async () => {
+    setModalLoading(true);
+    try {
+      // Update the nutrients store with calculated values from lines 215-218
+      setCarbs(carbs);
+      setProtein(prot);
+      setSodium(sod);
+      setCalories(cal);
+
+      // Use saveWithPhotos with the updated values
+      const result = await saveWithPhotos(capturedPhotos);
+
+      if (result.success) {
+        // IMPORTANT: Refresh the nutritional history in the store after saving
+        console.log("📊 Refreshing nutritional history after save...");
+        await fetchNutritionalHistory(30);
+        console.log("✅ Nutritional history refreshed");
+
+        // Keep spinner visible for a moment before closing modal
+        await new Promise((resolve) => setTimeout(resolve, 500));
+
+        setModalLoading(false);
+        setModalVisible(false);
+
+        Alert.alert(
+          "Success",
+          "Nutritional data and photos saved successfully!",
+          [
+            {
+              text: "OK",
+              onPress: () => {
+                reset();
+                clearAllPhotos();
+                navigation.reset({
+                  index: 0,
+                  routes: [{ name: "page-2" }],
+                });
+              },
+            },
+          ]
+        );
+        await deleteAllCapturedPhotos(capturedPhotos);
+      } else {
+        setModalLoading(false);
+        Alert.alert(
+          "No Internet connection",
+          result.error || "Failed to save data"
+        );
+      }
+    } catch (error) {
+      setModalLoading(false);
+      Alert.alert("No Internet connection ", "An unexpected error occurred");
+      console.error("Save error:", error);
+    }
+  };
+
+  // NEW: Handle modal close
+  const handleModalClose = () => {
+    setModalVisible(false);
+  };
+
+  // Memoized carousel scroll handler to prevent unnecessary re-renders
+  const handleCarouselScroll = useCallback((event: any) => {
+    const slideIndex = Math.round(
+      (event.nativeEvent.contentOffset.x / SCREEN_WIDTH) * 1.11
     );
-  }
+    setCurrentSlide(slideIndex);
+  }, []);
 
   return (
     <SafeAreaView style={styles.safeContainer}>
       <KeyboardAvoidingView
         style={{ flex: 1 }}
         behavior={Platform.OS === "ios" ? "padding" : "height"}
-        keyboardVerticalOffset={Platform.OS === "ios" ? 20 : 0} // Adjust as needed
+        keyboardVerticalOffset={Platform.OS === "ios" ? 20 : 0}
       >
+        <AppLogo />
         <ScrollView contentContainerStyle={styles.scrollContainer}>
           <View style={styles.container}>
-            <View style={styles.header}>
-              <Image
-                source={require("@/assets/images/NutriVision.png")}
-                style={styles.logo}
-                resizeMode="contain"
-              />
-            </View>
-            {/* Thumbnail section */}
+            {/* Header with App Logo */}
+
+            {/* Photo Thumbnail Section */}
             <View style={styles.thumbnailSection}>
               <View style={styles.thumbnailWrapper}>
-                <ScrollView
-                  horizontal
-                  showsHorizontalScrollIndicator={false}
-                  contentContainerStyle={styles.thumbnailsRow}
-                >
-                  {capturedPhotos.map((item, index) => (
-                    <View key={index} style={styles.thumbnailContainer}>
-                      {item.uri ? (
+                {photosLoading ? (
+                  <Text style={styles.loadingText}>Loading photos...</Text>
+                ) : capturedPhotos.length > 0 ? (
+                  <ScrollView
+                    horizontal
+                    showsHorizontalScrollIndicator={false}
+                    contentContainerStyle={styles.thumbnailsRow}
+                  >
+                    {capturedPhotos.map((item, index) => (
+                      <View key={index} style={styles.thumbnailContainer}>
                         <Image
                           source={{ uri: item.uri }}
                           style={styles.thumbnail}
                           onError={() => console.log("Image failed to load")}
                         />
-                      ) : (
-                        <View style={styles.thumbnail}>
-                          <Text style={styles.placeholderText}>No Image</Text>
-                        </View>
-                      )}
-                    </View>
-                  ))}
-                </ScrollView>
+                      </View>
+                    ))}
+                  </ScrollView>
+                ) : (
+                  <View style={styles.placeholderContainer}>
+                    <Text style={styles.placeholderText}>
+                      No photos available
+                    </Text>
+                  </View>
+                )}
               </View>
             </View>
+            {/* Battery/Calories Indicator */}
+            <BatteryIndicator
+              calories={cal}
+              averageCalories={20} // PLACEHOLDER
+            />
+            {/* Legend */}
             <View style={styles.legendContainer}>
               <View style={styles.textLegendContainer}>
                 <Image
-                  source={require("@/assets/images/spoon.png")} // Change this to your desired image
-                  style={{
-                    width: 30,
-                    height: 30,
-                  }}
+                  source={require("@/assets/images/spoon.png")}
+                  style={styles.legendSpoon}
                   resizeMode="contain"
                 />
                 <Text style={styles.textLegend}>= 15 grams</Text>
               </View>
             </View>
-            {/* carbs table */}
-            <View style={styles.sugarContainer}>
+
+            {/* Carbs Display */}
+            <View style={styles.nutrientContainer}>
               <View style={styles.textContainer}>
-                <Text style={styles.textHeader}>
-                  Carbs: {carbsTablespoon.carbs} g
-                </Text>
-                <Text style={styles.textSubHeader}>Approx carbs: 0 grams</Text>
+                <Text style={styles.textHeader}>Carbs: {carbs}g</Text>
                 <Text style={styles.textSubHeader}>
-                  Equivalent to {carbsTablespoon.equivalentTablespoon}
+                  {getTablespoonEquivalent(carbs, "carbs")}
                 </Text>
               </View>
-              <SpoonImages spoonDisplay={carbsTablespoon.carbsTablepoon} />
+              <TouchableOpacity onPress={() => alert("carbohydrates clicked")}>
+                <SpoonVisualization
+                  value={carbs}
+                  minIntake={recommendationValues.carbsMin}
+                  maxIntake={recommendationValues.carbsMax}
+                />
+              </TouchableOpacity>
             </View>
-            {/* sodium table */}
-            <View style={styles.sugarContainer}>
+
+            {/* Sodium Display */}
+            <View style={styles.nutrientContainer}>
               <View style={styles.textContainer}>
-                <Text style={styles.textHeader}>
-                  Sodium: {sodiumTablespoon.sodium} g
-                </Text>
-                <Text style={styles.textSubHeader}>Approx Sodium: 0 grams</Text>
+                <Text style={styles.textHeader}>Sodium: {sod}g</Text>
                 <Text style={styles.textSubHeader}>
-                  Equivalent to {sodiumTablespoon.equivalentTablespoon}
+                  {getTablespoonEquivalent(sod, "sodium")}
                 </Text>
               </View>
-              <SpoonImages spoonDisplay={sodiumTablespoon.sodiumTablespoon} />
+              <TouchableOpacity onPress={() => alert("sodium clicked")}>
+                <SpoonVisualization
+                  value={sod}
+                  minIntake={recommendationValues.sodiumMin}
+                  maxIntake={recommendationValues.sodiumMax}
+                />
+              </TouchableOpacity>
             </View>
-            {/* protein table */}
-            <View style={styles.sugarContainer}>
+
+            {/* Protein Display */}
+
+            <View style={styles.nutrientContainer}>
               <View style={styles.textContainer}>
-                <Text style={styles.textHeader}>
-                  Protein: {proteinTablespoon.protein} g
-                </Text>
+                <Text style={styles.textHeader}>Protein: {prot}g</Text>
                 <Text style={styles.textSubHeader}>
-                  Approx Protein: 0 grams
-                </Text>
-                <Text style={styles.textSubHeader}>
-                  Equivalent to {proteinTablespoon.equivalentTablespoon}
+                  {getTablespoonEquivalent(prot, "protein")}
                 </Text>
               </View>
-              <SpoonImages spoonDisplay={proteinTablespoon.proteinTablespoon} />
+              <TouchableOpacity onPress={() => alert("protein clicked")}>
+                <SpoonVisualization
+                  value={prot}
+                  minIntake={recommendationValues.proteinMin}
+                  maxIntake={recommendationValues.proteinMax}
+                />
+              </TouchableOpacity>
             </View>
-            <View style={styles.FeedbackContainer}>
-              <ScrollView
-                style={styles.feedbackScroll}
-                contentContainerStyle={styles.feedbackContent}
-              >
-                {loading ? (
-                  <Text style={styles.loadingText}>Generating feedback...</Text>
-                ) : (
-                  <Text style={styles.feedbackText}>{requestMessage}</Text>
-                )}
-              </ScrollView>
+
+            {/* Feedback Carousel Section */}
+            <View style={styles.feedbackContainer}>
+              {isLoading ? (
+                <Text style={styles.loadingText}>Generating feedback...</Text>
+              ) : (
+                <>
+                  <ScrollView
+                    horizontal
+                    pagingEnabled
+                    showsHorizontalScrollIndicator={false}
+                    onMomentumScrollEnd={handleCarouselScroll}
+                    style={styles.carouselScroll}
+                  >
+                    {/* Slide 1: Comparison Analysis */}
+                    <View style={styles.slideContainer}>
+                      <Text style={styles.slideTitle}>
+                        Nutritional Analysis
+                      </Text>
+                      <ScrollView
+                        style={styles.slideContentScroll}
+                        contentContainerStyle={styles.slideContent}
+                        nestedScrollEnabled={true}
+                        showsVerticalScrollIndicator={true}
+                      >
+                        <Text style={styles.feedbackText}>
+                          {comparisonAnalysis}
+                        </Text>
+                      </ScrollView>
+                    </View>
+
+                    {/* Slide 2: Health Implications */}
+                    <View style={styles.slideContainer}>
+                      <Text style={styles.slideTitle}>Health Implications</Text>
+                      <ScrollView
+                        style={styles.slideContentScroll}
+                        contentContainerStyle={styles.slideContent}
+                        nestedScrollEnabled={true}
+                        showsVerticalScrollIndicator={true}
+                      >
+                        <Text style={styles.feedbackText}>
+                          {healthImplication}
+                        </Text>
+                      </ScrollView>
+                    </View>
+                  </ScrollView>
+
+                  {/* Carousel Indicators */}
+                  <View style={styles.indicatorContainer}>
+                    <View
+                      style={[
+                        styles.indicator,
+                        currentSlide === 0
+                          ? styles.activeIndicator
+                          : styles.inactiveIndicator,
+                      ]}
+                    />
+                    <View
+                      style={[
+                        styles.indicator,
+                        currentSlide === 1
+                          ? styles.activeIndicator
+                          : styles.inactiveIndicator,
+                      ]}
+                    />
+                  </View>
+                </>
+              )}
             </View>
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
+
+      {/* Navigation Buttons */}
       <TouchableOpacity
         style={styles.roundButton}
-        onPress={handleGoBack}
-        disabled={false}
+        onPress={() => navigation.goBack()}
       >
         <Ionicons name="arrow-undo-outline" size={28} color="#9AB206" />
       </TouchableOpacity>
 
+      {/* Save Button - Opens Modal */}
       <TouchableOpacity
-        style={styles.checkButton}
-        onPress={handleCheck}
-        disabled={false}
+        style={[styles.roundHomeButton, isLoading && styles.saveButtonDisabled]}
+        onPress={handleSaveToDatabase}
+        disabled={isLoading}
+        activeOpacity={0.8}
       >
-        <Image
-          source={require("@/assets/images/Home.png")}
-          style={{ width: 30, height: 30 }} // Adjust the size as needed
-        />
+        {isLoading ? (
+          <ActivityIndicator color="#fff" size="small" />
+        ) : (
+          <Ionicons name="home-outline" size={28} color="#9AB206" />
+        )}
       </TouchableOpacity>
+
+      {/* NUTRITIONAL MODAL */}
+      <NutritionalModal
+        visible={modalVisible}
+        onClose={handleModalClose}
+        onSave={handleModalSave}
+        nutritionData={{
+          carbs: carbs,
+          sodium: sod,
+          protein: prot,
+          calories: cal,
+        }}
+        recommendations={{
+          carbsMin: recommendationValues.carbsMin,
+          carbsMax: recommendationValues.carbsMax,
+          sodiumMin: recommendationValues.sodiumMin,
+          sodiumMax: recommendationValues.sodiumMax,
+          proteinMin: recommendationValues.proteinMin,
+          proteinMax: recommendationValues.proteinMax,
+          caloriesMin: recommendationValues.caloriesMin,
+          caloriesMax: recommendationValues.caloriesMax,
+        }}
+        loading={modalLoading}
+      />
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  keyboardAvoidingContainer: {
-    flex: 1,
-  },
-  image: {
-    width: SCREEN_WIDTH * 0.35, // Responsive width (25% of screen)
-    height: 50,
-    resizeMode: "contain",
-    backgroundColor: "white",
-  },
-  rightContainer: {
-    alignItems: "center",
-    justifyContent: "center",
-    paddingRight: 5,
-    backgroundColor: "white",
-  },
-  legendContainer: {
-    flexDirection: "row",
-    width: SCREEN_WIDTH * 0.9,
-    height: 40,
-    alignItems: "center", // Center the text vertically
-    justifyContent: "center",
-    backgroundColor: "white", // Match the container background color
-    // Use platform-specific styling for consistent shadows
-    ...Platform.select({
-      ios: {
-        shadowColor: "#000",
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 6,
-      },
-      android: {
-        elevation: 4,
-      },
-    }),
-    borderRadius: 10,
-    paddingVertical: 10,
-    paddingHorizontal: 15, // Add some horizontal padding
-    marginBottom: 15, // Add some margin between items
-  },
-  sugarContainer: {
-    flexDirection: "row",
-    width: SCREEN_WIDTH * 0.9,
-    height: 70,
-    paddingVertical: 10,
-    borderRadius: 10,
-    justifyContent: "space-between", // Changed from 'center' to better distribute content
-    alignItems: "center", // Added to vertically center items
-    backgroundColor: "white", // Match the container background color
-    // Use platform-specific styling for consistent shadows
-    ...Platform.select({
-      ios: {
-        shadowColor: "#000",
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 6,
-      },
-      android: {
-        elevation: 4,
-      },
-    }),
-    paddingHorizontal: 15, // Add some horizontal padding
-    marginBottom: 15, // Add some margin between items
-  },
-  FeedbackContainer: {
-    flexDirection: "row",
-    width: SCREEN_WIDTH * 0.9,
-    height: 320,
-    paddingVertical: 10,
-    borderRadius: 10,
-    justifyContent: "space-between", // Changed from 'center' to better distribute content
-    alignItems: "center", // Added to vertically center items
-    backgroundColor: "white", // Match the container background color
-    // Use platform-specific styling for consistent shadows
-    ...Platform.select({
-      ios: {
-        shadowColor: "#000",
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 6,
-      },
-      android: {
-        elevation: 4,
-      },
-    }),
-    paddingHorizontal: 15, // Add some horizontal padding
-    marginBottom: 15, // Add some margin between items
-  },
-  textHeader: {
-    fontSize: 18,
-    fontWeight: "bold",
-    color: "#4D4444",
-    paddingBottom: 1,
-    paddingLeft: -5,
-  },
-  textLegend: {
-    fontSize: 12,
-    fontWeight: "bold",
-    color: "#4D4444",
-    paddingBottom: 1,
-    paddingLeft: -5,
-  },
-  textLegendContainer: {
-    flexDirection: "row",
-    paddingHorizontal: 5,
-    flex: 1, // Take available space
-    backgroundColor: "white",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  textContainer: {
-    flex: 1, // Take available space
-    backgroundColor: "white",
-  },
-  textSubHeader: {
-    fontSize: 12,
-    color: "#9D9696",
-    paddingLeft: -5,
-  },
   safeContainer: {
     flex: 1,
-    backgroundColor: "#F5F5F5",
+    backgroundColor: "#eff1f6",
+  },
+  roundHomeButton: {
+    width: 60,
+    height: 60,
+    bottom: 40,
+    right: 20,
+    borderRadius: 30,
+    backgroundColor: "#333",
+    justifyContent: "center",
+    alignItems: "center",
+    position: "absolute",
+  },
+  saveButton: {
+    position: "absolute",
+    bottom: 40,
+    right: 20,
+    backgroundColor: "#7ca844",
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    borderRadius: 25,
+    minWidth: 150,
+    alignItems: "center",
+    justifyContent: "center",
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
   },
   scrollContainer: {
     flexGrow: 1,
-    paddingBottom: 100, // Add space for floating button
+    paddingBottom: 100,
   },
   container: {
     flex: 1,
-    backgroundColor: "#F5F5F5",
-    paddingHorizontal: 20,
+    backgroundColor: "#eff1f6",
+    paddingHorizontal: 16,
+    paddingVertical: 16,
   },
   header: {
-    marginLeft: -15,
     width: "100%",
     height: 100,
     justifyContent: "center",
-    alignItems: "flex-start",
+    alignItems: "center",
     marginBottom: 10,
   },
-  logo: {
-    width: 200,
-    height: 150,
-  },
   thumbnailSection: {
+    width: SCREEN_WIDTH * 0.9,
     backgroundColor: "white",
     borderRadius: 12,
     padding: 15,
@@ -618,13 +784,13 @@ const styles = StyleSheet.create({
   },
   thumbnailWrapper: {
     width: "100%",
+    minHeight: 60,
   },
   thumbnailsRow: {
     flexDirection: "row",
     alignItems: "center",
     paddingVertical: 5,
   },
-  
   thumbnailContainer: {
     width: 60,
     height: 60,
@@ -634,31 +800,181 @@ const styles = StyleSheet.create({
     borderColor: "#DDDDDD",
     overflow: "hidden",
   },
+  saveButtonDisabled: {
+    backgroundColor: "#c0b4b4",
+    opacity: 0.7,
+  },
+  saveButtonText: {
+    color: "#fff",
+    fontSize: 16,
+    fontWeight: "600",
+    fontFamily: "SpaceMono-Regular",
+  },
   thumbnail: {
     width: "100%",
     height: "100%",
   },
-  placeholderText: {
-    color: "gray",
-    fontSize: 10,
-    textAlign: "center",
-    marginTop: 20,
-  },
-  checkButton: {
-    position: "absolute",
-    bottom: 40,
-    right: 20,
-    width: 60,
+  placeholderContainer: {
     height: 60,
-    borderRadius: 30,
-    backgroundColor: "#333",
     justifyContent: "center",
     alignItems: "center",
   },
-  checkMark: {
-    fontSize: 25,
-    color: "#9AB206",
+  placeholderText: {
+    color: "gray",
+    fontSize: 12,
+    textAlign: "center",
+  },
+  legendContainer: {
+    flexDirection: "row",
+    width: SCREEN_WIDTH * 0.4,
+    height: 40,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "white",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 6,
+    elevation: 4,
+    borderRadius: 10,
+    paddingVertical: 10,
+    paddingHorizontal: 15,
+    marginBottom: 15,
+  },
+  textLegendContainer: {
+    flexDirection: "row",
+    paddingHorizontal: 5,
+    flex: 1,
+    backgroundColor: "white",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  legendSpoon: {
+    width: 30,
+    height: 30,
+  },
+  textLegend: {
+    fontSize: 12,
     fontWeight: "bold",
+    color: "#4D4444",
+    marginLeft: 5,
+  },
+  nutrientContainer: {
+    flexDirection: "row",
+    width: SCREEN_WIDTH * 0.9,
+    height: 70,
+    paddingVertical: 10,
+    borderRadius: 10,
+    justifyContent: "space-between",
+    alignItems: "center",
+    backgroundColor: "white",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 6,
+    elevation: 4,
+    paddingHorizontal: 15,
+    marginBottom: 15,
+  },
+  textContainer: {
+    flex: 1,
+    backgroundColor: "white",
+  },
+  textHeader: {
+    fontSize: 18,
+    fontWeight: "bold",
+    color: "#4D4444",
+    paddingBottom: 5,
+  },
+  textSubHeader: {
+    fontSize: 12,
+    color: "#9D9696",
+  },
+  rightContainer: {
+    alignItems: "center",
+    justifyContent: "center",
+    paddingRight: 5,
+    backgroundColor: "white",
+    width: SCREEN_WIDTH * 0.35,
+  },
+  spoonContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    width: "100%",
+  },
+  individualSpoon: {
+    width: 40,
+    height: 30,
+    marginLeft: -18,
+  },
+  plusSign: {
+    fontSize: 24,
+    marginTop: 20,
+    textAlign: "center",
+    marginLeft: -10,
+  },
+  lessThanSign: {
+    fontSize: 24,
+    marginTop: 20,
+    marginLeft: -10,
+    textAlign: "center",
+  },
+  feedbackContainer: {
+    width: SCREEN_WIDTH * 0.9,
+    height: 320,
+    borderRadius: 10,
+    backgroundColor: "white",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 6,
+    elevation: 4,
+    marginBottom: 15,
+    overflow: "hidden",
+  },
+  carouselScroll: {
+    flex: 1,
+  },
+  slideContainer: {
+    width: SCREEN_WIDTH * 0.9,
+    height: 300,
+    paddingHorizontal: 15,
+    paddingVertical: 10,
+    justifyContent: "flex-start",
+  },
+  slideTitle: {
+    fontSize: 16,
+    fontWeight: "bold",
+    color: "#4D4444",
+    marginBottom: 10,
+    textAlign: "center",
+  },
+  slideContentScroll: {
+    flex: 1,
+  },
+  slideContent: {
+    flexGrow: 1,
+    justifyContent: "flex-start",
+  },
+  indicatorContainer: {
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
+    paddingVertical: 10,
+    backgroundColor: "white",
+  },
+  indicator: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    marginHorizontal: 4,
+  },
+  activeIndicator: {
+    backgroundColor: "#9AB206",
+  },
+  inactiveIndicator: {
+    backgroundColor: "#CCCCCC",
   },
   feedbackScroll: {
     flex: 1,
@@ -671,12 +987,13 @@ const styles = StyleSheet.create({
   feedbackText: {
     fontSize: 14,
     color: "#333",
-    textAlign: "left",
+    textAlign: "justify",
   },
   loadingText: {
     fontSize: 14,
     color: "gray",
     textAlign: "center",
+    marginTop: 20,
   },
   roundButton: {
     width: 60,
@@ -688,6 +1005,21 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     position: "absolute",
+  },
+  checkButton: {
+    position: "absolute",
+    bottom: 40,
+    right: 20,
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: "#333",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  homeIcon: {
+    width: 30,
+    height: 30,
   },
 });
 
