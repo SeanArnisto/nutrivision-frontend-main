@@ -3,6 +3,9 @@
   "compilerOptions": {
     "jsx":"react-native",
     "strict": true,
+    "jsx": "react-jsx",
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
     "paths": {
       "@/*": [
         "./*"
@@ -13,6 +16,7 @@
     "**/*.ts",
     "**/*.tsx",
     ".expo/types/**/*.ts",
-    "expo-env.d.ts"
-, "app/camera.jsx"  ]
+    "expo-env.d.ts",
+    "app/camera.jsx"
+  ]
 }
